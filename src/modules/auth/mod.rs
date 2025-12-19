@@ -15,12 +15,18 @@ pub mod interface;
 
 pub struct AuthModule {
     pub service: Arc<AuthService>,
+    jwt: Arc<JwtService>,
+    audit: Arc<AuditService>,
 }
 
 impl AuthModule {
     pub fn new(db: Arc<Database>, redis: Arc<Redis>, jwt: Arc<JwtService>, audit: Arc<AuditService>, config: Arc<ConfigService>) -> Self {
-        let auth_service = Arc::new(AuthService::new(db, redis, jwt, audit, config));
-        Self { service: auth_service }
+        let auth_service = Arc::new(AuthService::new(db, redis, jwt.clone(), audit.clone(), config));
+        Self { 
+            service: auth_service,
+            jwt,
+            audit,
+        }
     }
 }
 
@@ -31,6 +37,13 @@ impl AppModule for AuthModule {
 
     fn try_configure(&self, config: &mut web::ServiceConfig) -> Result<(), crate::core::AppError> {
         let _service = self.service.clone();
+        // Create Middleware
+        let admin_auth = crate::core::infrastructure::permission_middleware::RequirePermission::new(
+            "user:write",
+            self.jwt.clone(),
+            self.audit.clone(),
+        );
+
         config.service(
             web::scope("/auth")
                 .state(self.service.clone())
@@ -41,6 +54,11 @@ impl AppModule for AuthModule {
                 .service(interface::http::register)
                 .service(interface::http::refresh_session)
                 .service(interface::http::logout)
+                .service(
+                    web::resource("/users")
+                        .wrap(admin_auth)
+                        .route(web::post().to(interface::http::create_user))
+                )
         );
         Ok(())
     }

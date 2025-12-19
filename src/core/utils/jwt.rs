@@ -1,6 +1,6 @@
 use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
 use serde::{Deserialize, Serialize};
-use chrono::{Utc, Duration};
+use chrono::Duration;
 use crate::core::AppError;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -39,6 +39,16 @@ impl JwtService {
 
     pub fn generate_refresh_token(&self, user_id: &str, role: &str, tenant_id: &str, permissions: Vec<String>) -> Result<String, AppError> {
         self.generate_token(user_id, role, tenant_id, permissions, TokenType::Refresh, Duration::hours(24))
+    }
+
+    /// Generate access token with custom expiry (in minutes)
+    pub fn generate_access_token_dynamic(&self, user_id: &str, role: &str, tenant_id: &str, permissions: Vec<String>, expiry_min: i64) -> Result<String, AppError> {
+        self.generate_token(user_id, role, tenant_id, permissions, TokenType::Access, Duration::minutes(expiry_min))
+    }
+
+    /// Generate refresh token with custom expiry (in hours)
+    pub fn generate_refresh_token_dynamic(&self, user_id: &str, role: &str, tenant_id: &str, permissions: Vec<String>, expiry_hours: i64) -> Result<String, AppError> {
+        self.generate_token(user_id, role, tenant_id, permissions, TokenType::Refresh, Duration::hours(expiry_hours))
     }
 
     pub fn generate_token(

@@ -51,7 +51,16 @@ pub async fn init(pool: &PgPool) -> Result<()> {
         )"
     ).execute(pool).await?;
 
-    // 4. Apply Triggers (moved to centralized trigger setup)
+    // 4. Persistence Configs (Source of truth for ConfigService)
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sys_configs (
+            key TEXT PRIMARY KEY,
+            value JSONB NOT NULL,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )"
+    ).execute(pool).await?;
+
+    // 5. Apply Triggers (moved to centralized trigger setup)
     init_triggers(pool).await?;
 
     // Seed Local Platform Origins (Development)
@@ -83,6 +92,16 @@ async fn init_triggers(pool: &PgPool) -> Result<()> {
         r#"
         CREATE TRIGGER update_sys_cors_origins_updated_at
         BEFORE UPDATE ON sys_cors_origins
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+        "#
+    ).execute(pool).await?;
+
+    // sys_configs trigger
+    sqlx::query("DROP TRIGGER IF EXISTS update_sys_configs_updated_at ON sys_configs").execute(pool).await?;
+    sqlx::query(
+        r#"
+        CREATE TRIGGER update_sys_configs_updated_at
+        BEFORE UPDATE ON sys_configs
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
         "#
     ).execute(pool).await?;

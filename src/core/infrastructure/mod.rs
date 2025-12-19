@@ -8,3 +8,4 @@ pub mod auth_middleware;
 pub mod config_service;
 pub mod handshake_middleware;
 pub mod rate_limit;
+pub mod permission_middleware;

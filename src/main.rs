@@ -2,13 +2,11 @@ use ntex::web;
 use std::io;
 use std::sync::Arc;
 use crate::core::AppModule;
-use uuid::Uuid;
-use sqlx::Row;
+mod core;
 use crate::core::infrastructure::redis::Redis;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::cors::CorsManager;
 
-mod core;
 mod modules;
 mod interface;
 
@@ -53,12 +51,9 @@ async fn main() -> io::Result<()> {
     // Initialize Database Tables (Migrations)
     database.initialize_tables().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
-    // Initialize Database Tables (Migrations)
-    database.initialize_tables().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-
     // 5. Initialize Core Services
     let audit_service = Arc::new(crate::core::infrastructure::audit::AuditService::new(database.clone()));
-    let config_service = Arc::new(ConfigService::new(redis.clone()));
+    let config_service = Arc::new(ConfigService::new(database.clone(), redis.clone()));
     let cors_manager = Arc::new(CorsManager::new(redis.clone(), database.clone()));
     
     // Initial CORS refresh from DB
@@ -100,6 +95,11 @@ async fn main() -> io::Result<()> {
         cors_manager.clone()
     ));
 
+    let media_module = Arc::new(modules::media::MediaModule::new(
+        database.clone(),
+        audit_service.clone()
+    ));
+
     println!("🚀 Kyx Kernel v{} ({}) starting on port {}...", 
         std::env::var("APP_VERSION").unwrap_or_else(|_| "0.1.0".to_string()),
         env,
@@ -108,22 +108,24 @@ async fn main() -> io::Result<()> {
     
     let auth = auth_module.clone();
     let system = system_module.clone();
+    let media = media_module.clone();
+    let config_for_rate = config_service.clone();
 
     web::server(move || {
         let auth_m = auth.clone();
         let system_m = system.clone();
+        let media_m = media.clone();
         
         web::App::new()
             .state(redis.clone())
             .wrap(web::middleware::Logger::default())
             .wrap(crate::core::infrastructure::cors_middleware::DynamicCors::new(cors_manager.clone()))
-            .wrap(crate::core::infrastructure::rate_limit::RateLimit::default_limit())
+            .wrap(crate::core::infrastructure::rate_limit::DynamicRateLimit::new(config_for_rate.clone()))
             .service(
                 web::scope("/api/v1")
                     .configure(move |cfg| { let _ = auth_m.try_configure(cfg); })
-                    .configure(move |cfg| { 
-                        let _ = system_m.try_configure(cfg);
-                    })
+                    .configure(move |cfg| { let _ = system_m.try_configure(cfg); })
+                    .configure(move |cfg| { let _ = media_m.try_configure(cfg); })
             )
             .service(
                 web::scope("/internal")

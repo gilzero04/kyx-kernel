@@ -177,3 +177,29 @@ pub async fn register(
         }
     }
 }
+
+pub async fn create_user(
+    req: web::types::Json<crate::modules::auth::application::login_service::CreateUserRequest>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    match service.create_user(req.into_inner()).await {
+        Ok(id) => Ok(web::HttpResponse::Created().json(&json!({
+            "status": "success",
+            "message": "User created successfully",
+            "data": { "id": id }
+        }))),
+        Err(e) => {
+            let mut status = match e.code {
+                400 => web::HttpResponse::BadRequest(),
+                401 => web::HttpResponse::Unauthorized(),
+                403 => web::HttpResponse::Forbidden(),
+                404 => web::HttpResponse::NotFound(),
+                _ => web::HttpResponse::InternalServerError(),
+            };
+            Ok(status.json(&json!({
+                "status": "error",
+                "message": e.message
+            })))
+        }
+    }
+}

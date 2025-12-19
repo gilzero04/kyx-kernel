@@ -27,10 +27,27 @@ pub async fn init(pool: &PgPool) -> Result<()> {
             slug VARCHAR(100) UNIQUE NOT NULL,
             sort_order INT DEFAULT 0,
             is_active BOOLEAN DEFAULT TRUE,
+            max_members INT,  -- Global limit for this role
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW(),
             deleted_at TIMESTAMPTZ,
             FOREIGN KEY (tenant_id) REFERENCES auth_tenants(id) ON DELETE CASCADE
+        )"
+    ).execute(pool).await?;
+
+    // Migration: Add max_members column if it doesn't exist (for existing tables)
+    sqlx::query(
+        "ALTER TABLE sys_roles ADD COLUMN IF NOT EXISTS max_members INT"
+    ).execute(pool).await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sys_tenant_role_limits (
+            tenant_id UUID REFERENCES auth_tenants(id) ON DELETE CASCADE,
+            role_id UUID REFERENCES sys_roles(id) ON DELETE CASCADE,
+            max_members INT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            PRIMARY KEY (tenant_id, role_id)
         )"
     ).execute(pool).await?;
 
@@ -92,19 +109,21 @@ async fn seed_data(pool: &PgPool) -> Result<()> {
     }
 
     // 2. Seed Roles
+    // (code, slug, name, sort, max_members)
     let roles = vec![
-        ("R001", "superadmin", "Super Administrator", 100),
-        ("R002", "admin", "Administrator", 80),
-        ("R003", "operator", "Operator", 60),
-        ("R004", "viewer", "Viewer", 40),
+        ("R001", "superadmin", "Super Administrator", 100, Some(3)), // Limit 3
+        ("R002", "admin", "Administrator", 80, None),
+        ("R003", "operator", "Operator", 60, None),
+        ("R004", "viewer", "Viewer", 40, None),
     ];
 
-    for (code, slug, name, sort) in roles {
+    for (code, slug, name, sort, max) in roles {
         sqlx::query(
-            "INSERT INTO sys_roles (code, slug, name, sort_order) 
-             VALUES ($1, $2, $3, $4) ON CONFLICT (slug) DO NOTHING"
+            "INSERT INTO sys_roles (code, slug, name, sort_order, max_members) 
+             VALUES ($1, $2, $3, $4, $5) 
+             ON CONFLICT (slug) DO UPDATE SET max_members = EXCLUDED.max_members"
         )
-        .bind(code).bind(slug).bind(name).bind(sort)
+        .bind(code).bind(slug).bind(name).bind(sort).bind(max)
         .execute(pool).await?;
     }
     

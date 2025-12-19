@@ -1,6 +1,5 @@
-use std::sync::Arc;
-use ntex::service::{Middleware, Service, ServiceCtx};
-use ntex::web;
+use ntex::service::{Middleware, Service};
+use ntex::{web, ServiceCtx};
 
 pub struct EngineHandshake {
     secret_key: String,
