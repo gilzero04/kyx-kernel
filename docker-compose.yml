@@ -1,0 +1,39 @@
+services:
+  db:
+    build:
+      context: .
+      dockerfile: infra/docker/postgres/Dockerfile
+    container_name: kyx-postgres-secure
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - kyx_postgres_data_success:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    build:
+      context: .
+      dockerfile: infra/docker/redis/Dockerfile
+    container_name: kyx-redis-secure
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: [ "--tls-port", "6380", "--port", "0", "--tls-cert-file", "/etc/redis/certs/redis.crt", "--tls-key-file", "/etc/redis/certs/redis.key", "--tls-auth-clients", "no", "--requirepass", "${REDIS_PASSWORD}", "--loadmodule", "/opt/redis-stack/lib/rejson.so", "--loadmodule", "/opt/redis-stack/lib/redisearch.so", "--appendonly", "yes" ]
+    ports:
+      - "6380:6380"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  kyx_postgres_data_success:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  default:
+    name: kyx-network

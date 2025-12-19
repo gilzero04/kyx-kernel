@@ -1,0 +1,46 @@
+[package]
+name = "kyx-kernel"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web Framework & Runtime (Ultra-Native)
+ntex = { version = "2.17", features = ["tokio"] }
+ntex-rt = "3.2"
+ntex-util = "3.2"
+ntex-files = "3.0"
+ntex-cors = "3.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async & Utilities
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+anyhow = "1.0"
+derive_more = { version = "1.0", features = ["full"] }
+dotenvy = "0.15"
+urlencoding = "2.1"
+parking_lot = "0.12"
+argon2 = "0.5"
+jsonwebtoken = "9.3"
+
+# Redis (Stable with JSON/Search support)
+redis = { version = "0.27", features = ["tokio-comp", "json", "connection-manager", "tokio-native-tls-comp"] }
+
+# WASM Runtime
+wasmer = "4.4"
+
+# Security & Validation (ISO/OWASP)
+validator = { version = "0.18", features = ["derive"] }
+
+# Database (Modular Migration)
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono"] }
+
+# Observability & Logging (ISO 27001)
+log = "0.4"
+env_logger = "0.11"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["serde", "v4"] }
+dashmap = "6.1.0"
