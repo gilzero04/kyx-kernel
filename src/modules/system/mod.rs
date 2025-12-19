@@ -83,7 +83,19 @@ impl AppModule for SystemModule {
                 .service(interface::http::get_system_status)
         );
         
-        // 2. Protected Admin Scope (SuperAdmin JWT required)
+        // 2. User Management Scope (user:write permission)
+        // Must be registered BEFORE /admin to matching priority
+        config.service(
+            web::scope("/admin/users")
+                .wrap(user_auth)
+                .state(self.db.clone())
+                .state(audit_service.clone())
+                .service(interface::http::users_handler::list_users)
+                .service(interface::http::users_handler::update_user)
+                .service(interface::http::users_handler::delete_user)
+        );
+
+        // 3. Protected Admin Scope (Requires system:manage permission)
         // Using /admin instead of /system/admin to avoid scope conflict
         config.service(
             web::scope("/admin")
@@ -93,7 +105,7 @@ impl AppModule for SystemModule {
                 .state(audit_service.clone())
                 .state(api_key_s.clone())
                 .state(cors_s)
-                // All admin endpoints require SuperAdmin role
+                // All admin endpoints require system:manage permission
                 .service(interface::http::get_config)
                 .service(interface::http::update_config)
                 .service(interface::http::create_api_key)
@@ -114,17 +126,6 @@ impl AppModule for SystemModule {
                 .service(interface::http::admin_test)
         );
 
-        // 3. User Management Scope (user:write permission)
-        // Note: We use /admin/users path but separate scope to use different middleware
-        config.service(
-            web::scope("/admin/users")
-                .wrap(user_auth)
-                .state(self.db.clone())
-                .state(audit_service.clone())
-                .service(interface::http::users_handler::list_users)
-                .service(interface::http::users_handler::update_user)
-                .service(interface::http::users_handler::delete_user)
-        );
 
         // 4. Headless/Public Scope (No JWT required, handlers check API Key)
         config.service(

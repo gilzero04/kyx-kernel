@@ -26,7 +26,7 @@ pub struct UsersQuery {
     search: Option<String>,
 }
 
-#[web::get("/users")]
+#[web::get("")]
 pub async fn list_users(
     db: web::types::State<Arc<crate::core::infrastructure::database::Database>>,
     query: web::types::Query<UsersQuery>,
@@ -90,7 +90,7 @@ pub struct UpdateUserRequest {
     is_active: Option<bool>,
 }
 
-#[web::patch("/users/{id}")]
+#[web::patch("/{id}")]
 pub async fn update_user(
     db: web::types::State<Arc<crate::core::infrastructure::database::Database>>,
     audit: web::types::State<Arc<AuditService>>,
@@ -129,7 +129,7 @@ pub async fn update_user(
 
 // === Delete User ===
 
-#[web::delete("/users/{id}")]
+#[web::delete("/{id}")]
 pub async fn delete_user(
     db: web::types::State<Arc<crate::core::infrastructure::database::Database>>,
     audit: web::types::State<Arc<AuditService>>,
