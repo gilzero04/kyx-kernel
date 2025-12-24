@@ -1,4 +1,6 @@
+pub mod ai_service;
 pub mod redis;
+
 pub mod database;
 pub mod audit;
 pub mod event_bus;

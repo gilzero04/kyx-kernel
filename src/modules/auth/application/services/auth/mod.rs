@@ -4,7 +4,7 @@ use crate::modules::auth::domain::login::UserCredentials;
 use crate::core::utils::jwt::{JwtService, TokenType};
 use crate::core::AppError;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::database::Database;
@@ -12,29 +12,7 @@ use crate::core::utils::password::verify_password;
 use uuid::Uuid;
 use sqlx::Row;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AuthResponse {
-    pub access_token: String,
-    pub refresh_token: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SetupRequest {
-    pub email: String,
-    pub password: String,
-    pub full_name: String,
-    pub org_name: String,
-    pub app_name: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct CreateUserRequest {
-    pub email: String,
-    pub password: String,
-    pub full_name: String,
-    pub tenant_id: Uuid,
-    pub role_slug: String,
-}
+use crate::modules::auth::interface::http::dto::auth::{UserInfo, AuthResponse, SetupRequest, CreateUserRequest};
 
 pub struct AuthService {
     db: Arc<Database>,
@@ -58,7 +36,7 @@ impl AuthService {
     pub async fn login(&self, creds: UserCredentials) -> Result<AuthResponse, AppError> {
         // 1. Find User by Email
         let user_row = sqlx::query(
-            "SELECT id, hashed_password FROM auth_users WHERE email = $1"
+            "SELECT id, email, full_name, hashed_password FROM auth_users WHERE email = $1"
         )
         .bind(&creds.username)
         .fetch_optional(&self.db.pool)
@@ -68,9 +46,11 @@ impl AuthService {
             message: format!("Database error: {}", e),
         })?;
 
-        let user: (Uuid, String) = match user_row {
+        let (user_id, email, full_name, hashed_password) = match user_row {
             Some(row) => (
                 row.get::<Uuid, _>("id"),
+                row.get::<String, _>("email"),
+                row.get::<Option<String>, _>("full_name"),
                 row.get::<String, _>("hashed_password")
             ),
             None => {
@@ -78,9 +58,6 @@ impl AuthService {
                 return Err(AppError { code: 401, message: "Invalid credentials".to_string() });
             }
         };
-        
-        let user_id = user.0;
-        let hashed_password = user.1;
 
         // 2. Verify Password
         if !verify_password(&creds.password, &hashed_password)? {
@@ -163,7 +140,16 @@ impl AuthService {
                 message: format!("Failed to store refresh token: {}", e),
             })?;
 
-        Ok(AuthResponse { access_token, refresh_token })
+        Ok(AuthResponse { 
+            access_token, 
+            refresh_token,
+            user: UserInfo {
+                id: user_id,
+                email,
+                full_name,
+                role: role,
+            }
+        })
     }
 
     pub async fn refresh_session(&self, refresh_token: &str) -> Result<AuthResponse, AppError> {
@@ -199,6 +185,27 @@ impl AuthService {
                 let access_token = self.jwt.generate_token(user_id, &claims.role, &claims.tenant_id, claims.permissions.clone(), TokenType::Access, chrono::Duration::minutes(access_expiry))?;
                 let new_refresh_token = self.jwt.generate_token(user_id, &claims.role, &claims.tenant_id, claims.permissions.clone(), TokenType::Refresh, chrono::Duration::minutes(refresh_expiry))?;
                 
+                // Fetch User Details for Response
+                let user_uuid = Uuid::parse_str(user_id).unwrap_or_default();
+                let user_row = sqlx::query(
+                    "SELECT email, full_name FROM auth_users WHERE id = $1"
+                )
+                .bind(user_uuid)
+                .fetch_optional(&self.db.pool)
+                .await
+                .map_err(|e| AppError {
+                    code: 500,
+                    message: format!("Database error: {}", e),
+                })?;
+
+                let (email, full_name) = match user_row {
+                    Some(row) => (
+                        row.get::<String, _>("email"),
+                        row.get::<Option<String>, _>("full_name")
+                    ),
+                    None => ("unknown".to_string(), None)
+                };
+
                 // Update Redis
                 let _: () = redis::cmd("SET")
                     .arg(&key)
@@ -215,7 +222,16 @@ impl AuthService {
                 // Log refresh
                 self.audit.log(user_id, "SESSION_REFRESH", Some(&claims.tenant_id), "SUCCESS", None).await?;
 
-                return Ok(AuthResponse { access_token, refresh_token: new_refresh_token });
+                return Ok(AuthResponse { 
+                    access_token, 
+                    refresh_token: new_refresh_token,
+                    user: UserInfo {
+                        id: user_uuid,
+                        email,
+                        full_name,
+                        role: claims.role,
+                    }
+                });
             }
         }
         
@@ -370,7 +386,16 @@ impl AuthService {
         // 8. Audit & Cache
         self.audit.log(&user_id_str, "SYSTEM_INITIALIZED", Some(&tenant_id_str), "SUCCESS", None).await?;
 
-        Ok(AuthResponse { access_token, refresh_token })
+        Ok(AuthResponse { 
+            access_token, 
+            refresh_token,
+            user: UserInfo {
+                id: user_id,
+                email: req.email,
+                full_name: Some(req.full_name),
+                role: "superadmin".to_string(),
+            }
+        })
     }
 
 

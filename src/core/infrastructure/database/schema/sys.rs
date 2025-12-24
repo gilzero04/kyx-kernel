@@ -72,6 +72,43 @@ pub async fn init(pool: &PgPool) -> Result<()> {
          ON CONFLICT (origin) DO NOTHING"
     ).execute(pool).await?;
 
+    // 6. i18n Locales
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sys_i18n_locales (
+            code VARCHAR(10) PRIMARY KEY, -- e.g. 'en', 'th', 'zh-CN'
+            name VARCHAR(100) NOT NULL,
+            is_active BOOLEAN DEFAULT TRUE,
+            is_default BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        )"
+    ).execute(pool).await?;
+
+    // 7. i18n Translations
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sys_i18n_translations (
+            id SERIAL PRIMARY KEY,
+            locale VARCHAR(10) NOT NULL REFERENCES sys_i18n_locales(code),
+            key VARCHAR(255) NOT NULL,
+            message TEXT NOT NULL,
+            is_auto_generated BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(locale, key)
+        )"
+    ).execute(pool).await?;
+
+    // i18n Indexes
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_i18n_translations_locale_key ON sys_i18n_translations(locale, key)").execute(pool).await?;
+
+    // Seed Default Locales
+    sqlx::query(
+        "INSERT INTO sys_i18n_locales (code, name, is_active, is_default) VALUES 
+         ('en', 'English', TRUE, TRUE),
+         ('th', 'Thai', TRUE, FALSE)
+         ON CONFLICT (code) DO NOTHING"
+    ).execute(pool).await?;
+
     Ok(())
 }
 

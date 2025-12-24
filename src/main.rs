@@ -9,6 +9,7 @@ use crate::core::infrastructure::cors::CorsManager;
 
 mod modules;
 mod interface;
+use utoipa::OpenApi;
 
 #[ntex::main]
 async fn main() -> io::Result<()> {
@@ -122,6 +123,49 @@ async fn main() -> io::Result<()> {
             .wrap(crate::core::infrastructure::cors_middleware::DynamicCors::new(cors_manager.clone()))
             .wrap(crate::core::infrastructure::rate_limit::DynamicRateLimit::new(config_for_rate.clone()))
             .service(
+                web::resource("/api-doc/openapi.json")
+                    .to(|| async {
+                        web::HttpResponse::Ok()
+                            .content_type("application/json")
+                            .json(&interface::http::openapi::ApiDoc::openapi())
+                    })
+            )
+            .service(
+                web::resource("/swagger-ui/")
+                    .to(|| async {
+                        web::HttpResponse::Ok()
+                            .content_type("text/html")
+                            .body(
+                                r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SwaggerUI" />
+  <title>Kyx Kernel - API Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+<script>
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: '/api-doc/openapi.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis
+      ],
+    });
+  };
+</script>
+</body>
+</html>"#
+                            )
+                    })
+            )
+            .service(
                 web::scope("/api/v1")
                     .configure(move |cfg| { let _ = auth_m.try_configure(cfg); })
                     .configure(move |cfg| { let _ = system_m.try_configure(cfg); })
@@ -141,6 +185,10 @@ async fn main() -> io::Result<()> {
                     "version": std::env::var("APP_VERSION").unwrap_or_else(|_| "1.0.0".to_string()),
                     "timestamp": chrono::Utc::now().to_rfc3339()
                 }))
+            }))
+            // Favicon handler (prevent 404 logs)
+            .service(web::resource("/favicon.ico").to(|| async {
+                web::HttpResponse::NoContent().finish()
             }))
     })
     .bind(("0.0.0.0", port))?

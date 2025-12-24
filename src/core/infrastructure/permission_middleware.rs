@@ -4,6 +4,7 @@ use ntex::web;
 use crate::core::utils::jwt::JwtService;
 use crate::core::infrastructure::audit::AuditService;
 
+#[derive(Clone)]
 pub struct RequirePermission {
     pub permission: String,
     pub jwt_service: Arc<JwtService>,

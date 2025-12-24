@@ -6,7 +6,7 @@ use crate::core::infrastructure::redis::Redis;
 use crate::core::utils::jwt::JwtService;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::config_service::ConfigService;
-use crate::modules::auth::application::login_service::AuthService;
+use crate::modules::auth::application::services::auth::AuthService;
 
 pub mod domain;
 pub mod application;
@@ -45,20 +45,8 @@ impl AppModule for AuthModule {
         );
 
         config.service(
-            web::scope("/auth")
+            interface::http::routers::auth::auth_routes(admin_auth)
                 .state(self.service.clone())
-                .service(interface::http::login)
-                .service(interface::http::get_setup_status)
-                .service(interface::http::verify_engine_key)
-                .service(interface::http::initialize_system)
-                .service(interface::http::register)
-                .service(interface::http::refresh_session)
-                .service(interface::http::logout)
-                .service(
-                    web::resource("/users")
-                        .wrap(admin_auth)
-                        .route(web::post().to(interface::http::create_user))
-                )
         );
         Ok(())
     }

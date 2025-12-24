@@ -28,8 +28,8 @@ impl AppModule for MediaModule {
         config.service(
             web::scope("/media")
                 .state(audit_service)
-                .service(interface::http::upload_file)
-                .service(interface::http::serve_file)
+                .route("", web::post().to(interface::http::handlers::media::upload_file))
+                .route("/{filename}", web::get().to(interface::http::handlers::media::serve_file))
         );
 
         Ok(())

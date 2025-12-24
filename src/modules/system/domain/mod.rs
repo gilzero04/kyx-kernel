@@ -1,1 +1,8 @@
+pub mod i18n;
 pub mod plugin;
+pub mod api_key;
+pub mod audit;
+pub mod cors;
+pub mod tenant;
+pub mod rbac;
+pub mod user;

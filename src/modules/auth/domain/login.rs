@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct User {
     pub id: Uuid,
     pub username: String,
@@ -11,7 +12,7 @@ pub struct User {
 
 use crate::core::domain::auth::UserRole;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UserCredentials {
     pub username: String,
     pub password: String,

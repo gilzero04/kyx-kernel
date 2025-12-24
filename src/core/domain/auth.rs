@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd, ToSchema)]
 pub enum UserRole {
     Viewer = 0,
     Operator = 1,
@@ -9,14 +10,14 @@ pub enum UserRole {
     SuperAdmin = 3,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Permission {
     pub id: Uuid,
     pub slug: String,
     pub name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct RoleDescriptor {
     pub id: Uuid,
     pub slug: String,
