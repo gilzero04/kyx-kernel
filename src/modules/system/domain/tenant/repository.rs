@@ -28,5 +28,5 @@ pub struct PaginatedTenants {
 #[async_trait]
 pub trait TenantRepository: Send + Sync {
     async fn list(&self, filter: TenantFilter) -> Result<PaginatedTenants>;
-    async fn update_owner_name(&self, name: &str) -> Result<()>;
+    async fn update_owner(&self, name: Option<String>, slug: Option<String>) -> Result<()>;
 }

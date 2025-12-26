@@ -1,6 +1,6 @@
 use crate::modules::system::domain::user::{UserEntry, PaginatedUsers, UserFilter};
 use crate::core::infrastructure::database::Database;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use std::sync::Arc;
 
 fn get_user_sort_column(col: &str) -> Option<&'static str> {
@@ -44,9 +44,11 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
         SELECT 
             u.id, u.email, u.full_name, u.is_active, u.created_at,
             r.name as role,
-            t.name as tenant_name
+            r.slug as role_slug,
+            t.name as tenant_name,
+            t.id as tenant_id
         FROM auth_users u
-        LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE
+        LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE AND m.deleted_at IS NULL
         LEFT JOIN sys_roles r ON m.role_id = r.id
         LEFT JOIN auth_tenants t ON m.tenant_id = t.id
         WHERE u.deleted_at IS NULL
@@ -55,7 +57,7 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
     let count_base_sql = r#"
         SELECT COUNT(DISTINCT u.id)
         FROM auth_users u
-        LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE
+        LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE AND m.deleted_at IS NULL
         LEFT JOIN sys_roles r ON m.role_id = r.id
         LEFT JOIN auth_tenants t ON m.tenant_id = t.id
         WHERE u.deleted_at IS NULL

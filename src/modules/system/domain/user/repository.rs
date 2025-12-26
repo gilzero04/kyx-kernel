@@ -29,7 +29,7 @@ pub struct PaginatedUsers {
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn list(&self, filter: UserFilter) -> Result<PaginatedUsers>;
-    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>) -> Result<bool>; // Returns found/updated
+    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>) -> Result<bool>; // Returns found/updated
     async fn soft_delete(&self, id: Uuid) -> Result<bool>;
     
     // Checks

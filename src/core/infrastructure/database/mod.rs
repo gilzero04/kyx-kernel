@@ -18,6 +18,13 @@ impl Database {
     }
 
     pub async fn initialize_tables(&self) -> Result<()> {
-        schema::initialize_all(&self.pool).await
+        // Run SQL migrations from ./migrations directory
+        // All schema is now defined in migration files
+        sqlx::migrate!("./migrations")
+            .run(&self.pool)
+            .await?;
+
+        log::info!("✅ Database migrations completed successfully.");
+        Ok(())
     }
 }

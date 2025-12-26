@@ -13,4 +13,6 @@ pub struct UsersQuery {
 pub struct UpdateUserRequest {
     pub full_name: Option<String>,
     pub is_active: Option<bool>,
+    pub role_slug: Option<String>,
+    pub tenant_id: Option<sqlx::types::Uuid>,
 }

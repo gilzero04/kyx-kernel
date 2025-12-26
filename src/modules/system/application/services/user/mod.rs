@@ -20,8 +20,8 @@ impl UserAdminService {
         self.repo.list(filter).await.map_err(|e| AppError { code: 500, message: e.to_string() })
     }
 
-    pub async fn update_user(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>) -> Result<(), AppError> {
-        let updated = self.repo.update(id, full_name, is_active).await
+    pub async fn update_user(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>) -> Result<(), AppError> {
+        let updated = self.repo.update(id, full_name, is_active, role_slug, tenant_id).await
             .map_err(|e| AppError { code: 500, message: e.to_string() })?;
         
         if !updated {

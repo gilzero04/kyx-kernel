@@ -116,13 +116,6 @@ impl AppModule for SystemModule {
             self.jwt.clone(),
             self.audit.clone(),
         );
-
-        // RequirePermission middleware for user management
-        let user_auth = crate::core::infrastructure::permission_middleware::RequirePermission::new(
-            "user:write",
-            self.jwt.clone(),
-            self.audit.clone(),
-        );
         
         // 1. Public System Scope (no auth required)
         config.service(
@@ -143,6 +136,7 @@ impl AppModule for SystemModule {
             web::scope("/admin")
                 .wrap(admin_auth.clone())
                 .state(self.db.clone())
+                .state(self.jwt.clone()) // Required for delete_user self-check
                 .state(config_service)
                 .state(audit_service.clone()) // Write (Core)
                 .state(audit_query_s) // Read (System Module)

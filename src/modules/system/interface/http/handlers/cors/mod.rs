@@ -2,7 +2,7 @@ use ntex::web;
 use std::sync::Arc;
 use crate::modules::system::application::services::cors::CORSService;
 use crate::core::infrastructure::audit::AuditService;
-use crate::modules::system::interface::http::dto::cors::AddCorsRequest;
+use crate::modules::system::interface::http::dto::cors::{AddCorsRequest, UpdateCorsRequest};
 
 /// List allowed CORS origins (Admin)
 #[utoipa::path(
@@ -47,6 +47,43 @@ pub async fn add_cors_origin(
             web::HttpResponse::Created().json(&origin)
         },
         Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": e.message }))
+    }
+}
+
+/// Update a CORS origin (Admin)
+#[utoipa::path(
+    patch,
+    path = "/api/v1/admin/cors/{id}",
+    request_body = UpdateCorsRequest,
+    responses(
+        (status = 200, description = "CORS origin updated successfully", body = CorsOrigin),
+        (status = 404, description = "CORS origin not found")
+    ),
+    tag = "cors",
+    params(
+        ("id" = i32, Path, description = "CORS origin ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_cors_origin(
+    body: web::types::Json<UpdateCorsRequest>,
+    service: web::types::State<Arc<CORSService>>,
+    audit: web::types::State<Arc<AuditService>>,
+    path: web::types::Path<i32>,
+) -> impl web::Responder {
+    let id = path.into_inner();
+    match service.update_origin(id, body.is_active, body.description.clone()).await {
+        Ok(origin) => {
+            let _ = audit.log("SuperAdmin", "CORS_ORIGIN_UPDATED", Some(&origin.origin), "SUCCESS", None).await;
+            web::HttpResponse::Ok().json(&origin)
+        },
+        Err(e) => {
+             // Basic error handling for not found
+             let mut status = if e.message.contains("no rows returned") { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
+            status.json(&serde_json::json!({ "error": e.message }))
+        }
     }
 }
 

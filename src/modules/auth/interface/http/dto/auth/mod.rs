@@ -23,6 +23,7 @@ pub struct SetupRequest {
     pub password: String,
     pub full_name: String,
     pub org_name: String,
+    pub org_slug: Option<String>,
     pub app_name: Option<String>,
 }
 

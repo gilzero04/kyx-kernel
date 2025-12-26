@@ -98,6 +98,16 @@ async fn init_triggers(pool: &PgPool) -> Result<()> {
         "#
     ).execute(pool).await?;
 
+    // auth_memberships trigger
+    sqlx::query("DROP TRIGGER IF EXISTS update_auth_memberships_updated_at ON auth_memberships").execute(pool).await?;
+    sqlx::query(
+        r#"
+        CREATE TRIGGER update_auth_memberships_updated_at
+        BEFORE UPDATE ON auth_memberships
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+        "#
+    ).execute(pool).await?;
+
     Ok(())
 }
 
@@ -111,6 +121,8 @@ pub async fn init_memberships(pool: &PgPool) -> Result<()> {
             role_id UUID REFERENCES sys_roles(id),
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            deleted_at TIMESTAMPTZ,
             PRIMARY KEY (user_id, tenant_id)
         )"
     ).execute(pool).await?;

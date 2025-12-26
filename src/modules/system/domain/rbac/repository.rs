@@ -9,11 +9,13 @@ pub struct CreateRoleCmd {
     pub slug: String,
     pub name: String,
     pub description: Option<String>,
+    pub is_active: Option<bool>,
 }
 
 #[derive(Debug)]
 pub struct UpdateRoleCmd {
     pub name: Option<String>,
+    pub code: Option<String>,
     pub description: Option<String>,
     pub is_active: Option<bool>,
 }
@@ -24,11 +26,13 @@ pub struct CreatePermissionCmd {
     pub slug: String,
     pub name: String,
     pub description: Option<String>,
+    pub is_active: Option<bool>,
 }
 
 #[derive(Debug)]
 pub struct UpdatePermissionCmd {
     pub name: Option<String>,
+    pub code: Option<String>,
     pub description: Option<String>,
     pub is_active: Option<bool>,
 }

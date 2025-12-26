@@ -27,6 +27,10 @@ pub fn auth_routes(
                 .route(web::post().to(auth::verify_engine_key))
         )
         .service(
+            web::resource("/setup/check-slug")
+                .route(web::get().to(auth::check_slug_availability))
+        )
+        .service(
             web::resource("/setup")
                 .route(web::post().to(auth::initialize_system))
         )

@@ -53,10 +53,11 @@ pub async fn create_role(
     body: web::types::Json<CreateRoleRequest>,
 ) -> impl web::Responder {
     let cmd = CreateRoleCmd {
-        code: None, // Or from body if added later
-        slug: body.name.to_lowercase().replace(" ", "-"), // Simple slug generation
+        code: body.code.clone(),
+        slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
         name: body.name.clone(),
         description: body.description.clone(),
+        is_active: body.is_active,
     };
 
     match service.create_role(cmd).await {
@@ -98,8 +99,9 @@ pub async fn update_role(
 
     let cmd = UpdateRoleCmd {
         name: body.name.clone(),
+        code: body.code.clone(),
         description: body.description.clone(),
-        is_active: None, // Or from body
+        is_active: body.is_active,
     };
 
     match service.update_role(id_uuid, cmd).await {
@@ -194,10 +196,11 @@ pub async fn create_permission(
     body: web::types::Json<CreatePermissionRequest>,
 ) -> impl web::Responder {
     let cmd = CreatePermissionCmd {
-        code: None,
-        slug: body.name.to_lowercase().replace(" ", "-"),
+        code: body.code.clone(),
+        slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
         name: body.name.clone(),
         description: body.description.clone(),
+        is_active: body.is_active,
     };
 
     match service.create_permission(cmd).await {
@@ -239,8 +242,9 @@ pub async fn update_permission(
 
     let cmd = UpdatePermissionCmd {
         name: body.name.clone(),
+        code: body.code.clone(),
         description: body.description.clone(),
-        is_active: None,
+        is_active: body.is_active,
     };
 
     match service.update_permission(id_uuid, cmd).await {

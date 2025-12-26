@@ -68,7 +68,7 @@ pub async fn update_user(
         Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
     };
 
-    match service.update_user(id_uuid, body.full_name.clone(), body.is_active).await {
+    match service.update_user(id_uuid, body.full_name.clone(), body.is_active, body.role_slug.clone(), body.tenant_id).await {
         Ok(_) => {
             let _ = audit.log("SuperAdmin", "USER_UPDATED", Some(&path), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))

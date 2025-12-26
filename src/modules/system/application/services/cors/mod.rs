@@ -28,6 +28,14 @@ impl CORSService {
         Ok(result)
     }
 
+    pub async fn update_origin(&self, id: i32, is_active: Option<bool>, description: Option<String>) -> Result<CorsOrigin, AppError> {
+        let result = self.repo.update(id, is_active, description).await
+            .map_err(|e| AppError { code: 500, message: e.to_string() })?;
+        
+        self.manager.refresh().await?;
+        Ok(result)
+    }
+
     pub async fn delete_origin(&self, id: i32) -> Result<(), AppError> {
         self.repo.delete(id).await
             .map_err(|e| AppError { code: 500, message: e.to_string() })?;

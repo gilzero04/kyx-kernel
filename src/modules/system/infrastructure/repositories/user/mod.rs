@@ -1,4 +1,4 @@
-use crate::modules::system::domain::user::{UserEntry, TenantMemberCount, UserRepository, PaginatedUsers, UserFilter};
+use crate::modules::system::domain::user::{TenantMemberCount, UserRepository, PaginatedUsers, UserFilter};
 use crate::core::infrastructure::database::Database;
 use async_trait::async_trait;
 use anyhow::{Result, anyhow};
@@ -24,8 +24,11 @@ impl UserRepository for PostgresUserRepository {
         list_query::list(&self.pool, filter).await
     }
 
-    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>) -> Result<bool> {
-        let result = sqlx::query(
+    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>) -> Result<bool> {
+        let mut tx = self.pool.pool.begin().await?;
+
+        // 1. Update User
+        let user_result = sqlx::query(
             "UPDATE auth_users SET 
              full_name = COALESCE($1, full_name), 
              is_active = COALESCE($2, is_active),
@@ -35,15 +38,40 @@ impl UserRepository for PostgresUserRepository {
         .bind(full_name)
         .bind(is_active)
         .bind(id)
-        .execute(&self.pool.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| anyhow!("Failed to update user: {}", e))?;
 
-        Ok(result.rows_affected() > 0)
+        if user_result.rows_affected() == 0 {
+            tx.rollback().await?;
+            return Ok(false);
+        }
+
+        // 2. Update Membership (Role and/or Tenant)
+        if role_slug.is_some() || tenant_id.is_some() {
+            // Update the existing active membership
+            sqlx::query(
+                "UPDATE auth_memberships m SET 
+                 role_id = COALESCE(r.id, m.role_id),
+                 tenant_id = COALESCE($1, m.tenant_id),
+                 updated_at = NOW()
+                 FROM sys_roles r
+                 WHERE m.user_id = $2 AND m.role_id = r.id AND (COALESCE($3, r.slug) = r.slug) AND m.is_active = TRUE AND m.deleted_at IS NULL"
+            )
+            .bind(tenant_id)
+            .bind(id)
+            .bind(role_slug)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| anyhow!("Failed to update user membership: {}", e))?;
+        }
+
+        tx.commit().await?;
+        Ok(true)
     }
 
     async fn soft_delete(&self, id: Uuid) -> Result<bool> {
-        let result = sqlx::query("UPDATE auth_users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
+        let result = sqlx::query("UPDATE auth_users SET is_active = FALSE, deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
             .bind(id)
             .execute(&self.pool.pool)
             .await
@@ -53,41 +81,41 @@ impl UserRepository for PostgresUserRepository {
     }
 
     async fn is_superadmin(&self, id: Uuid) -> Result<bool> {
-        let is_super = sqlx::query_scalar::<_, bool>(
+        let is_super: Option<bool> = sqlx::query_scalar(
             "SELECT EXISTS(
                 SELECT 1 FROM auth_memberships m 
                 JOIN sys_roles r ON m.role_id = r.id 
-                WHERE m.user_id = $1 AND r.slug = 'superadmin' AND m.is_active = TRUE
+                WHERE m.user_id = $1 AND r.slug = 'superadmin' AND m.is_active = TRUE AND m.deleted_at IS NULL
             )"
         )
         .bind(id)
         .fetch_one(&self.pool.pool)
         .await
-        .unwrap_or(false);
-        Ok(is_super)
+        .map_err(|e| anyhow!("Failed to check superadmin status: {}", e))?;
+        Ok(is_super.unwrap_or(false))
     }
 
     async fn count_superadmins(&self) -> Result<i64> {
-        let count = sqlx::query_scalar(
+        let count: Option<i64> = sqlx::query_scalar(
             "SELECT COUNT(*) FROM auth_memberships m 
              JOIN sys_roles r ON m.role_id = r.id 
-             WHERE r.slug = 'superadmin' AND m.is_active = TRUE"
+             WHERE r.slug = 'superadmin' AND m.is_active = TRUE AND m.deleted_at IS NULL"
         )
         .fetch_one(&self.pool.pool)
         .await
-        .unwrap_or(0);
-        Ok(count)
+        .map_err(|e| anyhow!("Failed to count superadmins: {}", e))?;
+        Ok(count.unwrap_or(0))
     }
 
     async fn get_user_tenants(&self, id: Uuid) -> Result<Vec<TenantMemberCount>> {
         let tenants = sqlx::query_as::<_, TenantMemberCount>(
             "SELECT t.id, t.name, (
-                SELECT COUNT(*) FROM auth_memberships m2 
-                WHERE m2.tenant_id = m.tenant_id AND m2.is_active = TRUE
+                SELECT COUNT(*)::BIGINT FROM auth_memberships m2 
+                WHERE m2.tenant_id = t.id AND m2.is_active = TRUE AND m2.deleted_at IS NULL
             ) as member_count
             FROM auth_memberships m
             JOIN auth_tenants t ON m.tenant_id = t.id
-            WHERE m.user_id = $1 AND m.is_active = TRUE"
+            WHERE m.user_id = $1 AND m.is_active = TRUE AND m.deleted_at IS NULL"
         )
         .bind(id)
         .fetch_all(&self.pool.pool)

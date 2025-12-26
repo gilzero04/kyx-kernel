@@ -12,7 +12,9 @@ pub struct UserEntry {
     pub created_at: DateTime<Utc>,
     // Joined fields
     pub role: Option<String>,
+    pub role_slug: Option<String>,
     pub tenant_name: Option<String>,
+    pub tenant_id: Option<sqlx::types::Uuid>,
 }
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]

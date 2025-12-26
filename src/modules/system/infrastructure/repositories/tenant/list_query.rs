@@ -1,6 +1,6 @@
 use crate::modules::system::domain::tenant::{TenantEntry, TenantFilter, PaginatedTenants};
 use crate::core::infrastructure::database::Database;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use std::sync::Arc;
 
 pub fn get_tenant_sort_column(col: &str) -> Option<&'static str> {
@@ -42,14 +42,13 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
 
     let base_sql = r#"
         SELECT 
-            t.id, t.name, t.slug, t.is_active, t.created_at,
-            (SELECT COUNT(*) FROM auth_memberships m WHERE m.tenant_id = t.id) as member_count
+            t.id, t.parent_id, t.name, t.slug, t.is_active, t.created_at,
+            (SELECT COUNT(*) FROM auth_memberships m WHERE m.tenant_id = t.id AND m.deleted_at IS NULL) as member_count
         FROM auth_tenants t
-        WHERE t.deleted_at IS NULL 
-            AND t.parent_id IS NOT NULL
+        WHERE t.deleted_at IS NULL
     "#;
     
-    let count_base_sql = "SELECT COUNT(*) FROM auth_tenants t WHERE t.deleted_at IS NULL AND t.parent_id IS NOT NULL";
+    let count_base_sql = "SELECT COUNT(*) FROM auth_tenants t WHERE t.deleted_at IS NULL";
 
     let order_clause = build_tenant_order_clause(&filter.sort);
 

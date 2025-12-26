@@ -12,4 +12,5 @@ pub struct TenantsQuery {
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateOwnerRequest {
     pub name: Option<String>,
+    pub slug: Option<String>,
 }

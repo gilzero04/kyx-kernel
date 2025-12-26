@@ -6,5 +6,6 @@ pub fn cors_routes() -> web::Scope<DefaultError> {
     web::scope("/cors")
         .route("", web::get().to(cors::list_cors_origins))
         .route("", web::post().to(cors::add_cors_origin))
+        .route("/{id}", web::patch().to(cors::update_cors_origin))
         .route("/{id}", web::delete().to(cors::delete_cors_origin))
 }

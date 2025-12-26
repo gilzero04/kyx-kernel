@@ -42,7 +42,7 @@ pub async fn list_tenants(
 /// Update system owner name (Admin)
 #[utoipa::path(
     patch,
-    path = "/api/v1/admin/settings/owner",
+    path = "/api/v1/admin/tenants/owner",
     request_body = UpdateOwnerRequest,
     responses(
         (status = 200, description = "Owner updated successfully")
@@ -57,10 +57,10 @@ pub async fn update_owner(
     audit: web::types::State<Arc<AuditService>>,
     body: web::types::Json<UpdateOwnerRequest>,
 ) -> impl web::Responder {
-    if let Some(name) = &body.name {
-        match service.update_owner(name.clone()).await {
+    if body.name.is_some() || body.slug.is_some() {
+        match service.update_owner(body.name.clone(), body.slug.clone()).await {
             Ok(_) => {
-                let _ = audit.log("SuperAdmin", "OWNER_UPDATED", Some("name"), "SUCCESS", None).await;
+                let _ = audit.log("SuperAdmin", "OWNER_UPDATED", Some("branding"), "SUCCESS", None).await;
                 web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
             },
             Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({

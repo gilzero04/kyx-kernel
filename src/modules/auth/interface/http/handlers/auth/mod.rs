@@ -151,6 +151,60 @@ pub async fn verify_engine_key(
     }
 }
 
+/// Check if organization slug is available (for setup)
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/setup/check-slug",
+    responses(
+        (status = 200, description = "Slug availability response"),
+        (status = 401, description = "Invalid engine key")
+    ),
+    tag = "auth",
+    params(
+        ("slug" = String, Query, description = "Slug to check"),
+        ("X-Engine-Secret" = String, Header, description = "Engine Secret Key")
+    )
+)]
+pub async fn check_slug_availability(
+    req: web::HttpRequest,
+    query: web::types::Query<std::collections::HashMap<String, String>>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    // 1. Verify Engine Secret
+    let engine_secret = std::env::var("ENGINE_SECRET_KEY").unwrap_or_default();
+    let provided_secret = req.headers().get("X-Engine-Secret")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or_default();
+
+    if engine_secret.is_empty() || provided_secret != engine_secret {
+        return Ok(web::HttpResponse::Unauthorized().json(&json!({
+            "status": "error",
+            "message": "Invalid engine secret"
+        })));
+    }
+
+    // 2. Get slug from query params
+    let slug = match query.get("slug") {
+        Some(s) if !s.is_empty() => s.clone(),
+        _ => return Ok(web::HttpResponse::BadRequest().json(&json!({
+            "status": "error",
+            "message": "Slug parameter is required"
+        }))),
+    };
+
+    // 3. Check availability via service
+    match service.check_slug_availability(&slug).await {
+        Ok(available) => Ok(web::HttpResponse::Ok().json(&json!({
+            "available": available,
+            "slug": slug
+        }))),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        })))
+    }
+}
+
 /// Initialize System (SuperAdmin creation)
 #[utoipa::path(
     post,

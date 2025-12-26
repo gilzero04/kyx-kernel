@@ -17,12 +17,13 @@ pub async fn list(pool: &Arc<Database>) -> Result<Vec<Role>> {
 
 pub async fn create(pool: &Arc<Database>, cmd: CreateRoleCmd) -> Result<Role> {
     let role = sqlx::query_as::<_, Role>(
-        "INSERT INTO sys_roles (code, slug, name, description) VALUES ($1, $2, $3, $4) RETURNING *"
+        "INSERT INTO sys_roles (code, slug, name, description, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING *"
     )
     .bind(cmd.code)
     .bind(cmd.slug)
     .bind(cmd.name)
     .bind(cmd.description)
+    .bind(cmd.is_active.unwrap_or(true))
     .fetch_one(&pool.pool)
     .await
     .map_err(|e| anyhow!("Failed to create role: {}", e))?;
@@ -33,13 +34,15 @@ pub async fn update(pool: &Arc<Database>, id: Uuid, cmd: UpdateRoleCmd) -> Resul
     let role = sqlx::query_as::<_, Role>(
         "UPDATE sys_roles SET 
          name = COALESCE($1, name), 
-         description = COALESCE($2, description),
-         is_active = COALESCE($3, is_active),
+         code = COALESCE($2, code),
+         description = COALESCE($3, description),
+         is_active = COALESCE($4, is_active),
          updated_at = NOW()
-         WHERE id = $4 AND deleted_at IS NULL
+         WHERE id = $5 AND deleted_at IS NULL
          RETURNING *"
     )
     .bind(cmd.name)
+    .bind(cmd.code)
     .bind(cmd.description)
     .bind(cmd.is_active)
     .bind(id)

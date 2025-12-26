@@ -71,7 +71,7 @@ impl AuthService {
             SELECT m.tenant_id, r.slug as role_slug, r.id as role_id 
             FROM auth_memberships m
             JOIN sys_roles r ON m.role_id = r.id
-            WHERE m.user_id = $1 AND m.is_active = TRUE AND r.is_active = TRUE
+            WHERE m.user_id = $1 AND m.is_active = TRUE AND r.is_active = TRUE AND m.deleted_at IS NULL
             LIMIT 1
             "#
         )
@@ -257,7 +257,7 @@ impl AuthService {
             })?;
             
         // Log logout
-        self.audit.log(&claims.sub, "LOGOUT", None, "SUCCESS", None).await?;
+        self.audit.log(&claims.sub, "LOGOUT", Some(&claims.tenant_id), "SUCCESS", None).await?;
             
         Ok(())
     }
@@ -272,6 +272,23 @@ impl AuthService {
             })?;
             
         Ok(count.unwrap_or(0) > 0)
+    }
+
+    /// Check if a slug is available for a new tenant
+    pub async fn check_slug_availability(&self, slug: &str) -> Result<bool, AppError> {
+        let exists: Option<bool> = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM auth_tenants WHERE slug = $1)"
+        )
+        .bind(slug)
+        .fetch_one(&self.db.pool)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Database error checking slug: {}", e),
+        })?;
+
+        // Returns true if slug is available (doesn't exist)
+        Ok(!exists.unwrap_or(false))
     }
 
     pub async fn initialize_system(&self, req: SetupRequest) -> Result<AuthResponse, AppError> {
@@ -295,8 +312,11 @@ impl AuthService {
             message: format!("Transaction error: {}", e),
         })?;
 
-        // 4. Create Tenant
-        let tenant_slug = format!("org-{}", &req.org_name.to_lowercase().replace(' ', "-"));
+        // 4. Create Tenant - use provided slug or generate from org_name
+        let tenant_slug = req.org_slug
+            .clone()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| format!("org-{}", &req.org_name.to_lowercase().replace(' ', "-")));
         let tenant_row = sqlx::query(
             "INSERT INTO auth_tenants (name, slug) VALUES ($1, $2) RETURNING id"
         )

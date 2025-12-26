@@ -40,6 +40,20 @@ impl CorsRepository for PostgresCorsRepository {
         Ok(row)
     }
 
+    async fn update(&self, id: i32, is_active: Option<bool>, description: Option<String>) -> Result<CorsOrigin> {
+        let row = sqlx::query_as::<_, CorsOrigin>(
+            "UPDATE sys_cors_origins SET is_active = COALESCE($2, is_active), description = COALESCE($3, description) WHERE id = $1 RETURNING id, origin, is_active, description, created_at, updated_at"
+        )
+        .bind(id)
+        .bind(is_active)
+        .bind(description)
+        .fetch_one(&self.pool.pool)
+        .await
+        .map_err(|e| anyhow!("Failed to update origin: {}", e))?;
+
+        Ok(row)
+    }
+
     async fn delete(&self, id: i32) -> Result<()> {
         sqlx::query("DELETE FROM sys_cors_origins WHERE id = $1")
             .bind(id)

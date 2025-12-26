@@ -1,0 +1,208 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  CARGO_TERM_COLOR: always
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Stage 1: Build & Test
+  # ============================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        continue-on-error: true
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test --release
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kyx-kernel-binary
+          path: target/release/kyx-kernel
+          retention-days: 7
+
+  # ============================================
+  # Stage 2: Build Docker Image
+  # ============================================
+  docker:
+    name: Build Docker Image
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build-push.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Build and push
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # Stage 3: Blue-Green Deployment (Template)
+  # ============================================
+  # Uncomment and configure when ready to deploy
+  #
+  # deploy-blue-green:
+  #   name: Blue-Green Deploy
+  #   needs: docker
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ github.event.inputs.environment || 'staging' }}
+  #   
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     # Option A: SSH to VPS
+  #     # - name: Deploy to VPS
+  #     #   uses: appleboy/ssh-action@v1.0.0
+  #     #   with:
+  #     #     host: ${{ secrets.SSH_HOST }}
+  #     #     username: ${{ secrets.SSH_USER }}
+  #     #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #     #     script: |
+  #     #       cd /opt/kyx-kernel
+  #     #       
+  #     #       # Blue-Green: Deploy to inactive slot
+  #     #       CURRENT=$(docker ps --filter "name=kyx-kernel" --format "{{.Names}}" | head -1)
+  #     #       if [[ "$CURRENT" == "kyx-kernel-blue" ]]; then
+  #     #         NEW_SLOT="green"
+  #     #         OLD_SLOT="blue"
+  #     #       else
+  #     #         NEW_SLOT="blue"
+  #     #         OLD_SLOT="green"
+  #     #       fi
+  #     #       
+  #     #       # Pull and start new container
+  #     #       docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+  #     #       docker run -d --name kyx-kernel-$NEW_SLOT \
+  #     #         --env-file .env \
+  #     #         -p 8081:8080 \
+  #     #         ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+  #     #       
+  #     #       # Health check
+  #     #       sleep 10
+  #     #       curl -f http://localhost:8081/health || exit 1
+  #     #       
+  #     #       # Switch traffic (update nginx/traefik)
+  #     #       # ... your load balancer config ...
+  #     #       
+  #     #       # Stop old container
+  #     #       docker stop kyx-kernel-$OLD_SLOT || true
+  #     #       docker rm kyx-kernel-$OLD_SLOT || true
+  #
+  #     # Option B: Railway/Render (uses their built-in blue-green)
+  #     # - name: Deploy to Railway
+  #     #   uses: bervProject/railway-deploy@main
+  #     #   with:
+  #     #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
+  #     #     service: kyx-kernel
+  #
+  #     # Option C: AWS ECS (built-in blue-green)
+  #     # - name: Deploy to ECS
+  #     #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+  #     #   with:
+  #     #     task-definition: task-definition.json
+  #     #     service: kyx-kernel
+  #     #     cluster: kyx-cluster
+  #     #     wait-for-service-stability: true
