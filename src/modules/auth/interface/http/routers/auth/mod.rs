@@ -4,6 +4,7 @@ use crate::modules::auth::interface::http::handlers::auth;
 
 pub fn auth_routes(
     admin_auth: crate::core::infrastructure::permission_middleware::RequirePermission,
+    user_auth: crate::core::infrastructure::permission_middleware::RequirePermission,
 ) -> web::Scope<ntex::web::DefaultError> {
     web::scope("/auth")
         .service(
@@ -45,10 +46,12 @@ pub fn auth_routes(
         )
         .service(
             web::resource("/sessions")
+                .wrap(user_auth.clone())
                 .route(web::get().to(auth::list_sessions))
         )
         .service(
             web::resource("/sessions/{sid}")
+                .wrap(user_auth.clone())
                 .route(web::delete().to(auth::revoke_session))
         )
         // Admin Global Session Management

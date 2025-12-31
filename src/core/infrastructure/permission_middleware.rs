@@ -91,22 +91,32 @@ where
                 Ok(claims) => {
                     // Check if session exists in Redis if sid is present
                     if let (Some(redis), Some(sid)) = (&self.redis_service, &claims.sid) {
-                        let key = format!("auth:session:{}:{}", claims.sub, sid);
-                        let mut conn = redis.get_connection();
-                        let exists: i32 = redis::cmd("EXISTS")
-                            .arg(&key)
-                            .query_async(&mut conn)
-                            .await
-                            .unwrap_or(0);
-                        
-                        if exists == 0 {
-                            println!("[RequirePermission] Session revoked for user: {}, sid: {}", claims.sub, sid);
-                            return Ok(req.into_response(
-                                web::HttpResponse::Unauthorized().finish()
-                            ));
+                        if !sid.is_empty() {
+                            let key = format!("auth:session:{}:{}", claims.sub, sid);
+                            let mut conn = redis.get_connection();
+                            
+                            let exists: i32 = redis::cmd("EXISTS")
+                                .arg(&key)
+                                .query_async(&mut conn)
+                                .await
+                                .map_err(|e| {
+                                    log::error!("[RequirePermission] Redis connection error: {}", e);
+                                    web::error::ErrorInternalServerError("Security check failed")
+                                })?;
+                            
+                            println!("[RequirePermission] Checking key: {} -> Exists: {}", key, exists);
+                            
+                            if exists == 0 {
+                                println!("[RequirePermission] REJECTED: Session not found in Redis for user: {}, sid: {}", claims.sub, sid);
+                                return Ok(req.into_response(
+                                    web::HttpResponse::Unauthorized().finish()
+                                ));
+                            }
                         } else {
-                            // println!("[RequirePermission] Session valid for user: {}, sid: {}", claims.sub, sid);
+                             // println!("[RequirePermission] Skipping check: SID is empty");
                         }
+                    } else {
+                        // println!("[RequirePermission] Skipping check: Redis service or SID missing");
                     }
 
                     // 1. Mandatory System Owner check if system_only is true

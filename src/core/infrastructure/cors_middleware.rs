@@ -47,9 +47,20 @@ where
         
         // Check if origin is allowed
         let allowed = if let Some(ref origin_str) = origin {
-            self.manager.is_origin_allowed(origin_str).await
+            let is_dev = std::env::var("ENVIRONMENT").unwrap_or_default() == "local";
+            let is_local_net = origin_str.starts_with("http://192.168.") 
+                || origin_str.starts_with("http://10.") 
+                || origin_str.starts_with("http://172.")
+                || origin_str.contains("localhost")
+                || origin_str.contains("127.0.0.1");
+
+            if is_dev && is_local_net {
+                true
+            } else {
+                self.manager.is_origin_allowed(origin_str).await
+            }
         } else {
-            false
+            true // Allow same-origin/server-side fetches
         };
         
         // Handle OPTIONS preflight requests

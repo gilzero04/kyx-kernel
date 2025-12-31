@@ -58,7 +58,7 @@ impl AppModule for AuthModule {
 
         // Auth routes (login, register, etc.)
         config.service(
-            interface::http::routers::auth::auth_routes(admin_auth)
+            interface::http::routers::auth::auth_routes(admin_auth, user_auth.clone())
                 .state(self.service.clone())
         );
 
