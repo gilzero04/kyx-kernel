@@ -1,0 +1,77 @@
+/* Card Component - Dark Theme */
+
+.card {
+    background: var(--glass-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--glass-border, var(--color-border));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
+    border-radius: var(--radius-xl, 24px);
+    /* overflow: hidden; <-- Removed to allow Select dropdowns */
+    padding: 16px;
+    box-shadow: var(--glass-shadow);
+    transition: all 0.2s;
+    position: relative;
+}
+
+@media (min-width: 768px) {
+    .card {
+        padding: 32px;
+    }
+}
+
+/* Elevate card when user is interacting with it */
+.card:focus-within,
+.card:hover,
+.card:active {
+    z-index: 30;
+}
+
+.card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.card-header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.05);
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-foreground);
+    letter-spacing: -0.01em;
+}
+
+.card-subtitle {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+}
+
+.card-description {
+    font-size: 14px;
+    color: var(--color-muted-foreground);
+    line-height: 1.5;
+}

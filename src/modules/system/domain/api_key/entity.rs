@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct ApiKey {
     pub id: Uuid,
-    pub tenant_id: String,
+    pub tenant_id: Uuid,
     pub prefix: String,
     pub name: Option<String>,
     pub key_type: String,

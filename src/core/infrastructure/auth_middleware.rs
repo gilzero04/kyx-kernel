@@ -12,6 +12,7 @@ pub struct RequireRole {
 }
 
 impl RequireRole {
+    #[allow(dead_code)]
     pub fn new(min_role: UserRole, jwt_service: Arc<JwtService>, audit_service: Arc<AuditService>) -> Self {
         Self { min_role, jwt_service, audit_service }
     }
@@ -57,7 +58,8 @@ where
                 Ok(claims) => {
                     let user_role = UserRole::from_str(&claims.role);
                     if user_role >= self.min_role {
-                        // Authorized - continue to next service
+                        // Authorized - attach claims to request extensions and continue
+                        req.extensions_mut().insert(claims);
                         return ctx.call(&self.service, req).await;
                     } else {
                         // Log unauthorized attempt

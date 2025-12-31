@@ -3,7 +3,10 @@ use std::sync::Arc;
 use serde_json::json;
 use crate::modules::auth::application::services::auth::AuthService;
 use crate::modules::auth::domain::login::UserCredentials;
-use crate::modules::auth::interface::http::dto::auth::{RefreshRequest, SetupRequest, CreateUserRequest};
+use crate::modules::auth::interface::http::dto::auth::{RefreshRequest, SetupRequest, CreateUserRequest, SignupRequest};
+#[allow(unused_imports)]
+use crate::modules::auth::interface::http::dto::auth::{AuthResponse, SessionInfo, AdminSessionInfo};
+use uuid::Uuid;
 
 /// User Login
 #[utoipa::path(
@@ -17,10 +20,27 @@ use crate::modules::auth::interface::http::dto::auth::{RefreshRequest, SetupRequ
     tag = "auth"
 )]
 pub async fn login(
+    req: web::HttpRequest,
     creds: web::types::Json<UserCredentials>,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    match service.login(creds.into_inner()).await {
+    let ip = if let Some(real_ip) = req.headers().get("X-Real-IP")
+        .and_then(|h| h.to_str().ok()) {
+        real_ip.trim().to_string()
+    } else if let Some(forwarded) = req.headers().get("X-Forwarded-For")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|list| list.split(',').next()) {
+        forwarded.trim().to_string()
+    } else {
+        req.connection_info().remote().unwrap_or("unknown").to_string()
+    };
+
+    let ua = req.headers().get("User-Agent")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("unknown")
+        .to_string();
+
+    match service.login(creds.into_inner(), ip, ua).await {
         Ok(auth_response) => Ok(web::HttpResponse::Ok().json(&auth_response)),
         Err(e) => Ok(web::HttpResponse::Unauthorized().json(&json!({
             "status": "error",
@@ -255,32 +275,27 @@ pub async fn initialize_system(
     }
 }
 
-pub async fn register(
-    req: web::types::Json<SetupRequest>,
+/// Public Signup (Create Tenant & Admin)
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/signup",
+    request_body = SignupRequest,
+    responses(
+        (status = 200, description = "Signup successful", body = AuthResponse),
+        (status = 400, description = "Invalid input or slug taken")
+    ),
+    tag = "auth"
+)]
+pub async fn signup(
+    req: web::types::Json<SignupRequest>,
     service: web::types::State<Arc<AuthService>>,
-    http_req: web::HttpRequest,
 ) -> Result<web::HttpResponse, web::Error> {
-    // 1. Verify Engine Secret (Duplicated Logic for Safety)
-    let engine_secret = std::env::var("ENGINE_SECRET_KEY").unwrap_or_default();
-    let provided_secret = http_req.headers().get("X-Engine-Secret")
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or_default();
-
-    if engine_secret.is_empty() || provided_secret != engine_secret {
-        return Ok(web::HttpResponse::Unauthorized().json(&json!({
-            "status": "error",
-            "message": "Invalid engine secret"
-        })));
-    }
-
-    // 2. Initialize System
-    match service.initialize_system(req.into_inner()).await {
+    match service.signup(req.into_inner()).await {
         Ok(response) => Ok(web::HttpResponse::Ok().json(&response)),
         Err(e) => {
-            let mut status = if e.code == 403 {
-                web::HttpResponse::Forbidden()
-            } else {
-                web::HttpResponse::InternalServerError()
+            let mut status = match e.code {
+                400 => web::HttpResponse::BadRequest(),
+                _ => web::HttpResponse::InternalServerError(),
             };
             Ok(status.json(&json!({
                 "status": "error",
@@ -328,5 +343,122 @@ pub async fn create_user(
                 "message": e.message
             })))
         }
+    }
+}
+
+/// List Active Sessions
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/sessions",
+    responses(
+        (status = 200, description = "List of active sessions", body = [SessionInfo])
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn list_sessions(
+    claims: crate::core::utils::jwt::Claims,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    match service.list_sessions(&user_id).await {
+        Ok(sessions) => Ok(web::HttpResponse::Ok().json(&sessions)),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
+    }
+}
+
+/// Revoke a Session
+#[utoipa::path(
+    delete,
+    path = "/api/v1/auth/sessions/{sid}",
+    responses(
+        (status = 200, description = "Session revoked"),
+        (status = 404, description = "Session not found")
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn revoke_session(
+    claims: crate::core::utils::jwt::Claims,
+    path: web::types::Path<(String,)>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    let (sid,) = path.into_inner();
+    
+    match service.revoke_session(&user_id, &sid).await {
+        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
+            "status": "success",
+            "message": "Session revoked"
+        }))),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
+    }
+}
+
+/// List All Active Sessions (Admin)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/auth/sessions",
+    responses(
+        (status = 200, description = "List of all active sessions", body = [AdminSessionInfo])
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn admin_list_sessions(
+    claims: crate::core::utils::jwt::Claims, // Ensure authenticated
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    // Note: RBAC middleware should handle permission check ("system:manage")
+    match service.list_all_sessions(claims.sid).await {
+        Ok(sessions) => Ok(web::HttpResponse::Ok().json(&sessions)),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
+    }
+}
+
+/// Revoke Any Session (Admin)
+#[utoipa::path(
+    delete,
+    path = "/api/v1/admin/auth/sessions/{user_id}/{sid}",
+    responses(
+        (status = 200, description = "Session revoked"),
+        (status = 404, description = "Session not found")
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn admin_revoke_session_handler(
+    _claims: crate::core::utils::jwt::Claims,
+    path: web::types::Path<(Uuid, String)>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let (user_id, sid) = path.into_inner();
+    
+    match service.admin_revoke_session(user_id, sid).await {
+        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
+            "status": "success",
+            "message": "Session revoked by admin"
+        }))),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
     }
 }

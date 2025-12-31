@@ -24,6 +24,7 @@ tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 async-trait = "0.1"
 anyhow = "1.0"
+trust-dns-resolver = "0.23"
 derive_more = { version = "1.0", features = ["full"] }
 dotenvy = "0.15"
 urlencoding = "2.1"
@@ -49,3 +50,6 @@ env_logger = "0.11"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["serde", "v4"] }
 dashmap = "6.1.0"
+zip = "7.0.0"
+base64 = "0.22"
+rand = "0.8"

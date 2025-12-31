@@ -1,0 +1,155 @@
+/* Button Component - Light Theme */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-radius: var(--radius-md, 8px);
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* Variants */
+.btn-default {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+    box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.4);
+}
+
+.btn-default:hover {
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-foreground);
+    border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+    background: rgba(56, 189, 248, 0.25);
+    /* Sky 400 - Bright Blue Glow */
+    border-color: rgba(14, 165, 233, 0.4);
+    /* Sky 500 */
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-foreground);
+}
+
+.btn-ghost:hover {
+    background: rgba(56, 189, 248, 0.2);
+    /* Sky 400 - Light Blue Hover */
+}
+
+.btn-destructive {
+    background: var(--color-destructive);
+    color: var(--color-destructive-foreground);
+}
+
+.btn-destructive:hover {
+    opacity: 0.9;
+}
+
+.btn-soft-primary {
+    background: rgba(var(--color-primary-rgb, 6, 182, 212), 0.1);
+    color: var(--color-primary);
+    border: 1px solid rgba(var(--color-primary-rgb, 6, 182, 212), 0.1);
+}
+
+.btn-soft-primary:hover {
+    background: rgba(var(--color-primary-rgb, 6, 182, 212), 0.2);
+    border-color: rgba(var(--color-primary-rgb, 6, 182, 212), 0.2);
+}
+
+.btn-soft-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-outline {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-foreground);
+}
+
+.btn-outline:hover {
+    border-color: var(--color-primary);
+    background: rgba(6, 182, 212, 0.1);
+    color: var(--color-primary);
+}
+
+.btn-link {
+    background: transparent;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Sizes */
+.btn-xs {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 10px;
+}
+
+.btn-sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+}
+
+.btn-md {
+    height: 48px;
+    padding: 0 24px;
+    font-size: 14px;
+}
+
+.btn-lg {
+    height: 56px;
+    padding: 0 32px;
+    font-size: 18px;
+}
+
+.btn-xl {
+    height: 64px;
+    padding: 0 40px;
+    font-size: 20px;
+}
+
+.btn-icon {
+    height: 40px;
+    width: 40px;
+    padding: 0;
+}
+
+.btn-fab {
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+    flex-shrink: 0;
+}
+
+.btn-loading-spinner {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+}

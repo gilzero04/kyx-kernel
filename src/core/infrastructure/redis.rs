@@ -59,6 +59,7 @@ impl Redis {
     }
 
     /// Setup RediSearch index for plugins (JSON based)
+    #[allow(dead_code)]
     pub async fn initialize_indices(&self) -> Result<()> {
         let _ = self.cmd("FT.CREATE", vec![
             "idx:plugins", "ON", "JSON", "PREFIX", "1", "plugin:",

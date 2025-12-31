@@ -36,6 +36,7 @@ pub struct RateLimit {
 }
 
 impl RateLimit {
+    #[allow(dead_code)]
     pub fn new(config: RateLimitConfig) -> Self {
         Self {
             config,
@@ -44,6 +45,7 @@ impl RateLimit {
     }
 
     /// Strict rate limit for sensitive endpoints (login, register)
+    #[allow(dead_code)]
     pub fn strict() -> Self {
         Self::new(RateLimitConfig {
             max_requests: 10,   // 10 requests
@@ -52,6 +54,7 @@ impl RateLimit {
     }
 
     /// Default rate limit for general API
+    #[allow(dead_code)]
     pub fn default_limit() -> Self {
         Self::new(RateLimitConfig::default())
     }

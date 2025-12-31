@@ -15,6 +15,9 @@ pub struct UserEntry {
     pub role_slug: Option<String>,
     pub tenant_name: Option<String>,
     pub tenant_id: Option<sqlx::types::Uuid>,
+    pub tenant_logo_url: Option<String>,
+    pub tenant_logo_dark_url: Option<String>,
+    pub permissions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]

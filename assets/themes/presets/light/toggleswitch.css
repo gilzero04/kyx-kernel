@@ -1,0 +1,149 @@
+/* ToggleSwitch Component - Dark Theme */
+
+/* Shared Base */
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: none;
+    outline: none;
+}
+
+.toggle-switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================= */
+/* Variant: Segment (Original)               */
+/* ========================================= */
+.toggle-switch.variant-segment {
+    background: var(--color-input);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    padding: 4px;
+    overflow: hidden;
+}
+
+.toggle-switch.variant-segment .toggle-option {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    color: var(--color-muted-foreground);
+    font-weight: 500;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+
+.toggle-switch.variant-segment .toggle-option.selected {
+    color: var(--color-primary-foreground);
+}
+
+.toggle-switch.variant-segment .toggle-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: var(--color-primary);
+    border-radius: calc(var(--radius-md, 8px) - 4px);
+    transition: transform 0.2s ease-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.toggle-switch.variant-segment .toggle-slider.right {
+    transform: translateX(100%);
+}
+
+.toggle-switch.variant-segment.active {
+    border-color: var(--color-primary);
+}
+
+
+/* ========================================= */
+/* Variant: Switch (iOS Style / User Request)*/
+/* ========================================= */
+.toggle-switch.variant-switch {
+    /* Main Track - Off State */
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    padding: 2px;
+    width: 44px;
+    height: 24px;
+    justify-content: flex-start;
+}
+
+/* Active State (On) */
+.toggle-switch.variant-switch.active {
+    /* Light Purple Track matches user image by making primary transparent */
+    background-color: color-mix(in srgb, var(--color-primary), transparent 60%);
+    border-color: color-mix(in srgb, var(--color-primary), transparent 60%);
+}
+
+/* Slider (Thumb) */
+.toggle-switch.variant-switch .toggle-slider {
+    position: relative;
+    /* Reset absolute positioning */
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+
+    width: 18px;
+    height: 18px;
+    background-color: #94a3b8;
+    /* Slate 400 (Grey) for Off */
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.3s;
+    transform: translateX(0);
+}
+
+/* Active Slider (Thumb) */
+.toggle-switch.variant-switch.active .toggle-slider {
+    transform: translateX(20px);
+    background-color: var(--color-primary);
+    /* Primary color thumb */
+}
+
+/* Hide text labels in switch variant */
+.toggle-switch.variant-switch .toggle-option {
+    display: none;
+}
+
+
+/* Sizes */
+.toggle-switch.variant-switch.toggle-sm {
+    width: 36px;
+    height: 20px;
+}
+
+.toggle-switch.variant-switch.toggle-sm .toggle-slider {
+    width: 14px;
+    height: 14px;
+}
+
+.toggle-switch.variant-switch.toggle-sm.active .toggle-slider {
+    transform: translateX(16px);
+}
+
+.toggle-switch.variant-switch.toggle-lg {
+    width: 52px;
+    height: 28px;
+}
+
+.toggle-switch.variant-switch.toggle-lg .toggle-slider {
+    width: 22px;
+    height: 22px;
+}
+
+.toggle-switch.variant-switch.toggle-lg.active .toggle-slider {
+    transform: translateX(24px);
+}

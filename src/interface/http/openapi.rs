@@ -46,6 +46,7 @@ use crate::modules::system::domain::audit::AuditLogEntry;
 
         // Tenants
         tenant::list_tenants,
+        tenant::get_tenant,
         tenant::update_owner,
 
         // Users

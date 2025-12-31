@@ -1,0 +1,12 @@
+/* Footer Component - Dark Theme Glassmorphism */
+:root {
+    --footer-bg: rgba(4, 38, 59, 0.35);
+    --footer-border: rgba(6, 182, 212, 0.08);
+    --footer-text: rgba(255, 255, 255, 0.45);
+    --footer-message: #22d3ee;
+}
+
+.footer-glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}

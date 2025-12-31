@@ -35,12 +35,33 @@ pub fn auth_routes(
                 .route(web::post().to(auth::initialize_system))
         )
         .service(
-            web::resource("/register")
-                .route(web::post().to(auth::register))
+            web::resource("/signup")
+                .route(web::post().to(auth::signup))
         )
         .service(
             web::resource("/users")
-                .wrap(admin_auth)
+                .wrap(admin_auth.clone())
                 .route(web::post().to(auth::create_user))
+        )
+        .service(
+            web::resource("/sessions")
+                .route(web::get().to(auth::list_sessions))
+        )
+        .service(
+            web::resource("/sessions/{sid}")
+                .route(web::delete().to(auth::revoke_session))
+        )
+        // Admin Global Session Management
+        .service(
+            web::scope("/admin")
+                .wrap(admin_auth)
+                .service(
+                    web::resource("/sessions")
+                        .route(web::get().to(auth::admin_list_sessions))
+                )
+                .service(
+                    web::resource("/sessions/{user_id}/{sid}")
+                        .route(web::delete().to(auth::admin_revoke_session_handler))
+                )
         )
 }

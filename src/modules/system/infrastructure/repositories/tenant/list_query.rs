@@ -40,44 +40,81 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
     let limit = filter.limit.min(100).max(1);
     let offset = (page - 1) * limit;
 
-    let base_sql = r#"
+    // Build the hierarchy filter if an actor tenant is provided
+    let (hierarchy_cte, hierarchy_where) = if let Some(_) = filter.actor_tenant_id {
+        (
+            r#"WITH RECURSIVE tenant_tree AS (
+                -- Anchor: The actor tenant itself
+                SELECT id FROM auth_tenants WHERE id = $1 AND deleted_at IS NULL
+                UNION
+                -- Recursive: Direct and indirect children
+                SELECT t.id FROM auth_tenants t
+                INNER JOIN tenant_tree tt ON t.parent_id = tt.id
+                WHERE t.deleted_at IS NULL
+            )"#,
+            "AND t.id IN (SELECT id FROM tenant_tree)"
+        )
+    } else {
+        ("", "")
+    };
+
+    let base_sql = format!(
+        r#"{}
         SELECT 
-            t.id, t.parent_id, t.name, t.slug, t.is_active, t.created_at,
+            t.id, t.parent_id, t.name, t.slug, t.logo_url, t.logo_dark_url, t.favicon_url, t.icon_app_url,
+            t.primary_color, t.secondary_color, t.accent_color, t.app_name_override,
+            t.contact_email, t.contact_phone, t.website_url, t.social_links, t.address, t.business_type,
+            t.config, t.custom_domain, t.allow_child_subdomains, t.use_parent_subdomain,
+            t.domain_verified_at, t.verification_token, t.is_active, t.created_at,
             (SELECT COUNT(*) FROM auth_memberships m WHERE m.tenant_id = t.id AND m.deleted_at IS NULL) as member_count
         FROM auth_tenants t
-        WHERE t.deleted_at IS NULL
-    "#;
+        WHERE t.deleted_at IS NULL {}"#,
+        hierarchy_cte, hierarchy_where
+    );
     
-    let count_base_sql = "SELECT COUNT(*) FROM auth_tenants t WHERE t.deleted_at IS NULL";
+    let count_base_sql = format!(
+        "{} SELECT COUNT(*) FROM auth_tenants t WHERE t.deleted_at IS NULL {}",
+        hierarchy_cte, hierarchy_where
+    );
 
     let order_clause = build_tenant_order_clause(&filter.sort);
+
+    // Determine parameter offset based on whether hierarchy_cte is used
+    let p_offset = if filter.actor_tenant_id.is_some() { 1 } else { 0 };
 
     let (data_sql, count_sql, search_bind) = if let Some(s) = &filter.search {
         let search_term = format!("%{}%", s);
         let data = format!(
-            "{} AND (t.name ILIKE $1 OR t.slug ILIKE $1) {} LIMIT $2 OFFSET $3",
-            base_sql, order_clause
+            "{} AND (t.name ILIKE ${} OR t.slug ILIKE ${}) {} LIMIT ${} OFFSET ${}",
+            base_sql, p_offset + 1, p_offset + 1, order_clause, p_offset + 2, p_offset + 3
         );
-        let count = format!("{} AND (t.name ILIKE $1 OR t.slug ILIKE $1)", count_base_sql);
+        let count = format!("{} AND (t.name ILIKE ${} OR t.slug ILIKE ${})", count_base_sql, p_offset + 1, p_offset + 1);
         (data, count, Some(search_term))
     } else {
-        let data = format!("{} {} LIMIT $1 OFFSET $2", base_sql, order_clause);
+        let data = format!("{} {} LIMIT ${} OFFSET ${}", base_sql, order_clause, p_offset + 1, p_offset + 2);
         (data, count_base_sql.to_string(), None)
     };
 
-    let total: i64 = if let Some(ref search) = search_bind {
-        sqlx::query_scalar::<_, i64>(&count_sql).bind(search).fetch_one(&pool.pool).await.unwrap_or(0)
-    } else {
-        sqlx::query_scalar::<_, i64>(&count_sql).fetch_one(&pool.pool).await.unwrap_or(0)
-    };
+    let mut query_total = sqlx::query_scalar::<_, i64>(&count_sql);
+    let mut query_data = sqlx::query_as::<_, TenantEntry>(&data_sql);
 
-    let entries = if let Some(search) = search_bind {
-        sqlx::query_as::<_, TenantEntry>(&data_sql)
-            .bind(search).bind(limit).bind(offset).fetch_all(&pool.pool).await?
-    } else {
-        sqlx::query_as::<_, TenantEntry>(&data_sql)
-            .bind(limit).bind(offset).fetch_all(&pool.pool).await?
-    };
+    // Bind hierarchy param if exists
+    if let Some(tid) = filter.actor_tenant_id {
+        query_total = query_total.bind(tid);
+        query_data = query_data.bind(tid);
+    }
+
+    // Bind search param if exists
+    if let Some(search) = search_bind {
+        query_total = query_total.bind(search.clone());
+        query_data = query_data.bind(search);
+    }
+
+    // Bind limit and offset
+    query_data = query_data.bind(limit).bind(offset);
+
+    let total = query_total.fetch_one(&pool.pool).await.unwrap_or(0);
+    let entries = query_data.fetch_all(&pool.pool).await?;
     
     let total_pages = (total as f64 / limit as f64).ceil() as i64;
 

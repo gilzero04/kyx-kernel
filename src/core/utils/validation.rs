@@ -1,6 +1,7 @@
 use validator::ValidationErrors;
 use serde_json::{json, Value};
 
+#[allow(dead_code)]
 pub fn format_validation_errors(errors: ValidationErrors) -> Value {
     let mut details = json!({});
     

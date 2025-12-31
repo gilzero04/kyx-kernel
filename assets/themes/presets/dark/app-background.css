@@ -1,0 +1,183 @@
+/* =========================================
+   Standard Background Engine - App Mode
+   (High Fidelity - Robust Animation)
+   ========================================= */
+
+/* Canvas Base - Brighter Atmosphere */
+.app-background-context .bg-canvas {
+    background: radial-gradient(circle at 50% 40%, #1e293b 0%, #0f172a 45%, #020617 100%);
+    background-size: 100% 100%;
+}
+
+/* Layer 1: Enhanced Twinkling Starfield */
+.app-background-context .bg-layer.layer-1 {
+    height: 100%;
+    top: 0;
+    opacity: 0.8;
+    background-image:
+        radial-gradient(1px 1px at 10% 10%, #fff 100%, transparent),
+        radial-gradient(1.2px 1.2px at 20% 30%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 30% 15%, #fff 100%, transparent),
+        radial-gradient(1.5px 1.5px at 55% 45%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 75% 20%, #fff 100%, transparent),
+        radial-gradient(1.2px 1.2px at 90% 35%, #fff 100%, transparent);
+    background-size: 800px 800px;
+    background-repeat: repeat;
+    mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    animation: starsPhase 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+/* Layer 2: Hidden (Reserved for Moon) */
+.app-background-context .bg-layer.layer-2 {
+    display: none !important;
+}
+
+/* Shared Wave Style - FIXED for Movement */
+.app-background-context .bg-layer.layer-3,
+.app-background-context .bg-layer.layer-4,
+.app-background-context .bg-layer.layer-5 {
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    mask-repeat: repeat-x;
+    -webkit-mask-repeat: repeat-x;
+    mask-position: 0 bottom;
+    -webkit-mask-position: 0 bottom;
+}
+
+/* Layer 3: Distant Sea Horizon */
+.app-background-context .bg-layer.layer-3 {
+    height: 48%;
+    background-color: #020617;
+    opacity: 0.6;
+    mask-size: 1400px 100%;
+    -webkit-mask-size: 1400px 100%;
+    animation: moveWave-1400 60s linear infinite;
+    z-index: 3;
+}
+
+/* Layer 4: Deep Rolling Ocean */
+.app-background-context .bg-layer.layer-4 {
+    height: 38%;
+    background: linear-gradient(to bottom, #0f172a, #020617);
+    opacity: 0.8;
+    mask-size: 1000px 100%;
+    -webkit-mask-size: 1000px 100%;
+    animation: moveWave-1000 40s linear infinite reverse;
+    z-index: 4;
+}
+
+/* Layer 5: Foreground Waves (Vibrant Highlights) */
+.app-background-context .bg-layer.layer-5 {
+    height: 30%;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.6) 0%,
+            #1e293b 35%,
+            #020617 100%);
+    opacity: 0.95;
+    mask-size: 800px 100%;
+    -webkit-mask-size: 800px 100%;
+    animation:
+        moveWave-800 25s linear infinite,
+        waterPulse 6s ease-in-out infinite;
+    z-index: 5;
+}
+
+/* Particles */
+.app-background-context .bg-particle {
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #fff;
+    animation: particlePhase var(--duration, 6s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    opacity: 0;
+}
+
+@keyframes starsPhase {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        filter: brightness(0.8);
+    }
+
+    50% {
+        opacity: 0.9;
+        filter: brightness(1.4);
+    }
+}
+
+@keyframes waterPulse {
+
+    0%,
+    100% {
+        filter: brightness(1) contrast(1);
+    }
+
+    50% {
+        filter: brightness(1.4) contrast(1.1);
+    }
+}
+
+@keyframes particlePhase {
+
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0;
+    }
+
+    20%,
+    80% {
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: translateY(-30px);
+        opacity: 0.2;
+    }
+}
+
+/* FIXED Keyframes using mask-position shorthand */
+@keyframes moveWave-1400 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1400px bottom;
+        mask-position: 1400px bottom;
+    }
+}
+
+@keyframes moveWave-1000 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1000px bottom;
+        mask-position: 1000px bottom;
+    }
+}
+
+@keyframes moveWave-800 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 800px bottom;
+        mask-position: 800px bottom;
+    }
+}

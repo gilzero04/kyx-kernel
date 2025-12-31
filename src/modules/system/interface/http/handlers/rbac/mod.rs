@@ -3,13 +3,17 @@ use std::sync::Arc;
 use crate::modules::system::application::services::rbac::RbacService;
 use crate::modules::system::interface::http::dto::rbac::{
     CreateRoleRequest, UpdateRoleRequest, 
-    CreatePermissionRequest, UpdatePermissionRequest
+    CreatePermissionRequest, UpdatePermissionRequest,
+    UpdateRolePermissionsRequest, RoleFilter
 };
 use crate::modules::system::domain::rbac::{
     CreateRoleCmd, UpdateRoleCmd, 
     CreatePermissionCmd, UpdatePermissionCmd
 };
 use crate::core::infrastructure::audit::AuditService;
+use crate::core::utils::jwt::Claims;
+use crate::modules::system::application::services::tenant::TenantService;
+use uuid::Uuid;
 
 // === Roles ===
 
@@ -27,8 +31,39 @@ use crate::core::infrastructure::audit::AuditService;
 )]
 pub async fn list_roles(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
+    claims: Claims,
+    query: web::types::Query<RoleFilter>,
 ) -> impl web::Responder {
-    match service.list_roles().await {
+    let actor_tenant_id = Some(claims.tenant_id);
+
+    // Identify if actor is System Owner
+    let is_owner = if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        actor_tenant_id == Some(owner_id)
+    } else {
+        false
+    };
+
+    // If actor is system owner, treat as None (allowing broad filter)
+    let effective_actor_tid = if is_owner { None } else { actor_tenant_id };
+
+    // Parse requested filter
+    let mut target_tenant_id = None;
+    let mut show_all = false;
+
+    if let Some(ref tid_str) = query.tenant_id {
+        match tid_str.as_str() {
+            "all" => show_all = true,
+            "global" => target_tenant_id = None,
+            uuid_str => {
+                if let Ok(uid) = Uuid::parse_str(uuid_str) {
+                    target_tenant_id = Some(uid);
+                }
+            }
+        }
+    }
+
+    match service.list_roles(target_tenant_id, effective_actor_tid, show_all).await {
         Ok(roles) => web::HttpResponse::Ok().json(&serde_json::json!({ "data": roles })),
         Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
     }
@@ -49,10 +84,24 @@ pub async fn list_roles(
 )]
 pub async fn create_role(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     body: web::types::Json<CreateRoleRequest>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    // If actor is system owner, treat as None
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
     let cmd = CreateRoleCmd {
+        tenant_id: None, // Will be set by service based on actor_tenant_id
         code: body.code.clone(),
         slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
         name: body.name.clone(),
@@ -60,7 +109,7 @@ pub async fn create_role(
         is_active: body.is_active,
     };
 
-    match service.create_role(cmd).await {
+    match service.create_role(cmd, actor_tenant_id).await {
         Ok(role) => {
             let _ = audit.log("SuperAdmin", "ROLE_CREATED", Some(&role.name), "SUCCESS", None).await;
             web::HttpResponse::Created().json(&role)
@@ -88,10 +137,22 @@ pub async fn create_role(
 )]
 pub async fn update_role(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     path: web::types::Path<String>,
     body: web::types::Json<UpdateRoleRequest>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
         Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
@@ -104,7 +165,7 @@ pub async fn update_role(
         is_active: body.is_active,
     };
 
-    match service.update_role(id_uuid, cmd).await {
+    match service.update_role(id_uuid, cmd, actor_tenant_id).await {
         Ok(role) => {
             let _ = audit.log("SuperAdmin", "ROLE_UPDATED", Some(&path), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&role)
@@ -134,15 +195,27 @@ pub async fn update_role(
 )]
 pub async fn delete_role(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     path: web::types::Path<String>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
         Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
     };
 
-    match service.delete_role(id_uuid).await {
+    match service.delete_role(id_uuid, actor_tenant_id).await {
         Ok(_) => {
             let _ = audit.log("SuperAdmin", "ROLE_DELETED", Some(&path), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
@@ -153,6 +226,105 @@ pub async fn delete_role(
         }
     }
 }
+
+/// Get role permissions (Admin)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/roles/{id}/permissions",
+    responses(
+        (status = 200, description = "List of role permissions", body = Vec<Permission>),
+        (status = 404, description = "Role not found")
+    ),
+    tag = "rbac",
+    params(
+        ("id" = String, Path, description = "Role ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn get_role_permissions(
+    service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
+    claims: Claims,
+    path: web::types::Path<String>,
+) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
+    let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
+        Ok(u) => u,
+        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+    };
+
+    match service.get_role_permissions(id_uuid, actor_tenant_id).await {
+        Ok(perms) => web::HttpResponse::Ok().json(&perms),
+        Err(e) => {
+             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
+             status.json(&serde_json::json!({ "error": e.message }))
+        }
+    }
+}
+
+/// Update role permissions (Admin)
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/roles/{id}/permissions",
+    request_body = UpdateRolePermissionsRequest,
+    responses(
+        (status = 200, description = "Role permissions updated successfully"),
+        (status = 404, description = "Role not found")
+    ),
+    tag = "rbac",
+    params(
+        ("id" = String, Path, description = "Role ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_role_permissions(
+    service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
+    audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
+    path: web::types::Path<String>,
+    body: web::types::Json<UpdateRolePermissionsRequest>,
+) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
+    let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
+        Ok(u) => u,
+        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+    };
+
+    match service.update_role_permissions(id_uuid, body.permission_ids.clone(), actor_tenant_id).await {
+        Ok(_) => {
+            let _ = audit.log("SuperAdmin", "ROLE_PERMISSIONS_UPDATED", Some(&path), "SUCCESS", None).await;
+            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
+        },
+        Err(e) => {
+             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
+             status.json(&serde_json::json!({ "error": e.message }))
+        }
+    }
+}
+
 
 // === Permissions ===
 
@@ -170,8 +342,21 @@ pub async fn delete_role(
 )]
 pub async fn list_permissions(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
+    claims: Claims,
 ) -> impl web::Responder {
-    match service.list_permissions().await {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    // If actor is system owner, treat as None for "unfiltered" access
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
+    match service.list_permissions(actor_tenant_id).await {
         Ok(perms) => web::HttpResponse::Ok().json(&serde_json::json!({ "data": perms })),
         Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
     }
@@ -192,9 +377,22 @@ pub async fn list_permissions(
 )]
 pub async fn create_permission(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     body: web::types::Json<CreatePermissionRequest>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
+    // If actor is system owner, treat as None
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if let Some(tid) = actor_tenant_id {
+            if tid == owner_id {
+                actor_tenant_id = None;
+            }
+        }
+    }
+
     let cmd = CreatePermissionCmd {
         code: body.code.clone(),
         slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
@@ -203,12 +401,15 @@ pub async fn create_permission(
         is_active: body.is_active,
     };
 
-    match service.create_permission(cmd).await {
+    match service.create_permission(cmd, actor_tenant_id).await {
         Ok(perm) => {
             let _ = audit.log("SuperAdmin", "PERMISSION_CREATED", Some(&perm.name), "SUCCESS", None).await;
             web::HttpResponse::Created().json(&perm)
         },
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+        Err(e) => {
+            let mut status = if e.code == 403 { web::HttpResponse::Forbidden() } else { web::HttpResponse::InternalServerError() };
+            status.json(&serde_json::json!({ "error": e.message }))
+        }
     }
 }
 
@@ -231,14 +432,25 @@ pub async fn create_permission(
 )]
 pub async fn update_permission(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     path: web::types::Path<String>,
     body: web::types::Json<UpdatePermissionRequest>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
         Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
     };
+
+    // If actor is system owner, treat as None
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if claims.tenant_id == owner_id {
+            actor_tenant_id = None;
+        }
+    }
 
     let cmd = UpdatePermissionCmd {
         name: body.name.clone(),
@@ -247,13 +459,15 @@ pub async fn update_permission(
         is_active: body.is_active,
     };
 
-    match service.update_permission(id_uuid, cmd).await {
+    match service.update_permission(id_uuid, cmd, actor_tenant_id).await {
         Ok(perm) => {
             let _ = audit.log("SuperAdmin", "PERMISSION_UPDATED", Some(&path), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&perm)
         },
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
+             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } 
+                             else if e.code == 403 { web::HttpResponse::Forbidden() }
+                             else { web::HttpResponse::InternalServerError() };
              status.json(&serde_json::json!({ "error": e.message }))
         }
     }
@@ -277,21 +491,34 @@ pub async fn update_permission(
 )]
 pub async fn delete_permission(
     service: web::types::State<Arc<RbacService>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
     audit: web::types::State<Arc<AuditService>>,
+    claims: Claims,
     path: web::types::Path<String>,
 ) -> impl web::Responder {
+    let mut actor_tenant_id = Some(claims.tenant_id);
+
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
         Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
     };
 
-    match service.delete_permission(id_uuid).await {
+    // If actor is system owner, treat as None
+    if let Ok(owner_id) = tenant_service.get_owner_id().await {
+        if claims.tenant_id == owner_id {
+            actor_tenant_id = None;
+        }
+    }
+
+    match service.delete_permission(id_uuid, actor_tenant_id).await {
         Ok(_) => {
             let _ = audit.log("SuperAdmin", "PERMISSION_DELETED", Some(&path), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
         },
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
+             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } 
+                             else if e.code == 403 { web::HttpResponse::Forbidden() }
+                             else { web::HttpResponse::InternalServerError() };
              status.json(&serde_json::json!({ "error": e.message }))
         }
     }

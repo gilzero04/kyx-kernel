@@ -1,0 +1,47 @@
+/* View Toggle - Dark Theme */
+
+.view-toggle-container {
+    display: flex;
+    background: rgba(255, 255, 255, 0.3);
+    /* Soft glass track */
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md, 8px);
+    padding: 3px;
+    gap: 4px;
+    height: 40px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 639px) {
+    .view-toggle-container {
+        display: none;
+    }
+}
+
+.view-toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    height: 100%;
+    border-radius: 6px;
+    color: var(--color-marine-deep);
+    border: none;
+    background: transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    min-width: 32px;
+}
+
+.view-toggle-item:hover:not(.active) {
+    color: var(--color-marine-vivid);
+    background: var(--glass-bg-hover);
+}
+
+.view-toggle-item.active {
+    background: var(--glass-bg-active);
+    color: var(--color-marine-vivid);
+    border: 1px solid var(--glass-border-vivid);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+}

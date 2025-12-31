@@ -15,6 +15,7 @@ pub struct CreateI18nKeyRequest {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateTranslationRequest {
+    #[allow(dead_code)]
     pub message: String,
 }
 

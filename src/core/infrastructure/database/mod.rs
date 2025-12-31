@@ -1,4 +1,4 @@
-pub mod schema;
+
 
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use anyhow::Result;

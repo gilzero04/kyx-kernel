@@ -6,4 +6,6 @@ pub mod cors;
 pub mod system;
 pub mod tenant;
 pub mod rbac;
+pub mod theme;
 pub mod user;
+pub mod cms;

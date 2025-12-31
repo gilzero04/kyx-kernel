@@ -6,7 +6,8 @@ use uuid::Uuid;
 pub async fn delete_user(
     repo: &Arc<dyn UserRepository>,
     target_id: Uuid,
-    current_user_id: Option<Uuid>
+    current_user_id: Option<Uuid>,
+    actor_tenant_id: Option<Uuid>
 ) -> Result<(), AppError> {
     // 1. Check self-deletion
     if let Some(current) = current_user_id {
@@ -38,7 +39,7 @@ pub async fn delete_user(
     }
 
     // 4. Perform Delete
-    let deleted = repo.soft_delete(target_id).await
+    let deleted = repo.soft_delete(target_id, actor_tenant_id).await
             .map_err(|e| AppError { code: 500, message: e.to_string() })?;
     
     if !deleted {

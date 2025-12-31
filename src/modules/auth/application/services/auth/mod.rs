@@ -12,7 +12,8 @@ use crate::core::utils::password::verify_password;
 use uuid::Uuid;
 use sqlx::Row;
 
-use crate::modules::auth::interface::http::dto::auth::{UserInfo, AuthResponse, SetupRequest, CreateUserRequest};
+use crate::modules::auth::interface::http::dto::auth::{UserInfo, AuthResponse, SetupRequest, CreateUserRequest, SignupRequest, SessionInfo, AdminSessionInfo};
+// ApiKeyService removed as it is no longer used in AuthService
 
 pub struct AuthService {
     db: Arc<Database>,
@@ -28,15 +29,15 @@ impl AuthService {
         redis: Arc<Redis>, 
         jwt: Arc<JwtService>, 
         audit: Arc<AuditService>, 
-        config: Arc<ConfigService>
+        config: Arc<ConfigService>,
     ) -> Self {
         Self { db, _redis: redis, jwt, audit, config }
     }
 
-    pub async fn login(&self, creds: UserCredentials) -> Result<AuthResponse, AppError> {
+    pub async fn login(&self, creds: UserCredentials, ip: String, ua: String) -> Result<AuthResponse, AppError> {
         // 1. Find User by Email
         let user_row = sqlx::query(
-            "SELECT id, email, full_name, hashed_password FROM auth_users WHERE email = $1"
+            "SELECT id, email, full_name, avatar_url, cover_url, hashed_password FROM auth_users WHERE email = $1"
         )
         .bind(&creds.username)
         .fetch_optional(&self.db.pool)
@@ -46,11 +47,13 @@ impl AuthService {
             message: format!("Database error: {}", e),
         })?;
 
-        let (user_id, email, full_name, hashed_password) = match user_row {
+        let (user_id, email, full_name, avatar_url, cover_url, hashed_password) = match user_row {
             Some(row) => (
                 row.get::<Uuid, _>("id"),
                 row.get::<String, _>("email"),
                 row.get::<Option<String>, _>("full_name"),
+                row.get::<Option<String>, _>("avatar_url"),
+                row.get::<Option<String>, _>("cover_url"),
                 row.get::<String, _>("hashed_password")
             ),
             None => {
@@ -83,9 +86,9 @@ impl AuthService {
             message: format!("Database error while fetching membership: {}", e),
         })?;
  
-        let (tenant_id, role, role_id) = match membership_row {
+        let (tenant_id_uuid, role, role_id) = match membership_row {
             Some(row) => (
-                row.get::<Uuid, _>("tenant_id").to_string(),
+                row.get::<Uuid, _>("tenant_id"),
                 row.get::<String, _>("role_slug"),
                 row.get::<Uuid, _>("role_id")
             ),
@@ -93,6 +96,30 @@ impl AuthService {
                 return Err(AppError { code: 403, message: "No active tenant membership found".to_string() });
             }
         };
+
+        // Check if this tenant is the platform owner and get its type
+        let tenant_row = sqlx::query(
+            r#"
+            SELECT t.id, tt.slug as type_slug 
+            FROM auth_tenants t
+            LEFT JOIN sys_tenant_types tt ON t.tenant_type_id = tt.id
+            WHERE t.id = $1
+            "#
+        )
+        .bind(tenant_id_uuid)
+        .fetch_one(&self.db.pool)
+        .await
+        .map_err(|e| AppError { code: 500, message: format!("Failed to fetch tenant details: {}", e) })?;
+        
+        let owner_row = sqlx::query("SELECT id FROM auth_tenants ORDER BY created_at ASC LIMIT 1")
+            .fetch_one(&self.db.pool)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to fetch owner: {}", e) })?;
+        
+        let owner_id = owner_row.get::<Uuid, _>("id");
+        let tenant_type = tenant_row.get::<Option<String>, _>("type_slug");
+        let is_system_owner = tenant_id_uuid == owner_id;
+        let tenant_id = tenant_id_uuid;
 
         // 4. Fetch Permissions for this Role
         let permission_rows = sqlx::query(
@@ -114,30 +141,37 @@ impl AuthService {
         let permissions: Vec<String> = permission_rows.iter().map(|r| r.get("slug")).collect();
 
         let user_id_str = user_id.to_string();
-
-        // 5. Generate Tokens
-        let access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
         let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
+
+        // 5. Generate Session ID and Tokens
+        let sid = Uuid::new_v4().to_string();
+        let access_token = self.jwt.generate_access_token(&user_id_str, &role, tenant_id, permissions.clone(), is_system_owner, Some(sid.clone()))?;
+        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, &role, tenant_id, permissions.clone(), is_system_owner, Some(sid.clone()))?;
         
-        let access_token = self.jwt.generate_token(&user_id_str, &role, &tenant_id, permissions.clone(), TokenType::Access, chrono::Duration::minutes(access_expiry))?;
-        let refresh_token = self.jwt.generate_token(&user_id_str, &role, &tenant_id, permissions, TokenType::Refresh, chrono::Duration::minutes(refresh_expiry))?;
+        // 5. Log and Cache Session
+        self.audit.log(&user_id_str, "LOGIN_SUCCESS", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
         
-        // 5. Log and Cache
-        self.audit.log(&user_id_str, "LOGIN_SUCCESS", Some(&tenant_id), "SUCCESS", None).await?;
-        
-        let key = format!("auth:refresh:{}", user_id_str);
+        let session_key = format!("auth:session:{}:{}", user_id_str, sid);
         let mut conn = self._redis.get_connection();
         
+        let session_info = SessionInfo {
+            sid: sid.clone(),
+            ip,
+            user_agent: ua,
+            created_at: chrono::Utc::now().timestamp(),
+            expires_at: (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry)).timestamp(),
+        };
+
         let _: () = redis::cmd("SET")
-            .arg(&key)
-            .arg(&refresh_token)
+            .arg(&session_key)
+            .arg(serde_json::to_string(&session_info).unwrap_or_default())
             .arg("EX")
             .arg(refresh_expiry * 60)
             .query_async(&mut conn)
             .await
             .map_err(|e| AppError {
                 code: 500,
-                message: format!("Failed to store refresh token: {}", e),
+                message: format!("Failed to store session: {}", e),
             })?;
 
         Ok(AuthResponse { 
@@ -148,6 +182,11 @@ impl AuthService {
                 email,
                 full_name,
                 role: role,
+                permissions: permissions.clone(),
+                tenant_type,
+                avatar_url,
+                cover_url,
+                images: vec![],
             }
         })
     }
@@ -163,87 +202,107 @@ impl AuthService {
         }
         
         let user_id = &claims.sub;
-        let key = format!("auth:refresh:{}", user_id);
+        let sid = claims.sid.clone().unwrap_or_default();
+        let session_key = format!("auth:session:{}:{}", user_id, sid);
         
         let mut conn = self._redis.get_connection();
         
-        let stored_token: Option<String> = redis::cmd("GET")
-            .arg(&key)
+        let session_json: Option<String> = redis::cmd("GET")
+            .arg(&session_key)
             .query_async(&mut conn)
             .await
             .map_err(|e| AppError {
                 code: 500,
-                message: format!("Failed to get refresh token: {}", e),
+                message: format!("Failed to get session: {}", e),
             })?;
             
-        if let Some(st) = stored_token {
-            if st == refresh_token {
-                // Get dynamic expiry
-                let access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
-                let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
+        if let Some(json) = session_json {
+            // Get dynamic expiry
+            let access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
+            let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
 
-                let access_token = self.jwt.generate_token(user_id, &claims.role, &claims.tenant_id, claims.permissions.clone(), TokenType::Access, chrono::Duration::minutes(access_expiry))?;
-                let new_refresh_token = self.jwt.generate_token(user_id, &claims.role, &claims.tenant_id, claims.permissions.clone(), TokenType::Refresh, chrono::Duration::minutes(refresh_expiry))?;
-                
-                // Fetch User Details for Response
-                let user_uuid = Uuid::parse_str(user_id).unwrap_or_default();
-                let user_row = sqlx::query(
-                    "SELECT email, full_name FROM auth_users WHERE id = $1"
-                )
-                .bind(user_uuid)
-                .fetch_optional(&self.db.pool)
-                .await
-                .map_err(|e| AppError {
-                    code: 500,
-                    message: format!("Database error: {}", e),
-                })?;
+            // Fetch User Details and Tenant Type for Response
+            let user_uuid = Uuid::parse_str(user_id).unwrap_or_default();
+            let user_row = sqlx::query(
+                r#"
+                SELECT u.email, u.full_name, u.avatar_url, u.cover_url, tt.slug as tenant_type
+                FROM auth_users u
+                JOIN auth_memberships m ON u.id = m.user_id
+                JOIN auth_tenants t ON m.tenant_id = t.id
+                LEFT JOIN sys_tenant_types tt ON t.tenant_type_id = tt.id
+                WHERE u.id = $1
+                LIMIT 1
+                "#
+            )
+            .bind(user_uuid)
+            .fetch_optional(&self.db.pool)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Database error: {}", e),
+            })?;
 
-                let (email, full_name) = match user_row {
-                    Some(row) => (
-                        row.get::<String, _>("email"),
-                        row.get::<Option<String>, _>("full_name")
-                    ),
-                    None => ("unknown".to_string(), None)
-                };
+            let (email, full_name, avatar_url, cover_url, tenant_type) = match user_row {
+                Some(row) => (
+                    row.get::<String, _>("email"),
+                    row.get::<Option<String>, _>("full_name"),
+                    row.get::<Option<String>, _>("avatar_url"),
+                    row.get::<Option<String>, _>("cover_url"),
+                    row.get::<Option<String>, _>("tenant_type")
+                ),
+                None => ("unknown".to_string(), None, None, None, None)
+            };
 
-                // Update Redis
+            // Update Session in Redis
+            if let Ok(mut session) = serde_json::from_str::<SessionInfo>(&json) {
+                session.expires_at = (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry)).timestamp();
                 let _: () = redis::cmd("SET")
-                    .arg(&key)
-                    .arg(&new_refresh_token)
+                    .arg(&session_key)
+                    .arg(serde_json::to_string(&session).unwrap_or_default())
                     .arg("EX")
                     .arg(refresh_expiry * 60)
                     .query_async(&mut conn)
                     .await
                     .map_err(|e| AppError {
                         code: 500,
-                        message: format!("Failed to update refresh token: {}", e),
+                        message: format!("Failed to update session: {}", e),
                     })?;
-                    
-                // Log refresh
-                self.audit.log(user_id, "SESSION_REFRESH", Some(&claims.tenant_id), "SUCCESS", None).await?;
-
-                return Ok(AuthResponse { 
-                    access_token, 
-                    refresh_token: new_refresh_token,
-                    user: UserInfo {
-                        id: user_uuid,
-                        email,
-                        full_name,
-                        role: claims.role,
-                    }
-                });
             }
+
+            let is_system_owner = claims.is_system_owner.unwrap_or(false);
+            let access_token = self.jwt.generate_access_token_dynamic(user_id, &claims.role, claims.tenant_id, claims.permissions.clone(), is_system_owner, access_expiry, claims.sid.clone())?;
+            let new_refresh_token = self.jwt.generate_refresh_token_dynamic(user_id, &claims.role, claims.tenant_id, claims.permissions.clone(), is_system_owner, refresh_expiry, claims.sid.clone())?;
+            
+            // Log refresh
+            self.audit.log(user_id, "SESSION_REFRESH", Some(&claims.tenant_id.to_string()), "SUCCESS", None).await?;
+
+            return Ok(AuthResponse { 
+                access_token, 
+                refresh_token: new_refresh_token,
+                user: UserInfo {
+                    id: user_uuid,
+                    email,
+                    full_name,
+                    role: claims.role,
+                    permissions: claims.permissions,
+                    tenant_type,
+                    avatar_url,
+                    cover_url,
+                    images: vec![],
+                }
+            });
         }
         
         Err(AppError {
             code: 401,
-            message: "Refresh token revoked or expired".to_string(),
+            message: "Session revoked or expired".to_string(),
         })
     }
 
     pub async fn logout(&self, access_token: &str) -> Result<(), AppError> {
         let claims = self.jwt.verify_token(access_token)?;
-        let key = format!("auth:refresh:{}", claims.sub);
+        let sid = claims.sid.unwrap_or_default();
+        let key = format!("auth:session:{}:{}", claims.sub, sid);
         
         let mut conn = self._redis.get_connection();
         
@@ -253,13 +312,130 @@ impl AuthService {
             .await
             .map_err(|e| AppError {
                 code: 500,
-                message: format!("Failed to delete refresh token: {}", e),
+                message: format!("Failed to delete session: {}", e),
             })?;
             
         // Log logout
-        self.audit.log(&claims.sub, "LOGOUT", Some(&claims.tenant_id), "SUCCESS", None).await?;
+        self.audit.log(&claims.sub, "LOGOUT", Some(&claims.tenant_id.to_string()), "SUCCESS", None).await?;
             
         Ok(())
+    }
+
+    pub async fn list_sessions(&self, user_id: &Uuid) -> Result<Vec<SessionInfo>, AppError> {
+        let pattern = format!("auth:session:{}:*", user_id);
+        let mut conn = self._redis.get_connection();
+        
+        let keys: Vec<String> = redis::cmd("KEYS")
+            .arg(&pattern)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to list sessions: {}", e),
+            })?;
+            
+        let mut sessions = Vec::new();
+        for key in keys {
+            let json: Option<String> = redis::cmd("GET")
+                .arg(&key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(None);
+                
+            if let Some(j) = json {
+                if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
+                    sessions.push(s);
+                }
+            }
+        }
+        
+        Ok(sessions)
+    }
+
+    pub async fn revoke_session(&self, user_id: &Uuid, sid: &str) -> Result<(), AppError> {
+        let key = format!("auth:session:{}:{}", user_id, sid);
+        let mut conn = self._redis.get_connection();
+        
+        let _: () = redis::cmd("DEL")
+            .arg(&key)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to revoke session: {}", e),
+            })?;
+            
+        Ok(())
+    }
+
+    pub async fn list_all_sessions(&self, current_sid: Option<String>) -> Result<Vec<AdminSessionInfo>, AppError> {
+        let pattern = "auth:session:*";
+        let mut conn = self._redis.get_connection();
+        
+        // 1. Get all session keys
+        let keys: Vec<String> = redis::cmd("KEYS")
+            .arg(pattern)
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to list all sessions from Redis: {}", e),
+            })?;
+            
+        let mut admin_sessions = Vec::new();
+
+        // 2. Extract User IDs and SIDs from keys
+        // Pattern: auth:session:{user_id}:{sid}
+        for key in keys {
+            let parts: Vec<&str> = key.split(':').collect();
+            if parts.len() < 4 { continue; }
+            
+            let user_id_str = parts[2];
+            let user_id = Uuid::parse_str(user_id_str).unwrap_or_default();
+            
+            // 3. Get session info from Redis
+            let json: Option<String> = redis::cmd("GET")
+                .arg(&key)
+                .query_async(&mut conn)
+                .await
+                .unwrap_or(None);
+                
+            if let Some(j) = json {
+                if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
+                    // 4. Enrich with user data from Postgres
+                    let user_row = sqlx::query("SELECT email, full_name FROM auth_users WHERE id = $1")
+                        .bind(user_id)
+                        .fetch_optional(&self.db.pool)
+                        .await
+                        .unwrap_or(None);
+                        
+                    let (email, full_name) = match user_row {
+                        Some(row) => (row.get::<String, _>("email"), row.get::<Option<String>, _>("full_name")),
+                        None => ("unknown".to_string(), None),
+                    };
+                    
+                    let is_current = current_sid.as_ref().map(|id| id == &s.sid).unwrap_or(false);
+
+                    admin_sessions.push(AdminSessionInfo {
+                        sid: s.sid,
+                        user_id,
+                        email,
+                        full_name,
+                        ip: s.ip,
+                        user_agent: s.user_agent,
+                        created_at: s.created_at,
+                        expires_at: s.expires_at,
+                        is_current,
+                    });
+                }
+            }
+        }
+        
+        Ok(admin_sessions)
+    }
+
+    pub async fn admin_revoke_session(&self, user_id: Uuid, sid: String) -> Result<(), AppError> {
+        self.revoke_session(&user_id, &sid).await
     }
 
     pub async fn is_setup_done(&self) -> Result<bool, AppError> {
@@ -317,19 +493,34 @@ impl AuthService {
             .clone()
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| format!("org-{}", &req.org_name.to_lowercase().replace(' ', "-")));
-        let tenant_row = sqlx::query(
-            "INSERT INTO auth_tenants (name, slug) VALUES ($1, $2) RETURNING id"
+
+        let type_id: Uuid = sqlx::query_scalar("SELECT id FROM sys_tenant_types WHERE slug = 'owner'")
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError { 
+                code: 500, 
+                message: format!("Default tenant type 'owner' not found: {}", e) 
+            })?;
+
+        let tenant_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id, app_name_override, primary_color, secondary_color, accent_color) 
+             VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8)"
         )
+        .bind(tenant_id)
         .bind(&req.org_name)
         .bind(&tenant_slug)
-        .fetch_one(&mut *tx)
+        .bind(type_id)
+        .bind(&req.app_name)
+        .bind(&req.primary_color)
+        .bind(&req.secondary_color)
+        .bind(&req.accent_color)
+        .execute(&mut *tx)
         .await
         .map_err(|e| AppError {
             code: 500,
             message: format!("Failed to create tenant: {}", e),
         })?;
-
-        let tenant_id = tenant_row.get::<Uuid, _>("id");
 
         // Check Role Limit for SuperAdmin before creating user (though it's the first one)
         // We do this check inside transaction or before committed, but check_role_limit uses &self.db which is separate connection
@@ -339,13 +530,16 @@ impl AuthService {
         // But for create_user it is important.
 
         // 5. Create User
+        use crate::core::utils::avatar::generate_default_avatar;
+        let default_avatar = generate_default_avatar(&req.full_name);
         let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
         let user_row = sqlx::query(
-            "INSERT INTO auth_users (email, hashed_password, full_name) VALUES ($1, $2, $3) RETURNING id"
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
         )
         .bind(&req.email)
         .bind(hashed_pw)
         .bind(&req.full_name)
+        .bind(default_avatar)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -381,6 +575,66 @@ impl AuthService {
             message: format!("Failed to create membership: {}", e),
         })?;
 
+        // 7. Manual API Key Management (Self-Service)
+        // DELETED: Automatic API Key generation removed. Users will create keys via dashboard.
+
+        // Seed Default Homepage
+        use crate::core::utils::seeding::get_default_home_page_content;
+        let home_page_content = get_default_home_page_content(&req.org_name);
+        
+        sqlx::query(
+            "INSERT INTO sys_pages (tenant_id, slug, title, content, is_published) VALUES ($1, $2, $3, $4, $5)"
+        )
+        .bind(tenant_id)
+        .bind("home")
+        .bind("Home")
+        .bind(&home_page_content)
+        .bind(true)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create default homepage: {}", e),
+        })?;
+
+        // 7. Handover orphaned records (Themes, Pages, Configs seeded during first boot)
+        // These are records created with NULL tenant_id before setup was completed.
+        
+        // Update Pages
+        sqlx::query("UPDATE sys_pages SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to handover pages: {}", e) })?;
+
+        // Update Themes
+        sqlx::query("UPDATE sys_themes SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to handover themes: {}", e) })?;
+
+        // Update Roles
+        sqlx::query("UPDATE sys_roles SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to handover roles: {}", e) })?;
+
+        // Update API Keys
+        sqlx::query("UPDATE sys_api_keys SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to handover api keys: {}", e) })?;
+
+        // Update Configs (Assign to platform scope by default during handover)
+        sqlx::query("UPDATE sys_configs SET tenant_id = $1, scope = COALESCE(scope, 'platform') WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to handover configs: {}", e) })?;
+
         tx.commit().await.map_err(|e| AppError {
             code: 500,
             message: format!("Failed to commit transaction: {}", e),
@@ -388,12 +642,12 @@ impl AuthService {
 
         // 6. Generate Tokens
         let user_id_str = user_id.to_string();
-        let tenant_id_str = tenant_id.to_string();
-        let access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
-        let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
+        let tenant_id = tenant_id; // Uuid
+        let _access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
+        let _refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
         
-        let access_token = self.jwt.generate_token(&user_id_str, "superadmin", &tenant_id_str, vec!["system:manage".to_string()], TokenType::Access, chrono::Duration::minutes(access_expiry))?;
-        let refresh_token = self.jwt.generate_token(&user_id_str, "superadmin", &tenant_id_str, vec!["system:manage".to_string()], TokenType::Refresh, chrono::Duration::minutes(refresh_expiry))?;
+        let access_token = self.jwt.generate_access_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
+        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
 
         // 7. Persist Global Branding (PCAL)
         // owner_name is now stored in auth_tenants.name - no need for sys_configs
@@ -403,8 +657,39 @@ impl AuthService {
             }
         }
 
-        // 8. Audit & Cache
-        self.audit.log(&user_id_str, "SYSTEM_INITIALIZED", Some(&tenant_id_str), "SUCCESS", None).await?;
+        // 8. Persist Platform Mode
+        let _ = self.config.set("platform_type", serde_json::Value::String(req.platform_type)).await;
+
+        // 9. Set Default Themes (Kyx Light / Kyx Dark)
+        // We look for themes named "light" and "dark" (seeded by system) or contain "Kyx"
+        let light_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Light' OR (name ILIKE '%light%' AND visibility = 'public') ORDER BY (name = 'Kyx Light') DESC, created_at ASC LIMIT 1")
+            .fetch_optional(&self.db.pool)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to find default light theme: {}", e) })?;
+
+        let dark_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Dark' OR (name ILIKE '%dark%' AND visibility = 'public') ORDER BY (name = 'Kyx Dark') DESC, created_at ASC LIMIT 1")
+            .fetch_optional(&self.db.pool)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to find default dark theme: {}", e) })?;
+
+        if let Some(row) = light_theme_row {
+            let id: Uuid = row.get("id");
+            let _ = self.config.set("theme_light_id", serde_json::Value::String(id.to_string())).await;
+            
+            // Also set as workspace default
+             let _ = self.config.set_tenant_config(Some(tenant_id), "workspace_theme_light_id", serde_json::Value::String(id.to_string()), Some("workspace")).await;
+        }
+
+        if let Some(row) = dark_theme_row {
+            let id: Uuid = row.get("id");
+            let _ = self.config.set("theme_dark_id", serde_json::Value::String(id.to_string())).await;
+
+            // Also set as workspace default
+             let _ = self.config.set_tenant_config(Some(tenant_id), "workspace_theme_dark_id", serde_json::Value::String(id.to_string()), Some("workspace")).await;
+        }
+
+        // 10. Audit & Cache
+        self.audit.log(&user_id_str, "SYSTEM_INITIALIZED", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
 
         Ok(AuthResponse { 
             access_token, 
@@ -414,6 +699,11 @@ impl AuthService {
                 email: req.email,
                 full_name: Some(req.full_name),
                 role: "superadmin".to_string(),
+                permissions: vec!["system:manage".to_string()],
+                tenant_type: None,
+                avatar_url: None,
+                cover_url: None,
+                images: vec![],
             }
         })
     }
@@ -433,15 +723,18 @@ impl AuthService {
             message: format!("Transaction error: {}", e),
         })?;
 
+        use crate::core::utils::avatar::generate_default_avatar;
+        let default_avatar = generate_default_avatar(&req.full_name);
         let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
         
         // 2. Create User
         let user_row = sqlx::query(
-            "INSERT INTO auth_users (email, hashed_password, full_name) VALUES ($1, $2, $3) RETURNING id"
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
         )
         .bind(&req.email)
         .bind(hashed_pw)
         .bind(&req.full_name)
+        .bind(default_avatar)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -552,5 +845,175 @@ impl AuthService {
         }
 
         Ok(())
+    }
+
+    pub async fn signup(&self, req: SignupRequest) -> Result<AuthResponse, AppError> {
+        use crate::core::utils::password::hash_password;
+        use crate::core::utils::password_policy::validate_password;
+
+        // 1. Validate password policy
+        validate_password(&req.password)?;
+
+        // 2. Check if slug is available
+        if !self.check_slug_availability(&req.org_slug).await? {
+            return Err(AppError {
+                code: 400,
+                message: format!("Slug '{}' is already taken", req.org_slug),
+            });
+        }
+
+        // 3. Transact: Create Tenant -> Create User -> Create Membership
+        let mut tx = self.db.pool.begin().await.map_err(|e| AppError {
+            code: 500,
+            message: format!("Transaction error: {}", e),
+        })?;
+
+        // 4. Get Tenant Type ID
+        let type_row = sqlx::query("SELECT id FROM sys_tenant_types WHERE slug = $1")
+            .bind(&req.plan_type)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Database error fetching tenant type: {}", e),
+            })?
+            .ok_or(AppError {
+                code: 400,
+                message: format!("Tenant type '{}' not found", req.plan_type),
+            })?;
+        
+        let tenant_type_id = type_row.get::<Uuid, _>("id");
+
+        // 5. Create Tenant
+        let tenant_row = sqlx::query(
+            "INSERT INTO auth_tenants (name, slug, parent_id, tenant_type_id) VALUES ($1, $2, $3, $4) RETURNING id"
+        )
+        .bind(&req.org_name)
+        .bind(&req.org_slug)
+        .bind(req.parent_id)
+        .bind(tenant_type_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create tenant: {}", e),
+        })?;
+
+        let tenant_id = tenant_row.get::<Uuid, _>("id");
+
+        // 6. Create User
+        use crate::core::utils::avatar::generate_default_avatar;
+        let default_avatar = generate_default_avatar(&req.full_name);
+        let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
+        let user_row = sqlx::query(
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
+        )
+        .bind(&req.email)
+        .bind(hashed_pw)
+        .bind(&req.full_name)
+        .bind(default_avatar)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create admin user: {}", e),
+        })?;
+
+        let user_id = user_row.get::<Uuid, _>("id");
+
+        // 7. Find 'superadmin' role (all tenants have one admin)
+        let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin'")
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to find superadmin role: {}", e),
+            })?;
+        
+        let role_id = role_row.get::<Uuid, _>("id");
+
+        // 6. Create Membership
+        sqlx::query(
+            "INSERT INTO auth_memberships (user_id, tenant_id, role, role_id) VALUES ($1, $2, $3, $4)"
+        )
+        .bind(user_id)
+        .bind(tenant_id)
+        .bind("SuperAdmin")
+        .bind(role_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create membership: {}", e),
+        })?;
+
+        // Seed Default Homepage
+        use crate::core::utils::seeding::get_default_home_page_content;
+        let home_page_content = get_default_home_page_content(&req.org_name);
+
+        sqlx::query(
+            "INSERT INTO sys_pages (tenant_id, slug, title, content, is_published) VALUES ($1, $2, $3, $4, $5)"
+        )
+        .bind(tenant_id)
+        .bind("home")
+        .bind("Home")
+        .bind(&home_page_content)
+        .bind(true)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create default homepage: {}", e),
+        })?;
+
+        tx.commit().await.map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to commit transaction: {}", e),
+        })?;
+
+        // 9. Generate Tokens
+        let user_id_str = user_id.to_string();
+        
+        // Fetch permissions for the role
+        let permission_rows = sqlx::query(
+            r#"
+            SELECT p.slug 
+            FROM sys_permissions p
+            JOIN sys_role_permissions rp ON p.id = rp.permission_id
+            WHERE rp.role_id = $1 AND p.is_active = TRUE AND p.deleted_at IS NULL
+            "#
+        )
+        .bind(role_id)
+        .fetch_all(&self.db.pool)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Database error while fetching permissions: {}", e),
+        })?;
+
+        let permissions: Vec<String> = permission_rows.iter().map(|r| r.get("slug")).collect();
+
+        // For internal use or platform setup, we can use None for sid
+        let access_token = self.jwt.generate_access_token(&user_id_str, "superadmin", tenant_id, permissions.clone(), false, None)?;
+        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, "superadmin", tenant_id, permissions.clone(), false, None)?;
+
+        // 10. Audit & Cache
+        self.audit.log(&user_id_str, "USER_SIGNUP", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
+
+        Ok(AuthResponse { 
+            access_token, 
+            refresh_token,
+            user: UserInfo {
+                id: user_id,
+                email: req.email,
+                full_name: Some(req.full_name),
+                role: "superadmin".to_string(),
+                permissions,
+                tenant_type: Some(req.plan_type),
+                avatar_url: None,
+                cover_url: None,
+                images: vec![],
+            }
+        })
     }
 }

@@ -1,0 +1,12 @@
+:root {
+    --header-bg: rgba(4, 38, 59, 0.35);
+    --header-border: rgba(6, 182, 212, 0.08);
+    --header-text: #ffffff;
+    --header-input-bg: rgba(255, 255, 255, 0.05);
+    --header-input-bg-hover: rgba(255, 255, 255, 0.1);
+}
+
+.header-glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}

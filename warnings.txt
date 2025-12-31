@@ -1,0 +1,373 @@
+warning: unused import: `crate::core::infrastructure::permission_middleware::RequirePermission`
+  --> src/modules/system/interface/http/routers/system/mod.rs:12:9
+   |
+12 | ...se crate::core::infrastructure::permission_middleware::RequirePermission;
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `service`
+   --> src/modules/system/interface/http/handlers/theme/mod.rs:100:5
+    |
+100 |     service: web::types::State<std::sync::Arc<ThemeService>>,
+    |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_service`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `theme_id`
+   --> src/modules/system/interface/http/handlers/theme/mod.rs:102:9
+    |
+102 |     let theme_id = path.into_inner();
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_theme_id`
+
+warning: unused variable: `tenant_id`
+   --> src/modules/system/interface/http/handlers/theme/mod.rs:104:9
+    |
+104 |     let tenant_id = Uuid::nil(); 
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_tenant_id`
+
+warning: unused variable: `access_expiry`
+   --> src/modules/auth/application/services/auth/mod.rs:128:13
+    |
+128 |         let access_expiry = self.config.get_int("access_token_ex...
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_access_expiry`
+
+warning: unused variable: `access_expiry`
+   --> src/modules/auth/application/services/auth/mod.rs:404:13
+    |
+404 |         let access_expiry = self.config.get_int("access_token_ex...
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_access_expiry`
+
+warning: unused variable: `refresh_expiry`
+   --> src/modules/auth/application/services/auth/mod.rs:405:13
+    |
+405 |         let refresh_expiry = self.config.get_int("refresh_token_...
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_refresh_expiry`
+
+warning: method `name` is never used
+  --> src/core/mod.rs:12:8
+   |
+10 | pub trait AppModule: Send + Sync {
+   |           --------- method in this trait
+11 |     /// Unique name of the module
+12 |     fn name(&self) -> &str;
+   |        ^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated functions `new`, `forbidden`, and `not_found` are never used
+  --> src/core/mod.rs:37:12
+   |
+36 | impl AppError {
+   | ------------- associated functions in this implementation
+37 |     pub fn new(code: u16, message: String) -> Self {
+   |            ^^^
+...
+49 |     pub fn forbidden(message: impl Into<String>) -> Self {
+   |            ^^^^^^^^^
+...
+53 |     pub fn not_found(message: impl Into<String>) -> Self {
+   |            ^^^^^^^^^
+
+warning: methods `publish` and `subscribe` are never used
+  --> src/core/domain/event_bus.rs:8:14
+   |
+6  | pub trait EventBus: Send + Sync {
+   |           -------- methods in this trait
+7  |     /// Publish an event to the bus
+8  |     async fn publish<E>(&self, topic: &str, event: E) -> Result<()>
+   |              ^^^^^^^
+...
+13 |     fn subscribe(&self, topic: &str);
+   |        ^^^^^^^^^
+
+warning: method `as_str` is never used
+  --> src/core/domain/auth.rs:38:12
+   |
+28 | impl UserRole {
+   | ------------- method in this implementation
+...
+38 |     pub fn as_str(&self) -> &str {
+   |            ^^^^^^
+
+warning: methods `cmd` and `initialize_indices` are never used
+  --> src/core/infrastructure/redis.rs:50:18
+   |
+8  | impl Redis {
+   | ---------- methods in this implementation
+...
+50 |     pub async fn cmd(&self, cmd_name: &str, args: Vec<&str>) -> R...
+   |                  ^^^
+...
+62 |     pub async fn initialize_indices(&self) -> Result<()> {
+   |                  ^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> src/core/infrastructure/event_bus.rs:16:12
+   |
+15 | impl InMemoryEventBus {
+   | --------------------- associated function in this implementation
+16 |     pub fn new() -> Self {
+   |            ^^^
+
+warning: associated function `new` is never used
+  --> src/core/infrastructure/auth_middleware.rs:15:12
+   |
+14 | impl RequireRole {
+   | ---------------- associated function in this implementation
+15 |     pub fn new(min_role: UserRole, jwt_service: Arc<JwtService>, ...
+   |            ^^^
+
+warning: associated functions `new`, `strict`, and `default_limit` are never used
+  --> src/core/infrastructure/rate_limit.rs:39:12
+   |
+38 | impl RateLimit {
+   | -------------- associated functions in this implementation
+39 |     pub fn new(config: RateLimitConfig) -> Self {
+   |            ^^^
+...
+47 |     pub fn strict() -> Self {
+   |            ^^^^^^
+...
+55 |     pub fn default_limit() -> Self {
+   |            ^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+   --> src/core/infrastructure/permission_middleware.rs:121:12
+    |
+120 | impl RequirePlatform {
+    | -------------------- associated function in this implementation
+121 |     pub fn new(jwt_service: Arc<JwtService>) -> Self {
+    |            ^^^
+
+warning: function `format_validation_errors` is never used
+ --> src/core/utils/validation.rs:4:8
+  |
+4 | pub fn format_validation_errors(errors: ValidationErrors) -> Value {
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `strict` is never used
+  --> src/core/utils/password_policy.rs:27:12
+   |
+25 | impl PasswordPolicy {
+   | ------------------- associated function in this implementation
+26 |     /// Strict policy for admin accounts
+27 |     pub fn strict() -> Self {
+   |            ^^^^^^
+
+warning: function `validate_password_strict` is never used
+   --> src/core/utils/password_policy.rs:102:8
+    |
+102 | pub fn validate_password_strict(password: &str) -> Result<(), Ap...
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `Plugin` is never constructed
+  --> src/modules/system/domain/plugin/entity.rs:30:12
+   |
+30 | pub struct Plugin {
+   |            ^^^^^^
+
+warning: variants `Installed`, `Loaded`, and `Error` are never constructed
+  --> src/modules/system/domain/plugin/entity.rs:37:5
+   |
+36 | pub enum PluginStatus {
+   |          ------------ variants in this enum
+37 |     Installed,
+   |     ^^^^^^^^^
+38 |     Loaded,
+   |     ^^^^^^
+39 |     Error(String),
+   |     ^^^^^
+   |
+   = note: `PluginStatus` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: method `find_by_prefix` is never used
+ --> src/modules/system/domain/api_key/repository.rs:9:14
+  |
+7 | pub trait ApiKeyRepository: Send + Sync {
+  |           ---------------- method in this trait
+8 |     async fn create(&self, tenant_id: &str, key_hash: &str, prefix...
+9 |     async fn find_by_prefix(&self, prefix: &str) -> Result<Vec<Api...
+  |              ^^^^^^^^^^^^^^
+
+warning: methods `update_permission` and `delete_permission` are never used
+  --> src/modules/system/domain/rbac/repository.rs:54:14
+   |
+42 | pub trait RbacRepository: Send + Sync {
+   |           -------------- methods in this trait
+...
+54 |     async fn update_permission(&self, id: Uuid, cmd: UpdatePermis...
+   |              ^^^^^^^^^^^^^^^^^
+55 |     async fn delete_permission(&self, id: Uuid) -> Result<bool>;
+   |              ^^^^^^^^^^^^^^^^^
+
+warning: methods `find_by_id`, `update`, `delete`, `set_active_theme`, and `get_active_theme` are never used
+  --> src/modules/system/domain/theme/repository.rs:10:14
+   |
+8  | pub trait ThemeRepository: Send + Sync {
+   |           --------------- methods in this trait
+9  |     async fn create(&self, dto: CreateThemeDto) -> AppResult<Theme>;
+10 |     async fn find_by_id(&self, id: Uuid) -> AppResult<Option<Them...
+   |              ^^^^^^^^^^
+...
+16 |     async fn update(&self, id: Uuid, dto: UpdateThemeDto) -> AppR...
+   |              ^^^^^^
+...
+19 |     async fn delete(&self, id: Uuid) -> AppResult<()>;
+   |              ^^^^^^
+...
+22 |     async fn set_active_theme(&self, tenant_id: Uuid, theme_id: U...
+   |              ^^^^^^^^^^^^^^^^
+...
+25 |     async fn get_active_theme(&self, tenant_id: Uuid) -> AppResul...
+   |              ^^^^^^^^^^^^^^^^
+
+warning: method `verify_key` is never used
+  --> src/modules/system/application/services/api_key/mod.rs:37:18
+   |
+12 | impl ApiKeyService {
+   | ------------------ method in this implementation
+...
+37 |     pub async fn verify_key(&self, plain_key: &str, user_agent: O...
+   |                  ^^^^^^^^^^
+
+warning: field `audit` is never read
+  --> src/modules/system/application/services/i18n/mod.rs:10:5
+   |
+8  | pub struct I18nService {
+   |            ----------- field in this struct
+9  |     repo: Arc<dyn I18nRepository>,
+10 |     audit: Arc<AuditService>,
+   |     ^^^^^
+
+warning: struct `PluginService` is never constructed
+ --> src/modules/system/application/services/plugin/mod.rs:9:12
+  |
+9 | pub struct PluginService {
+  |            ^^^^^^^^^^^^^
+
+warning: associated items `new` and `install_plugin` are never used
+  --> src/modules/system/application/services/plugin/mod.rs:15:12
+   |
+14 | impl PluginService {
+   | ------------------ associated items in this implementation
+15 |     pub fn new(redis: Arc<Redis>) -> Self {
+   |            ^^^
+...
+22 |     pub async fn install_plugin(&mut self, manifest: Manifest, wa...
+   |                  ^^^^^^^^^^^^^^
+
+warning: methods `update_permission` and `delete_permission` are never used
+  --> src/modules/system/application/services/rbac/mod.rs:31:18
+   |
+17 | impl RbacService {
+   | ---------------- methods in this implementation
+...
+31 |     pub async fn update_permission(&self, id: Uuid, cmd: UpdatePe...
+   |                  ^^^^^^^^^^^^^^^^^
+...
+35 |     pub async fn delete_permission(&self, id: Uuid, actor_tenant_...
+   |                  ^^^^^^^^^^^^^^^^^
+
+warning: function `update` is never used
+  --> src/modules/system/application/services/rbac/permission_actions.rs:17:14
+   |
+17 | pub async fn update(repo: &Arc<dyn RbacRepository>, id: Uuid, cmd...
+   |              ^^^^^^
+
+warning: function `delete` is never used
+  --> src/modules/system/application/services/rbac/permission_actions.rs:26:14
+   |
+26 | pub async fn delete(repo: &Arc<dyn RbacRepository>, id: Uuid, act...
+   |              ^^^^^^
+
+warning: multiple methods are never used
+  --> src/modules/system/application/services/theme/mod.rs:22:18
+   |
+11 | impl ThemeService {
+   | ----------------- methods in this implementation
+...
+22 |     pub async fn create_system_theme(&self, name: String, config:...
+   |                  ^^^^^^^^^^^^^^^^^^^
+...
+34 |     pub async fn create_tenant_theme(&self, tenant_id: Uuid, name...
+   |                  ^^^^^^^^^^^^^^^^^^^
+...
+49 |     pub async fn get_theme(&self, id: Uuid) -> AppResult<Option<T...
+   |                  ^^^^^^^^^
+...
+53 |     pub async fn update_theme(&self, id: Uuid, dto: UpdateThemeDt...
+   |                  ^^^^^^^^^^^^
+...
+58 |     pub async fn delete_theme(&self, id: Uuid) -> AppResult<()> {
+   |                  ^^^^^^^^^^^^
+...
+63 |     pub async fn set_active_theme(&self, tenant_id: Uuid, theme_i...
+   |                  ^^^^^^^^^^^^^^^^
+...
+74 |     pub async fn fork_theme(&self, source_theme_id: Uuid, target_...
+   |                  ^^^^^^^^^^
+
+warning: struct `WasmEngine` is never constructed
+ --> src/modules/system/infrastructure/wasm_engine/mod.rs:6:12
+  |
+6 | pub struct WasmEngine;
+  |            ^^^^^^^^^^
+
+warning: associated items `new` and `load` are never used
+  --> src/modules/system/infrastructure/wasm_engine/mod.rs:9:12
+   |
+8  | impl WasmEngine {
+   | --------------- associated items in this implementation
+9  |     pub fn new() -> Self {
+   |            ^^^
+...
+13 |     pub async fn load(&mut self, manifest: &Manifest, path: &str)...
+   |                  ^^^^
+
+warning: field `message` is never read
+  --> src/modules/system/interface/http/dto/i18n/mod.rs:18:9
+   |
+17 | pub struct UpdateTranslationRequest {
+   |            ------------------------ field in this struct
+18 |     pub message: String,
+   |         ^^^^^^^
+   |
+   = note: `UpdateTranslationRequest` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `name`, `code`, `description`, and `is_active` are never read
+  --> src/modules/system/interface/http/dto/rbac/mod.rs:37:9
+   |
+36 | pub struct UpdatePermissionRequest {
+   |            ----------------------- fields in this struct
+37 |     pub name: Option<String>,
+   |         ^^^^
+38 |     pub code: Option<Option<String>>,
+   |         ^^^^
+39 |     pub description: Option<Option<String>>,
+   |         ^^^^^^^^^^^
+40 |     pub is_active: Option<bool>,
+   |         ^^^^^^^^^
+   |
+   = note: `UpdatePermissionRequest` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `update_permission` is never used
+   --> src/modules/system/interface/http/handlers/rbac/mod.rs:529:14
+    |
+529 | pub async fn update_permission(
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `delete_permission` is never used
+   --> src/modules/system/interface/http/handlers/rbac/mod.rs:602:14
+    |
+602 | pub async fn delete_permission(
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `tenant_routes` is never used
+  --> src/modules/system/interface/http/routers/tenant/mod.rs:34:8
+   |
+34 | pub fn tenant_routes(_config: &mut web::ServiceConfig, _jwt: std:...
+   |        ^^^^^^^^^^^^^
+
+warning: `kyx-kernel` (bin "kyx-kernel") generated 39 warnings (run `cargo fix --bin "kyx-kernel"` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s

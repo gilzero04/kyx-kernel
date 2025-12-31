@@ -16,3 +16,8 @@ pub struct UpdateUserRequest {
     pub role_slug: Option<String>,
     pub tenant_id: Option<sqlx::types::Uuid>,
 }
+
+#[derive(Deserialize, ToSchema)]
+pub struct AdminResetPasswordRequest {
+    pub new_password: String,
+}

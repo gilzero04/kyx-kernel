@@ -27,14 +27,20 @@ pub enum RuntimeType {
     Service,
 }
 
+#[allow(dead_code)]
 pub struct Plugin {
+    #[allow(dead_code)]
     pub manifest: Manifest,
+    #[allow(dead_code)]
     pub status: PluginStatus,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PluginStatus {
+    #[allow(dead_code)]
     Installed,
+    #[allow(dead_code)]
     Loaded,
+    #[allow(dead_code)]
     Error(String),
 }

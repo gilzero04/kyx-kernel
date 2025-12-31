@@ -9,9 +9,9 @@
   "sub": "user-uuid",
   "email": "user@example.com",
   "role": "superadmin",
-  "tenant_id": "tenant-uuid",  // null for Owner
+  "tenant_id": "tenant-uuid",  // Root Tenant ID for Root Admin, Child ID for others
   "scope": "global|tenant",
-  "permissions": ["user.create", "user.read"],
+  "permissions": ["user:read", "user:create", "tenant:read"],
   "exp": 1703001234
 }
 ```
@@ -49,8 +49,8 @@ Client → POST /auth/logout (Authorization: Bearer token)
 
 | User Type | JWT tenant_id | Visibility |
 |-----------|---------------|------------|
-| **Owner** | `null` | All tenants |
-| **Tenant Admin** | `<uuid>` | Own tenant + children |
+| **System Owner** | `root_uuid` | Full system branch (unfiltered) |
+| **Tenant Admin** | `<uuid>` | Own tenant + descendants |
 | **Branch Admin** | `<uuid>` | Own branch only |
 
 ## Setup Flow (First-Time)

@@ -1,6 +1,7 @@
 use ntex::web;
 use crate::modules::media::interface::http::handlers::media;
 
+#[allow(dead_code)]
 pub fn media_routes(
     audit_service: std::sync::Arc<crate::core::infrastructure::audit::AuditService>,
 ) -> web::Scope<ntex::web::DefaultError> {

@@ -13,6 +13,7 @@ pub struct InMemoryEventBus {
 }
 
 impl InMemoryEventBus {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             channels: Arc::new(Mutex::new(HashMap::new())),

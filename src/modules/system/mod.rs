@@ -13,14 +13,18 @@ use crate::core::infrastructure::ai_service::AIService;
 use crate::modules::system::application::services::cors::CORSService;
 use crate::modules::system::application::services::audit::AuditQueryService;
 use crate::modules::system::infrastructure::repositories::audit::PostgresAuditRepository;
-use crate::modules::system::infrastructure::repositories::api_key::PostgresApiKeyRepository;
 use crate::modules::system::infrastructure::repositories::cors::PostgresCorsRepository;
 use crate::modules::system::infrastructure::repositories::tenant::PostgresTenantRepository;
 use crate::modules::system::application::services::tenant::TenantService;
+use crate::modules::system::application::services::tenant::domain_verification::DomainVerificationService;
 use crate::modules::system::infrastructure::repositories::rbac::PostgresRbacRepository;
 use crate::modules::system::application::services::rbac::RbacService;
 use crate::modules::system::infrastructure::repositories::user::PostgresUserRepository;
 use crate::modules::system::application::services::user::UserAdminService;
+use crate::modules::system::infrastructure::repositories::theme::PostgresThemeRepository;
+use crate::modules::system::application::services::theme::ThemeService;
+use crate::modules::system::infrastructure::repositories::cms::PostgresCmsRepository;
+use crate::modules::system::application::services::cms::CmsService;
 use std::sync::Arc;
 
 pub mod domain;
@@ -37,10 +41,13 @@ pub struct SystemModule {
     api_key_service: Arc<ApiKeyService>,
     cors_service: Arc<CORSService>,
     i18n_service: Arc<I18nService>,
-    audit_query_service: Arc<AuditQueryService>,
     tenant_service: Arc<TenantService>,
+    domain_verification_service: Arc<DomainVerificationService>,
     rbac_service: Arc<RbacService>,
     user_service: Arc<UserAdminService>,
+    theme_service: Arc<ThemeService>,
+    audit_query_service: Arc<AuditQueryService>,
+    cms_service: Arc<CmsService>,
 }
 
 impl SystemModule {
@@ -51,16 +58,16 @@ impl SystemModule {
         audit: Arc<AuditService>,
         config: Arc<ConfigService>,
         cors_manager: Arc<CorsManager>,
+        api_key_service: Arc<ApiKeyService>,
     ) -> Self {
-        let api_key_repo = Arc::new(PostgresApiKeyRepository::new(db.clone()));
-        let api_key_service = Arc::new(ApiKeyService::new(api_key_repo));
 
         let cors_repo = Arc::new(PostgresCorsRepository::new(db.clone()));
         let cors_service = Arc::new(CORSService::new(cors_repo, cors_manager));
         
         // Tenant
         let tenant_repo = Arc::new(PostgresTenantRepository::new(db.clone()));
-        let tenant_service = Arc::new(TenantService::new(tenant_repo));
+        let tenant_service = Arc::new(TenantService::new(tenant_repo.clone()));
+        let domain_verification_service = Arc::new(DomainVerificationService::new(tenant_repo.clone()));
 
         // RBAC
         let rbac_repo = Arc::new(PostgresRbacRepository::new(db.clone()));
@@ -70,6 +77,10 @@ impl SystemModule {
         let user_repo = Arc::new(PostgresUserRepository::new(db.clone()));
         let user_service = Arc::new(UserAdminService::new(user_repo));
 
+        // Theme
+        let theme_repo = Arc::new(PostgresThemeRepository::new(db.clone()));
+        let theme_service = Arc::new(ThemeService::new(theme_repo));
+
         // I18n
         let i18n_repo = Arc::new(PostgresI18nRepositoryImpl::new(db.clone()));
         let ai_service = Arc::new(AIService::new(config.clone()));
@@ -78,6 +89,10 @@ impl SystemModule {
         // Audit Query (Read)
         let audit_repo = Arc::new(PostgresAuditRepository::new(db.clone()));
         let audit_query_service = Arc::new(AuditQueryService::new(audit_repo));
+
+        // CMS
+        let cms_repo = Arc::new(PostgresCmsRepository::new(db.clone()));
+        let cms_service = Arc::new(CmsService::new(cms_repo));
 
         Self {
             _redis: redis,
@@ -90,9 +105,16 @@ impl SystemModule {
             i18n_service,
             audit_query_service,
             tenant_service,
+            domain_verification_service,
             rbac_service,
             user_service,
+            theme_service,
+            cms_service,
         }
+    }
+
+    pub async fn seed_themes(&self) -> crate::core::AppResult<()> {
+        self.theme_service.seed_default_themes().await
     }
 }
 
@@ -109,79 +131,83 @@ impl AppModule for SystemModule {
         let i18n_s = self.i18n_service.clone();
         let audit_query_s = self.audit_query_service.clone();
         let tenant_s = self.tenant_service.clone();
+        let domain_verification_s = self.domain_verification_service.clone();
+        let theme_s = self.theme_service.clone();
         
-        // RequirePermission middleware for admin endpoints
-        let admin_auth = crate::core::infrastructure::permission_middleware::RequirePermission::new(
-            "system:manage",
-            self.jwt.clone(),
-            self.audit.clone(),
-        );
+// DELETED: Global admin_auth wrapper replaced by granular guards in routers
+
         
-        // 1. Public System Scope (no auth required)
+        // 1. System Scope (Public & Protected Platform Management)
+        let cms_s = self.cms_service.clone();
         config.service(
             web::scope("/system")
                 .state(self.db.clone())
                 .state(config_service.clone())
                 .state(audit_service.clone())
                 .state(i18n_s.clone()) 
-                // Public: System Status (no auth) - for app startup/branding
+                .state(self.jwt.clone()) 
+                .state(audit_query_s.clone()) 
+                .state(api_key_s.clone())
+                .state(cors_s.clone())
+                .state(tenant_s.clone())
+                .state(domain_verification_s.clone())
+                .state(self.rbac_service.clone())
+                .state(theme_s.clone())
+                // Public Routes
                 .service(interface::http::routers::system::public_routes())
                 .service(interface::http::routers::i18n::public_routes())
+                // Protected Platform Routes (Each router is now self-protected)
+                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::rbac::rbac_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::config::config_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::api_key::api_key_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
         );
-        
 
-
-        // 3. Consolidated Protected Admin Scope (Requires system:manage permission)
+        // 3. Tenant Admin Scope (Business Management)
         config.service(
             web::scope("/admin")
-                .wrap(admin_auth.clone())
                 .state(self.db.clone())
-                .state(self.jwt.clone()) // Required for delete_user self-check
-                .state(config_service)
-                .state(audit_service.clone()) // Write (Core)
-                .state(audit_query_s) // Read (System Module)
-                .state(api_key_s.clone())
-                .state(cors_s)
-                .state(i18n_s.clone())
-                .state(tenant_s)
+                .state(self.jwt.clone()) 
+                .state(config_service.clone())
+                .state(audit_service.clone()) 
                 .state(self.rbac_service.clone())
                 .state(self.user_service.clone())
-                .state(self.i18n_service.clone())
-                // Sub-Routers with specific prefixes
-                .service(interface::http::routers::audit::audit_routes()) 
-                .service(interface::http::routers::config::config_routes())
-                .service(interface::http::routers::api_key::api_key_routes())
-                .service(interface::http::routers::cors::cors_routes())
-                .service(interface::http::routers::tenant::tenant_routes())
-                .service(interface::http::routers::user::user_routes())
-                .service(interface::http::routers::i18n::admin_routes())
-                
-                // System Settings & Status (Direct)
-                .route("/settings", web::get().to(interface::http::handlers::system::get_system_settings))
-                .route("/test", web::get().to(interface::http::handlers::system::admin_test))
-
-                // RBAC (Explicit Sub-Scopes)
-                .service(
-                    web::scope("/roles")
-                        .route("", web::get().to(interface::http::handlers::rbac::list_roles))
-                        .route("", web::post().to(interface::http::handlers::rbac::create_role))
-                        .route("/{id}", web::patch().to(interface::http::handlers::rbac::update_role))
-                        .route("/{id}", web::delete().to(interface::http::handlers::rbac::delete_role))
-                )
-                .service(
-                    web::scope("/permissions")
-                        .route("", web::get().to(interface::http::handlers::rbac::list_permissions))
-                        .route("", web::post().to(interface::http::handlers::rbac::create_permission))
-                        .route("/{id}", web::patch().to(interface::http::handlers::rbac::update_permission))
-                        .route("/{id}", web::delete().to(interface::http::handlers::rbac::delete_permission))
-                )
+                .state(tenant_s.clone())
+                .state(cors_s.clone())
+                .state(audit_query_s)
+                .state(i18n_s.clone())
+                .state(theme_s.clone())
+                .state(cms_s.clone())
+                // Business level operations
+                .configure(|conf| interface::http::routers::user::user_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::rbac::rbac_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::config::config_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| interface::http::routers::cms::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
         );
         
         // 4. Headless/Public Scope
         config.service(
             web::scope("/public/system")
                 .state(api_key_s)
+                .state(self.cms_service.clone())
+                .state(self.tenant_service.clone())
                 .route("/info", web::get().to(interface::http::handlers::system::get_system_info))
+                .route("/tenants/{slug}", web::get().to(interface::http::handlers::tenant::get_tenant_by_slug))
+                .service(
+                    web::scope("/cms/pages/{tenant_id}")
+                        .default_service(web::get().to(interface::http::handlers::cms::get_page_by_slug))
+                )
         );
 
         Ok(())

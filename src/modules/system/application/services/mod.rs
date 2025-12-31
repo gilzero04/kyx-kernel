@@ -1,8 +1,10 @@
 pub mod api_key;
 pub mod cors;
 pub mod i18n;
+pub mod cms;
 pub mod plugin;
 pub mod audit;
 pub mod tenant;
 pub mod rbac;
+pub mod theme;
 pub mod user;

@@ -1,0 +1,9 @@
+:root {
+    /* Smooth Sea Glass Header */
+    --header-bg: rgba(255, 255, 255, 0.4);
+    --header-border: rgba(6, 182, 212, 0.15);
+    --header-text: #164e63;
+    --header-input-bg: rgba(6, 182, 212, 0.05);
+    --header-input-bg-hover: rgba(6, 182, 212, 0.1);
+    --header-blur: blur(30px);
+}

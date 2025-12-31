@@ -84,14 +84,8 @@ impl I18nRepository for PostgresI18nRepositoryImpl {
     }
 
     async fn delete_locale(&self, code: &str) -> Result<()> {
-        // Delete translations first (though FK cascade should handle it ideally)
-        sqlx::query("DELETE FROM sys_i18n_translations WHERE locale = $1")
-        .bind(code)
-        .execute(&self.db.pool)
-        .await?;
-
-        // Delete locale
-        sqlx::query("DELETE FROM sys_i18n_locales WHERE code = $1")
+        // Deactivate locale instead of hard delete
+        sqlx::query("UPDATE sys_i18n_locales SET is_active = FALSE, updated_at = NOW() WHERE code = $1")
         .bind(code)
         .execute(&self.db.pool)
         .await?;

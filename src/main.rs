@@ -79,12 +79,15 @@ async fn main() -> io::Result<()> {
         }
     });
 
+    let api_key_repo = Arc::new(crate::modules::system::infrastructure::repositories::api_key::PostgresApiKeyRepository::new(database.clone()));
+    let api_key_service = Arc::new(crate::modules::system::application::services::api_key::ApiKeyService::new(api_key_repo));
+
     let auth_module = Arc::new(modules::auth::AuthModule::new(
         database.clone(),
         redis.clone(), 
         jwt_service.clone(), 
         audit_service.clone(), 
-        config_service.clone()
+        config_service.clone(),
     ));
     
     let system_module = Arc::new(modules::system::SystemModule::new(
@@ -93,12 +96,14 @@ async fn main() -> io::Result<()> {
         jwt_service.clone(),
         audit_service.clone(),
         config_service.clone(),
-        cors_manager.clone()
+        cors_manager.clone(),
+        api_key_service.clone()
     ));
 
     let media_module = Arc::new(modules::media::MediaModule::new(
         database.clone(),
-        audit_service.clone()
+        audit_service.clone(),
+        jwt_service.clone()
     ));
 
     println!("🚀 Kyx Kernel v{} ({}) starting on port {}...", 
@@ -111,6 +116,13 @@ async fn main() -> io::Result<()> {
     let system = system_module.clone();
     let media = media_module.clone();
     let config_for_rate = config_service.clone();
+
+    let system_for_seed = system_module.clone();
+    tokio::spawn(async move {
+        if let Err(e) = system_for_seed.seed_themes().await {
+            log::error!("Failed to seed default themes: {}", e);
+        }
+    });
 
     web::server(move || {
         let auth_m = auth.clone();
@@ -186,6 +198,12 @@ async fn main() -> io::Result<()> {
                     "timestamp": chrono::Utc::now().to_rfc3339()
                 }))
             }))
+            // Serve static theme assets (preview images, logos)
+            .service(
+                ntex_files::Files::new("/themes", "./assets/themes")
+                    .show_files_listing()
+                    .use_last_modified(true)
+            )
             // Favicon handler (prevent 404 logs)
             .service(web::resource("/favicon.ico").to(|| async {
                 web::HttpResponse::NoContent().finish()

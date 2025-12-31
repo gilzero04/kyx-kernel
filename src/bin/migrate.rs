@@ -13,6 +13,7 @@ async fn main() -> Result<()> {
         .connect(&db_url)
         .await?;
 
+
     println!("🚀 Running pending migrations...");
     sqlx::migrate!("./migrations")
         .run(&pool)

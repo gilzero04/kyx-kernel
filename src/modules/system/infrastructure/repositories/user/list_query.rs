@@ -40,60 +40,102 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
     let limit = filter.limit.min(100).max(1);
     let offset = (page - 1) * limit;
 
-    let base_sql = r#"
+    // Build the hierarchy/isolation filter
+    // $1 = tree_root, $2 = specific_tenant (optional)
+    let (hierarchy_cte, hierarchy_where, p_count) = if let Some(_root) = filter.actor_tenant_id.or(filter.tenant_id) {
+        (
+            r#"WITH RECURSIVE tenant_tree AS (
+                SELECT id FROM auth_tenants WHERE id = $1 AND deleted_at IS NULL
+                UNION ALL
+                SELECT t.id FROM auth_tenants t
+                JOIN tenant_tree tt ON t.parent_id = tt.id
+                WHERE t.deleted_at IS NULL
+            )"#,
+            if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() {
+                "AND t.id = $2 AND t.id IN (SELECT id FROM tenant_tree)"
+            } else {
+                "AND t.id IN (SELECT id FROM tenant_tree)"
+            },
+            if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() { 2 } else { 1 }
+        )
+    } else {
+        ("", "", 0)
+    };
+
+    let base_sql = format!(
+        r#"{}
         SELECT 
             u.id, u.email, u.full_name, u.is_active, u.created_at,
             r.name as role,
             r.slug as role_slug,
             t.name as tenant_name,
-            t.id as tenant_id
+            t.id as tenant_id,
+            t.logo_url as tenant_logo_url,
+            t.logo_dark_url as tenant_logo_dark_url,
+            NULL::text[] as permissions
         FROM auth_users u
         LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE AND m.deleted_at IS NULL
         LEFT JOIN sys_roles r ON m.role_id = r.id
         LEFT JOIN auth_tenants t ON m.tenant_id = t.id
-        WHERE u.deleted_at IS NULL
-    "#;
+        WHERE u.deleted_at IS NULL {}"#,
+        hierarchy_cte, hierarchy_where
+    );
 
-    let count_base_sql = r#"
+    let count_base_sql = format!(
+        r#"{}
         SELECT COUNT(DISTINCT u.id)
         FROM auth_users u
         LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE AND m.deleted_at IS NULL
         LEFT JOIN sys_roles r ON m.role_id = r.id
         LEFT JOIN auth_tenants t ON m.tenant_id = t.id
-        WHERE u.deleted_at IS NULL
-    "#;
+        WHERE u.deleted_at IS NULL {}"#,
+        hierarchy_cte, hierarchy_where
+    );
 
     let order_clause = build_user_order_clause(&filter.sort);
 
     let (data_sql, count_sql, search_bind) = if let Some(s) = &filter.search {
         let search_term = format!("%{}%", s);
         let data = format!(
-            "{} AND (u.email ILIKE $1 OR u.full_name ILIKE $1 OR r.name ILIKE $1) {} LIMIT $2 OFFSET $3",
-            base_sql, order_clause
+            "{} AND (u.email ILIKE ${} OR u.full_name ILIKE ${} OR r.name ILIKE ${}) {} LIMIT ${} OFFSET ${}",
+            base_sql, p_count + 1, p_count + 1, p_count + 1, order_clause, p_count + 2, p_count + 3
         );
         let count = format!(
-            "{} AND (u.email ILIKE $1 OR u.full_name ILIKE $1 OR r.name ILIKE $1)",
-            count_base_sql
+            "{} AND (u.email ILIKE ${} OR u.full_name ILIKE ${} OR r.name ILIKE ${})",
+            count_base_sql, p_count + 1, p_count + 1, p_count + 1
         );
         (data, count, Some(search_term))
     } else {
-        let data = format!("{} {} LIMIT $1 OFFSET $2", base_sql, order_clause);
+        let data = format!("{} {} LIMIT ${} OFFSET ${}", base_sql, order_clause, p_count + 1, p_count + 2);
         (data, count_base_sql.to_string(), None)
     };
 
-    let total: i64 = if let Some(ref search) = search_bind {
-        sqlx::query_scalar::<_, i64>(&count_sql).bind(search).fetch_one(&pool.pool).await.unwrap_or(0)
-    } else {
-        sqlx::query_scalar::<_, i64>(&count_sql).fetch_one(&pool.pool).await.unwrap_or(0)
-    };
+    let mut query_total = sqlx::query_scalar::<_, i64>(&count_sql);
+    let mut query_data = sqlx::query_as::<_, UserEntry>(&data_sql);
 
-    let entries = if let Some(search) = search_bind {
-        sqlx::query_as::<_, UserEntry>(&data_sql)
-            .bind(search).bind(limit).bind(offset).fetch_all(&pool.pool).await?
-    } else {
-        sqlx::query_as::<_, UserEntry>(&data_sql)
-            .bind(limit).bind(offset).fetch_all(&pool.pool).await?
-    };
+    // Bind parameters in order
+    // 1. Hierarchy Root
+    if let Some(root) = filter.actor_tenant_id.or(filter.tenant_id) {
+        query_total = query_total.bind(root);
+        query_data = query_data.bind(root);
+    }
+    // 2. Specific Tenant (if both aid and tid provided)
+    if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() {
+        query_total = query_total.bind(filter.tenant_id.unwrap());
+        query_data = query_data.bind(filter.tenant_id.unwrap());
+    }
+
+    // Next: Search term
+    if let Some(search) = search_bind {
+        query_total = query_total.bind(search.clone());
+        query_data = query_data.bind(search);
+    }
+
+    // Finally: Limit and offset
+    query_data = query_data.bind(limit).bind(offset);
+
+    let total = query_total.fetch_one(&pool.pool).await?;
+    let entries = query_data.fetch_all(&pool.pool).await?;
 
     let total_pages = (total as f64 / limit as f64).ceil() as i64;
 

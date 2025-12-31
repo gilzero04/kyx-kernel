@@ -24,7 +24,7 @@ impl UserRepository for PostgresUserRepository {
         list_query::list(&self.pool, filter).await
     }
 
-    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>) -> Result<bool> {
+    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>) -> Result<bool> {
         let mut tx = self.pool.pool.begin().await?;
 
         // 1. Update User
@@ -33,11 +33,16 @@ impl UserRepository for PostgresUserRepository {
              full_name = COALESCE($1, full_name), 
              is_active = COALESCE($2, is_active),
              updated_at = NOW()
-             WHERE id = $3 AND deleted_at IS NULL"
+             WHERE id = $3 AND deleted_at IS NULL
+             AND ($4::uuid IS NULL OR EXISTS (
+                 SELECT 1 FROM auth_memberships 
+                 WHERE user_id = auth_users.id AND tenant_id = $4 AND deleted_at IS NULL
+             ))"
         )
         .bind(full_name)
         .bind(is_active)
         .bind(id)
+        .bind(actor_tenant_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| anyhow!("Failed to update user: {}", e))?;
@@ -69,13 +74,55 @@ impl UserRepository for PostgresUserRepository {
         tx.commit().await?;
         Ok(true)
     }
+    async fn soft_delete(&self, id: Uuid, actor_tenant_id: Option<Uuid>) -> Result<bool> {
+        let mut tx = self.pool.pool.begin().await?;
 
-    async fn soft_delete(&self, id: Uuid) -> Result<bool> {
-        let result = sqlx::query("UPDATE auth_users SET is_active = FALSE, deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
+        // 1. Deactivate User (Only if they belong to the actor's tenant or actor is system owner)
+        let result = sqlx::query(
+            "UPDATE auth_users SET is_active = FALSE, deleted_at = NOW() 
+             WHERE id = $1 AND deleted_at IS NULL
+             AND ($2::uuid IS NULL OR EXISTS (
+                 SELECT 1 FROM auth_memberships 
+                 WHERE user_id = auth_users.id AND tenant_id = $2 AND deleted_at IS NULL
+             ))"
+        )
             .bind(id)
-            .execute(&self.pool.pool)
+            .bind(actor_tenant_id)
+            .execute(&mut *tx)
             .await
             .map_err(|e| anyhow!("Failed to delete user: {}", e))?;
+        
+        if result.rows_affected() > 0 {
+            // 2. Deactivate Memberships
+            sqlx::query("UPDATE auth_memberships SET is_active = FALSE, deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL")
+                .bind(id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| anyhow!("Failed to deactivate user memberships: {}", e))?;
+            
+            tx.commit().await?;
+            Ok(true)
+        } else {
+            tx.rollback().await?;
+            Ok(false)
+        }
+    }
+
+    async fn update_password(&self, id: Uuid, hashed_password: String, actor_tenant_id: Option<Uuid>) -> Result<bool> {
+        let result = sqlx::query(
+            "UPDATE auth_users SET password_hash = $1, updated_at = NOW() 
+             WHERE id = $2 AND deleted_at IS NULL
+             AND ($3::uuid IS NULL OR EXISTS (
+                 SELECT 1 FROM auth_memberships 
+                 WHERE user_id = auth_users.id AND tenant_id = $3 AND deleted_at IS NULL
+             ))"
+        )
+        .bind(hashed_password)
+        .bind(id)
+        .bind(actor_tenant_id)
+        .execute(&self.pool.pool)
+        .await
+        .map_err(|e| anyhow!("Failed to update user password: {}", e))?;
         
         Ok(result.rows_affected() > 0)
     }

@@ -7,6 +7,7 @@ use crate::core::infrastructure::ai_service::AIService;
 
 pub struct I18nService {
     repo: Arc<dyn I18nRepository>,
+    #[allow(dead_code)]
     audit: Arc<AuditService>,
     ai: Arc<AIService>,
 }

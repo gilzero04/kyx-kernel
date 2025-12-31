@@ -1,0 +1,87 @@
+/* =========================================
+   Tropical Sea Simulation - Splash Mode (Light)
+   (Rolling Waves, High Fidelity)
+   ========================================= */
+
+/* Scoping */
+
+/* Overriding Base */
+.splash-overlay .bg-canvas {
+    background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 60%, #7dd3fc 100%) !important;
+}
+
+/* Layer 1: Distant Tropical Wave */
+.splash-overlay .bg-layer.layer-1 {
+    height: 45%;
+    background-color: var(--color-primary);
+    opacity: 0.2;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    mask-size: 1400px 100%;
+    -webkit-mask-size: 1400px 100%;
+    mask-repeat: repeat-x;
+    animation: moveSplashLight-1400 60s linear infinite;
+    z-index: 1;
+}
+
+/* Layer 2: Near Tropical Wave (Distinct from dark theme moon) */
+.splash-overlay .bg-layer.layer-2 {
+    height: 35%;
+    background-color: var(--color-primary);
+    opacity: 0.15;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    mask-size: 1000px 100%;
+    -webkit-mask-size: 1000px 100%;
+    mask-repeat: repeat-x;
+    animation: moveSplashLight-1000 40s linear infinite reverse;
+    z-index: 2;
+}
+
+/* Shimmer Layer */
+.splash-overlay .bg-layer.layer-3 {
+    height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+    mix-blend-mode: overlay;
+    animation: lightShimmer 10s ease-in-out infinite;
+    opacity: 0.7;
+    z-index: 3;
+}
+
+@keyframes lightShimmer {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+@keyframes moveSplashLight-1400 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1400px bottom;
+        mask-position: 1400px bottom;
+    }
+}
+
+@keyframes moveSplashLight-1000 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1000px bottom;
+        mask-position: 1000px bottom;
+    }
+}

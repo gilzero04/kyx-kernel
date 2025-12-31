@@ -16,14 +16,27 @@ impl ApiKeyService {
 
     pub async fn create_key(
         &self,
-        tenant_id: &str,
+        tenant_id: Uuid,
         name: Option<String>,
         key_type: &str,
         allowed_origins: Option<Value>,
     ) -> Result<(ApiKey, String), AppError> {
-        let plain_key = format!("sk_live_{}", Uuid::new_v4().to_string().replace("-", ""));
+        // Professional Enterprise Prefixing (Stripe-like)
+        // Format: kyx_[pk/sk]_[live/test]_[random_string]
+        let prefix_type = match key_type {
+            "public" | "client" => "pk",
+            "secret" | "server" => "sk",
+            _ => "key"
+        };
+        
+        // Defaulting to 'live' env prefix
+        let env_prefix = "live";
+        let professional_prefix = format!("kyx_{}_{}_", prefix_type, env_prefix);
+        
+        let plain_random = self.generate_secure_random(32);
+        let plain_key = format!("{}{}", professional_prefix, plain_random);
         let key_hash = hash_password(&plain_key)?;
-        let prefix = &plain_key[..10]; // sk_live_...
+        let prefix = &plain_key[..12]; // e.g. kyx_sk_live_
 
         let key = self.repo.create(tenant_id, &key_hash, prefix, name, key_type, allowed_origins).await
             .map_err(|e| AppError {
@@ -34,12 +47,13 @@ impl ApiKeyService {
         Ok((key, plain_key))
     }
 
+    #[allow(dead_code)]
     pub async fn verify_key(&self, plain_key: &str, user_agent: Option<&str>, fetch_mode: Option<&str>) -> Result<ApiKey, AppError> {
-        if !plain_key.starts_with("sk_live_") {
+        if !plain_key.starts_with("kyx_") {
             return Err(AppError { code: 401, message: "Invalid key format".into() });
         }
 
-        let prefix = &plain_key[..10];
+        let prefix = &plain_key[..12];
         
         let candidates = self.repo.find_by_prefix(prefix).await
             .map_err(|e| AppError { code: 500, message: e.to_string() })?;
@@ -64,5 +78,26 @@ impl ApiKeyService {
         }
 
         Err(AppError { code: 401, message: "Invalid API key".into() })
+    }
+
+    pub async fn list_keys_hierarchical(&self, tenant_id: Uuid) -> Result<Vec<ApiKey>, AppError> {
+        self.repo.find_hierarchical(tenant_id).await
+            .map_err(|e| AppError { code: 500, message: e.to_string() })
+    }
+
+    pub async fn revoke_key(&self, key_id: Uuid, actor_tenant_id: Uuid) -> Result<(), AppError> {
+        self.repo.delete(key_id, actor_tenant_id).await
+            .map_err(|e| AppError { code: 400, message: e.to_string() })
+    }
+
+    fn generate_secure_random(&self, length: usize) -> String {
+        use rand::{thread_rng, Rng};
+        use rand::distributions::Alphanumeric;
+
+        thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(length)
+            .map(char::from)
+            .collect()
     }
 }

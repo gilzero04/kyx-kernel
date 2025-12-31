@@ -1,0 +1,109 @@
+/* UserProfilePill Component - Light Theme */
+
+.user-profile-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 9999px;
+    /* Pill Shape */
+    background: var(--user-pill-bg, rgba(255, 255, 255, 0.15));
+    border: 1px solid var(--user-pill-border, rgba(56, 189, 248, 0.2));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Avatar-only mode (no info shown) - Make it a perfect circle */
+.user-profile-pill:not(:has(.user-profile-pill-info)) {
+    padding: 4px;
+    gap: 0;
+}
+
+.user-profile-pill:hover {
+    background: var(--user-pill-bg-hover, rgba(255, 255, 255, 0.25));
+    border-color: var(--user-pill-border-hover, rgba(56, 189, 248, 0.4));
+    transform: scale(1.02);
+}
+
+.user-profile-pill-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--user-pill-avatar-from, #0284c7) 0%, var(--user-pill-avatar-to, #0369a1) 100%);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.user-profile-pill-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+}
+
+.user-profile-pill-role {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--user-pill-role-color, #0369a1);
+    opacity: 0.8;
+}
+
+.user-profile-pill-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--user-pill-name-color, #0c4a6e);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Size Variants */
+.user-profile-pill-sm {
+    padding: 2px 8px 2px 2px;
+    gap: 6px;
+}
+
+.user-profile-pill-sm .user-profile-pill-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+}
+
+.user-profile-pill-sm .user-profile-pill-role {
+    font-size: 8px;
+}
+
+.user-profile-pill-sm .user-profile-pill-name {
+    font-size: 11px;
+}
+
+.user-profile-pill-lg {
+    padding: 6px 16px 6px 6px;
+    gap: 10px;
+}
+
+.user-profile-pill-lg .user-profile-pill-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+}
+
+.user-profile-pill-lg .user-profile-pill-role {
+    font-size: 10px;
+}
+
+.user-profile-pill-lg .user-profile-pill-name {
+    font-size: 14px;
+}

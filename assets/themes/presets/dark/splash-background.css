@@ -1,0 +1,236 @@
+/* =========================================
+   Immersive Night Sea - Splash Mode
+   (Refined High-Fidelity Atmosphere)
+   ========================================= */
+
+/* Scoping everything to .splash-overlay to prevent leakage into AppBackground */
+
+/* Overriding Base App Background for Splash Immersivity */
+.splash-overlay .bg-canvas {
+    background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0f172a 40%, #020617 100%) !important;
+}
+
+/* Layer 1: Celestial Starfield (Synced with App) */
+.splash-overlay .bg-layer.layer-1 {
+    height: 100%;
+    top: 0;
+    opacity: 0.8;
+    background-image:
+        radial-gradient(1px 1px at 10% 10%, #fff 100%, transparent),
+        radial-gradient(1.2px 1.2px at 20% 30%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 30% 15%, #fff 100%, transparent),
+        radial-gradient(1.5px 1.5px at 55% 45%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 75% 20%, #fff 100%, transparent),
+        radial-gradient(1.2px 1.2px at 90% 35%, #fff 100%, transparent);
+    background-size: 800px 800px;
+    background-repeat: repeat;
+    mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    animation: starsPhase 4s ease-in-out infinite;
+    z-index: 1;
+}
+
+/* Layer 2: Yin Yang Celestial Moon Symbol (Enhanced Glow) */
+.splash-overlay .bg-layer.layer-2 {
+    width: min(35vw, 210px);
+    height: min(35vw, 210px);
+    top: 50%;
+    left: 50%;
+    bottom: auto !important;
+    transform: translate(-50%, -50%);
+    transform-origin: center;
+    background-image: var(--theme-toggle-icon);
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 1;
+    z-index: 5;
+    animation: moonPulse 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
+}
+
+/* Atmospheric Halo Radiant Glow */
+.splash-overlay .bg-layer.layer-2::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 250%;
+    height: 250%;
+    background: radial-gradient(circle at center,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(6, 182, 212, 0.1) 40%,
+            transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    transform: translate(-50%, -50%);
+    animation: auraPulse 12s ease-in-out infinite;
+}
+
+/* Specular Reflection on Sea Surface (Vertical beam) */
+.splash-overlay .bg-layer.layer-2::after {
+    content: '';
+    position: fixed;
+    top: 60%;
+    left: 50%;
+    width: 120px;
+    height: 40vh;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.2) 0%,
+            rgba(6, 182, 212, 0.1) 50%,
+            transparent 100%);
+    filter: blur(40px);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.6;
+    mix-blend-mode: color-dodge;
+}
+
+/* Shared Wave Style (Higher Contrast/Splash Only) */
+.splash-overlay .bg-layer.layer-3,
+.splash-overlay .bg-layer.layer-4,
+.splash-overlay .bg-layer.layer-5 {
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    mask-repeat: repeat-x;
+    -webkit-mask-repeat: repeat-x;
+    mask-position: 0 bottom;
+    -webkit-mask-position: 0 bottom;
+}
+
+/* Layer 3: Distant Sea Horizon */
+.splash-overlay .bg-layer.layer-3 {
+    height: 48%;
+    background-color: #020617;
+    opacity: 0.6;
+    mask-size: 1400px 100%;
+    -webkit-mask-size: 1400px 100%;
+    animation: moveSplashWave-1400 80s linear infinite;
+    z-index: 3;
+}
+
+/* Layer 4: Deep Rolling Ocean */
+.splash-overlay .bg-layer.layer-4 {
+    height: 38%;
+    background: linear-gradient(to bottom, #0f172a, #020617);
+    opacity: 0.8;
+    mask-size: 1000px 100%;
+    -webkit-mask-size: 1000px 100%;
+    animation: moveSplashWave-1000 50s linear infinite reverse;
+    z-index: 4;
+}
+
+/* Layer 5: Foreground Waves (High Reflection) */
+.splash-overlay .bg-layer.layer-5 {
+    height: 30%;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0.4) 0%,
+            #1e293b 30%,
+            #020617 100%);
+    opacity: 0.9;
+    mask-size: 800px 100%;
+    -webkit-mask-size: 800px 100%;
+    animation:
+        moveSplashWave-800 30s linear infinite,
+        moonHighlight 8s ease-in-out infinite;
+    z-index: 5;
+}
+
+/* Specific Splash Animations */
+@keyframes moonPulse {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.95);
+        opacity: 0.9;
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
+    }
+
+    50% {
+        transform: translate(-50%, -50%) rotate(10deg) scale(1.05);
+        opacity: 1;
+        filter: drop-shadow(0 0 45px rgba(255, 255, 255, 0.7));
+    }
+}
+
+@keyframes auraPulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.3);
+    }
+}
+
+@keyframes moonHighlight {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.6) contrast(1.2);
+    }
+}
+
+@keyframes starsPhase {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        filter: brightness(0.8);
+    }
+
+    50% {
+        opacity: 0.9;
+        filter: brightness(1.4);
+    }
+}
+
+/* FIXED Keyframes for Splash Screen */
+@keyframes moveSplashWave-1400 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1400px bottom;
+        mask-position: 1400px bottom;
+    }
+}
+
+@keyframes moveSplashWave-1000 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1000px bottom;
+        mask-position: 1000px bottom;
+    }
+}
+
+@keyframes moveSplashWave-800 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 800px bottom;
+        mask-position: 800px bottom;
+    }
+}

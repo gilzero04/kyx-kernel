@@ -5,5 +5,7 @@ pub mod config;
 pub mod cors;
 pub mod system;
 pub mod tenant;
+pub mod theme;
 pub mod rbac;
 pub mod user;
+pub mod cms;

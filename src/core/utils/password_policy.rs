@@ -24,6 +24,7 @@ impl Default for PasswordPolicy {
 
 impl PasswordPolicy {
     /// Strict policy for admin accounts
+    #[allow(dead_code)]
     pub fn strict() -> Self {
         Self {
             min_length: 12,
@@ -99,6 +100,7 @@ pub fn validate_password(password: &str) -> Result<(), AppError> {
 }
 
 /// Validate password with strict policy (for admin setup)
+#[allow(dead_code)]
 pub fn validate_password_strict(password: &str) -> Result<(), AppError> {
     PasswordPolicy::strict().validate(password)
 }

@@ -1,0 +1,384 @@
+/* =========================================
+   Splash Screen (Dark/Platform Refined)
+   ========================================= */
+
+/* Overlay */
+.splash-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1000 !important;
+    overflow: hidden;
+    background-color: var(--color-background);
+}
+
+.splash-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+        opacity 0.5s ease,
+        visibility 0.5s ease;
+}
+
+/* Align logo stage with moon position - FIXED for consistency */
+:global(.splash-overlay .bg-stage) {
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    height: auto !important;
+    min-height: 400px;
+}
+
+/* Main content container - MOVED ABOVE HERO STACK DEFINITION IN PREVIOUS CHUNK */
+
+/* Animated waves around logo */
+.splash-waves {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.wave {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--color-primary);
+    opacity: 0.3;
+    border-radius: 50%;
+    animation: waveExpand 3s ease-out infinite;
+}
+
+.wave-1 {
+    animation-delay: 0s;
+}
+
+.wave-2 {
+    animation-delay: 1s;
+}
+
+.wave-3 {
+    animation-delay: 2s;
+}
+
+@keyframes waveExpand {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* Logo container with glow */
+.splash-logo-container {
+    position: relative;
+    width: min(30vw, 180px);
+    max-width: 180px;
+    height: min(30vw, 180px);
+    max-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+    animation: logoFloat 3s ease-in-out infinite;
+    z-index: 10;
+    margin: 0;
+}
+
+.splash-logo-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes logoFloat {
+
+    0%,
+    100% {
+        transform: translateY(0px) scale(1);
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1.02);
+    }
+}
+
+/* Logo glow effect */
+.logo-glow {
+    position: absolute;
+    inset: -30%;
+    background: radial-gradient(circle,
+            var(--color-primary) 0%,
+            transparent 70%);
+    opacity: 0.4;
+    border-radius: 50%;
+    filter: blur(30px);
+    animation: glowPulse 2s ease-in-out infinite;
+    z-index: 5;
+}
+
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        opacity: 0.2;
+        transform: scale(0.95);
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: scale(1.05);
+    }
+}
+
+/* Logo image */
+.splash-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+    animation: logoAppear 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+    position: relative;
+    z-index: 10;
+}
+
+@keyframes logoAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+.splash-hero-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* This centers the center-point of the stack at the 50% mark */
+    width: 100%;
+    height: 100%;
+}
+
+/* Ensure the logo itself is the anchor for centering */
+.splash-hero-stack :global(.logo-section) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0 !important;
+}
+
+/* Standard content container - placed below the centered logo */
+.splash-content {
+    position: absolute;
+    top: calc(50% + 110px);
+    /* 192px moon/2 + some gap */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    z-index: 10;
+    width: 100%;
+}
+
+/* App title */
+.splash-title {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.05rem;
+    font-size: clamp(0.8rem, 4.5vw, 2.5rem);
+    font-weight: 800;
+    font-family: var(--font-display, serif);
+    letter-spacing: 0.02em;
+    width: 98%;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    color: var(--color-foreground);
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 20px var(--color-primary);
+    -webkit-mask-image: linear-gradient(-75deg, rgba(0, 0, 0, 0.6) 30%, #000 50%, rgba(0, 0, 0, 0.6) 70%);
+    -webkit-mask-size: 200%;
+    animation: shine 2s infinite;
+}
+
+@keyframes shine {
+    from {
+        -webkit-mask-position: 150%;
+    }
+
+    to {
+        -webkit-mask-position: -50%;
+    }
+}
+
+.title-letter {
+    display: inline-block;
+    animation:
+        letterEntrance 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+        letterFloat 3s ease-in-out infinite;
+    animation-delay: calc(var(--i) * 0.05s + 0.2s), calc(var(--i) * 0.1s + 0.8s);
+    opacity: 0;
+    transform: translateY(30px) scale(0.5);
+    position: relative;
+}
+
+@keyframes letterEntrance {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.5) rotate(-10deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+    }
+}
+
+@keyframes letterFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-6px) rotate(2deg);
+    }
+}
+
+/* Pixel effect for 'o' or last character */
+.title-letter:last-child::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 40%;
+    width: 6px;
+    height: 6px;
+    background: var(--color-primary);
+    box-shadow: 0 0 10px var(--color-primary);
+    opacity: 0.8;
+    border-radius: 1px;
+    animation: pixelFloat 2s ease-in-out infinite;
+}
+
+@keyframes pixelFloat {
+
+    0%,
+    100% {
+        transform: translateY(-50%) translateX(0);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translateY(-50%) translateX(4px);
+        opacity: 1;
+    }
+}
+
+/* Loading animation */
+.splash-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInUp 0.4s ease forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+    margin-top: 0.25rem;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loading-text {
+    color: var(--color-muted);
+    font-size: clamp(0.7rem, 2.5vw, 1rem);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    animation: dotPulse 1.4s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--color-primary);
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+}
+
+/* Responseive adjustments */
+@media (max-width: 768px) {
+    .splash-waves {
+        width: 220px;
+        height: 220px;
+    }
+}
+
+@media (max-width: 480px) {
+    .splash-waves {
+        width: 180px;
+        height: 180px;
+    }
+}

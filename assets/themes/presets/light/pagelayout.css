@@ -1,0 +1,212 @@
+/* PageLayout Component - Light Theme (Smooth Sea Aesthetic) */
+
+.pagelayout-container {
+    min-height: 100vh;
+    padding-bottom: 5rem;
+}
+
+/* Sticky Header Wrapper */
+.pagelayout-sticky-header {
+    position: fixed;
+    top: 66px;
+    /* Mobile: adjusted to 66px */
+    left: 0;
+    right: 0;
+    z-index: 40;
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-sticky-header {
+        top: 64px;
+        /* Desktop: larger header */
+        left: 260px;
+        /* Sidebar width */
+        width: auto;
+    }
+}
+
+/* When sidebar collapsed */
+.sidebar-collapsed .pagelayout-sticky-header {
+    left: 80px;
+}
+
+/* Sticky Pill Case */
+.pagelayout-sticky-pill {
+    margin: 0.5rem;
+    pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-sticky-pill {
+        margin: 0.5rem 1rem;
+        max-width: calc(100% - 2rem);
+    }
+}
+
+/* Pill Content - Smooth Light Glass */
+.pagelayout-pill-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background-color: var(--glass-bg);
+    padding: 0.5rem 1rem;
+    backdrop-filter: blur(var(--bg-blur));
+    -webkit-backdrop-filter: blur(var(--bg-blur));
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Page Header */
+.pagelayout-header {
+    padding: 1.5rem 1rem;
+    transition: opacity 0.3s ease;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-header {
+        padding: 1.5rem 0;
+    }
+}
+
+/* Page Main */
+.pagelayout-main {
+    padding: 0 1rem 4rem 1rem;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-main {
+        padding: 0 0 4rem 0;
+    }
+}
+
+/* Footer - Smooth Light Glass */
+.pagelayout-footer-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    border-top: 1px solid var(--border);
+    background-color: var(--glass-bg);
+    backdrop-filter: blur(var(--bg-blur));
+    -webkit-backdrop-filter: blur(var(--bg-blur));
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.03);
+}
+
+/* Full Height Mode */
+.pagelayout-container.full-height {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.full-height .pagelayout-main {
+    padding: 0 1rem 4rem 1rem;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+@media (min-width: 768px) {
+    .full-height .pagelayout-main {
+        padding: 0 0 2rem 0;
+    }
+}
+
+.full-height .pagelayout-main .datatable-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Section subtitle */
+.section-subtitle {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+    .section-subtitle {
+        font-size: 0.75rem;
+    }
+}
+
+/* --- Global Crystalline Overrides (Moved from theme.css) --- */
+
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 18px;
+    width: 18px;
+    border: 1.5px solid var(--glass-border-vivid);
+    border-radius: 5px;
+    background-color: var(--glass-bg);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    vertical-align: middle;
+    outline: none;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5), 0 2px 4px rgba(6, 182, 212, 0.05);
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--color-marine-vivid);
+    border-color: var(--color-marine-vivid);
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 2px 4px rgba(6, 182, 212, 0.2);
+}
+
+input[type="checkbox"]:indeterminate,
+input[type="checkbox"].indeterminate {
+    background-color: var(--color-marine-vivid);
+    border-color: var(--color-marine-vivid);
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='3' y='7' width='10' height='2' rx='1'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+input[type="checkbox"]:hover:not(:checked) {
+    border-color: var(--color-marine-vivid);
+    background-color: var(--glass-bg-hover);
+}
+
+input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+/* Global Scrollbar (Crystalline) */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-marine-vivid);
+}

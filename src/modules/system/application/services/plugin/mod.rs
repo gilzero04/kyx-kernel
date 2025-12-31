@@ -6,12 +6,14 @@ use crate::core::infrastructure::redis::Redis;
 use std::sync::Arc;
 use serde_json::to_string;
 
+#[allow(dead_code)]
 pub struct PluginService {
     wasm_engine: WasmEngine,
     redis: Arc<Redis>,
 }
 
 impl PluginService {
+    #[allow(dead_code)]
     pub fn new(redis: Arc<Redis>) -> Self {
         Self {
             wasm_engine: WasmEngine::new(),
@@ -19,6 +21,7 @@ impl PluginService {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn install_plugin(&mut self, manifest: Manifest, wasm_path: &str) -> Result<Plugin> {
         // 1. Persistence via RedisJSON
         let key = format!("plugin:{}", manifest.id);

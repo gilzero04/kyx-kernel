@@ -1,0 +1,99 @@
+@import './language-switcher.css';
+@import './datatable.css';
+@import './input.css';
+@import './select.css';
+@import './button.css';
+@import './toggleswitch.css';
+@import './card.css';
+@import './badge.css';
+@import './modal.css';
+@import "./viewtoggle.css";
+@import "./pagelayout.css";
+@import "./toast.css";
+@import "./alert.css";
+@import "./avatar.css";
+@import "./userprofilepill.css";
+@import "./theme-manager.css";
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Prata&display=swap');
+@import url('./app-background.css');
+@import url('./splash-background.css');
+@import url('./splash-screen.css');
+@import './header.css';
+@import './sidebar.css';
+@import './footer.css';
+
+:root {
+    /* Brand - Cyan from SplashScreen */
+    --color-primary: #06b6d4;
+    /* Cyan 500 */
+    --color-primary-foreground: #ffffff;
+
+    /* Backgrounds - Night Sea Obsidian */
+    --color-background: #020617;
+    /* Slate 950 - Deepest Night */
+    --color-surface: #0f172a;
+    /* Slate 900 - Dark Navy Surface */
+
+    /* Text */
+    --color-foreground: #ffffff;
+    /* White text on dark bg */
+    --color-muted: #94a3b8;
+    /* Slate 400 */
+
+    /* Borders */
+    --color-border: rgba(6, 182, 212, 0.25);
+    /* Vibrant Cyan forced transparency */
+    --color-input-bg: rgba(6, 74, 123, 0.4);
+    --color-ring: #06b6d4;
+
+    /* Popover/Card */
+    --color-popover: rgba(6, 74, 123, 0.8);
+    --color-popover-foreground: #ffffff;
+    --color-card: rgba(6, 74, 123, 0.4);
+    --color-card-foreground: #ffffff;
+
+    /* Semantic Colors */
+    --color-destructive: #ef4444;
+    /* Red 500 - Keep bright for visibility on dark */
+    --color-destructive-foreground: #ffffff;
+
+    --color-success: #22c55e;
+    /* Green 500 */
+    --color-success-foreground: #ffffff;
+
+    --color-warning: #f59e0b;
+    /* Amber 500 */
+    --color-warning-foreground: #ffffff;
+
+    --color-info: #3b82f6;
+    /* Blue 500 */
+    --color-info-foreground: #ffffff;
+
+    /* Extras */
+    --font-heading: 'Playfair Display', serif;
+
+    /* Animated Background (Pure Night Sea) */
+    --color-sea-night: #010409;
+    /* Deepest black-blue */
+    --color-sea-navy: #0f172a;
+    /* Clean Navy Abyss */
+    --color-moon-silver: #f8fafc;
+    /* Crisp Moonlight */
+
+    --bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 25%, #1e293b 50%, #0f172a 75%, #020617 100%);
+    --particle-color: rgba(248, 250, 252, 0.4);
+    --particle-shadow: rgba(226, 232, 240, 0.2);
+
+    /* Waves - Moon Lit Surface */
+    --wave-color: rgba(226, 232, 240, 0.15);
+
+    /* Sidebar Dynamic Assets (ZERO Hardcoding) */
+    --aura-colors: #f8fafc 15%, #cbd5e1 30%, transparent 45%, #94a3b8 60%, #1e293b 75%;
+    --aura-icon-glow: rgba(248, 250, 252, 0.6);
+    --aura-opacity: 0.45;
+    --aura-rotation-speed: 25s;
+
+    /* Toggle Icon - Moon Yin-Yang (Silver & Indigo) */
+    --theme-toggle-icon: url("data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='12' cy='12' r='11' stroke='%23cbd5e1' stroke-width='1.5'/%3e%3cpath d='M12 1A11 11 0 0 0 12 23A5.5 5.5 0 0 0 12 12A5.5 5.5 0 0 1 12 1z' fill='%23f8fafc'/%3e%3ccircle cx='12' cy='6.5' r='1.5' fill='%231e293b'/%3e%3ccircle cx='12' cy='17.5' r='1.5' fill='white'/%3e%3c/svg%3e");
+}

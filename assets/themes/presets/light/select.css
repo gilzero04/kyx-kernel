@@ -1,0 +1,110 @@
+/* Select Component - Dark Theme */
+
+.select-container {
+    position: relative;
+    width: 100%;
+}
+
+.select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+    padding: 8px 16px;
+    background: var(--color-glass-surface);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-md, 8px);
+    font-size: 14px;
+    color: var(--color-marine-deep);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 2px 0 rgba(255, 255, 255, 0.4);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.select-trigger:focus,
+.select-trigger[aria-expanded="true"] {
+    outline: none;
+    border-color: var(--color-marine-vivid);
+    background: var(--color-glass-surface-heavy);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+.select-trigger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.select-trigger-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.select-trigger-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.select-trigger-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.5;
+    transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.select-trigger-icon.open {
+    transform: rotate(180deg);
+    color: var(--color-marine-vivid);
+    opacity: 1;
+}
+
+.select-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 50;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--color-glass-border);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    padding: 4px;
+    margin-top: 8px;
+    max-height: 300px;
+}
+
+.select-scroll-container {
+    max-height: 224px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.select-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--color-foreground);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.select-item:hover,
+.select-item.selected {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+}

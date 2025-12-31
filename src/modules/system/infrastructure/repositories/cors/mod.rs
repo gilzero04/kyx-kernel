@@ -18,7 +18,7 @@ impl PostgresCorsRepository {
 impl CorsRepository for PostgresCorsRepository {
     async fn list(&self) -> Result<Vec<CorsOrigin>> {
         let rows = sqlx::query_as::<_, CorsOrigin>(
-            "SELECT id, origin, is_active, description FROM sys_cors_origins ORDER BY created_at DESC"
+            "SELECT id, origin, is_active, description FROM sys_cors_origins WHERE deleted_at IS NULL ORDER BY created_at DESC"
         )
         .fetch_all(&self.pool.pool)
         .await
@@ -55,7 +55,7 @@ impl CorsRepository for PostgresCorsRepository {
     }
 
     async fn delete(&self, id: i32) -> Result<()> {
-        sqlx::query("DELETE FROM sys_cors_origins WHERE id = $1")
+        sqlx::query("UPDATE sys_cors_origins SET is_active = FALSE, deleted_at = NOW() WHERE id = $1")
             .bind(id)
             .execute(&self.pool.pool)
             .await

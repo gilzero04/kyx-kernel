@@ -3,13 +3,16 @@ use wasmer::{Instance, Module, Store, Cranelift};
 use crate::modules::system::domain::plugin::Manifest;
 use std::fs;
 
+#[allow(dead_code)]
 pub struct WasmEngine;
 
 impl WasmEngine {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self
     }
 
+    #[allow(dead_code)]
     pub async fn load(&mut self, manifest: &Manifest, path: &str) -> Result<Instance> {
         println!("[System] Loading WASM Plugin: {} (v{})", manifest.name, manifest.version);
         
