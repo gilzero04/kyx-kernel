@@ -3,6 +3,7 @@ use uuid::Uuid;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[allow(dead_code)]
 pub struct User {
     pub id: Uuid,
     pub username: String,

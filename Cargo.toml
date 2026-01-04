@@ -1,7 +1,7 @@
 [package]
 name = "kyx-kernel"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 # Web Framework & Runtime (Ultra-Native)
@@ -9,7 +9,7 @@ ntex = { version = "2.17", features = ["tokio"] }
 ntex-rt = "3.2"
 ntex-util = "3.2"
 ntex-files = "2.0"
-ntex-cors = "2.0"
+ntex-cors = "2.1"
 ntex-multipart = "2.0"
 
 # Serialization

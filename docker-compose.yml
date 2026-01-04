@@ -9,7 +9,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-8082}:5432"
     volumes:
       - kyx_postgres_data_success:/var/lib/postgresql/data
     restart: always
@@ -43,12 +43,12 @@ services:
         "yes",
       ]
     ports:
-      - "6380:6380"
+      - "${REDIS_PORT:-8083}:6380"
     volumes:
       - redis_data:/data
     restart: always
 
-  kernel:
+  kyx-kernel:
     build:
       context: .
       dockerfile: Dockerfile

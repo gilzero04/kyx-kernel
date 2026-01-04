@@ -1,134 +1,553 @@
+   Compiling cfg-if v1.0.4
+   Compiling once_cell v1.21.3
+   Compiling pin-project-lite v0.2.16
+   Compiling futures-core v0.3.31
+   Compiling libc v0.2.178
+   Compiling serde_core v1.0.228
+   Compiling bytes v1.11.0
+   Compiling bitflags v2.10.0
+   Compiling zerofrom v0.1.6
+   Compiling log v0.4.29
+   Compiling memchr v2.7.6
+   Compiling typenum v1.19.0
+   Compiling scopeguard v1.2.0
+   Compiling crossbeam-utils v0.8.21
+   Compiling itoa v1.0.15
+   Compiling slab v0.4.11
+   Compiling subtle v2.6.1
+   Compiling lock_api v0.4.14
+   Compiling mio v1.1.1
+   Compiling socket2 v0.6.1
+   Compiling zerocopy v0.8.31
+   Compiling litemap v0.8.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling generic-array v0.14.7
+   Compiling parking v2.2.1
+   Compiling writeable v0.6.2
+   Compiling signal-hook-registry v1.4.7
+   Compiling getrandom v0.2.16
+   Compiling thiserror v2.0.17
+   Compiling getrandom v0.3.4
+   Compiling cpufeatures v0.2.17
+   Compiling errno v0.3.14
+   Compiling concurrent-queue v2.5.0
+   Compiling percent-encoding v2.3.2
+   Compiling icu_properties_data v2.1.2
+   Compiling icu_normalizer_data v2.1.1
+   Compiling yoke v0.8.1
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling ryu v1.0.20
+   Compiling futures-task v0.3.31
+   Compiling core-foundation-sys v0.8.7
+   Compiling event-listener v5.4.1
+   Compiling zerovec v0.11.5
+   Compiling equivalent v1.0.2
+   Compiling digest v0.10.7
+   Compiling futures-io v0.3.31
+   Compiling pin-utils v0.1.0
+   Compiling event-listener-strategy v0.5.4
+   Compiling hashbrown v0.16.1
+   Compiling fnv v1.0.7
+   Compiling futures-sink v0.3.31
+   Compiling utf8_iter v1.0.4
+   Compiling serde v1.0.228
+   Compiling async-channel v2.5.0
+   Compiling sha2 v0.10.9
+   Compiling foldhash v0.2.0
+   Compiling fastrand v2.3.0
+   Compiling tinystr v0.8.2
+   Compiling futures-timer v3.0.3
+   Compiling oneshot v0.1.11
+   Compiling potential_utf v0.1.4
+   Compiling rustix v1.1.2
+   Compiling icu_locale_core v2.1.1
+   Compiling zerotrie v0.2.3
+   Compiling form_urlencoded v1.2.2
+   Compiling tracing-core v0.1.35
+   Compiling tinyvec_macros v0.1.1
+   Compiling icu_collections v2.1.1
+   Compiling smallvec v1.15.1
+   Compiling ntex-bytes v0.1.31
+   Compiling tinyvec v1.10.0
+   Compiling ahash v0.7.8
+   Compiling ahash v0.8.12
+   Compiling parking_lot_core v0.9.12
+   Compiling futures-channel v0.3.31
+   Compiling core-foundation v0.9.4
+   Compiling parking_lot v0.12.5
+   Compiling security-framework-sys v2.15.0
+   Compiling jobserver v0.1.34
+   Compiling icu_provider v2.1.1
+   Compiling futures-util v0.3.31
+   Compiling unicode-normalization v0.1.25
+   Compiling hashbrown v0.12.3
+   Compiling tokio v1.48.0
+   Compiling cc v1.2.49
+   Compiling security-framework v2.11.1
+   Compiling ntex-service v3.8.0
+   Compiling ppv-lite86 v0.2.21
+   Compiling serde_json v1.0.145
+   Compiling unicode-bidi v0.3.18
+   Compiling indexmap v1.9.3
+   Compiling icu_properties v2.1.2
+   Compiling icu_normalizer v2.1.1
+   Compiling num-traits v0.2.19
+   Compiling ntex-codec v0.6.2
+   Compiling aho-corasick v1.1.4
+   Compiling http v1.4.0
+   Compiling hex v0.4.3
+   Compiling regex-syntax v0.8.8
+   Compiling crc-catalog v2.4.0
+   Compiling indexmap v2.12.1
+   Compiling darling_core v0.21.3
+   Compiling crc v3.3.0
+   Compiling iana-time-zone v0.1.64
+   Compiling idna_adapter v1.2.1
+   Compiling foldhash v0.1.5
+   Compiling base64 v0.22.1
+   Compiling byteorder v1.5.0
+   Compiling allocator-api2 v0.2.21
+   Compiling idna v1.1.0
+   Compiling ptr_meta v0.1.4
+   Compiling ntex-http v0.1.15
+   Compiling regex-automata v0.4.13
+   Compiling hashbrown v0.15.5
+   Compiling either v1.15.0
+   Compiling hmac v0.12.1
+   Compiling rand_core v0.6.4
+   Compiling simdutf8 v0.1.5
+   Compiling thiserror v1.0.69
+   Compiling ntex-rt v0.4.33
+   Compiling bytecheck v0.6.12
+   Compiling hashlink v0.10.0
+   Compiling url v2.5.7
+   Compiling target-lexicon v0.12.16
+   Compiling ntex-util v2.16.0
+   Compiling tracing v0.1.43
+   Compiling darling_macro v0.21.3
+   Compiling uuid v1.19.0
+   Compiling crossbeam-queue v0.3.12
+   Compiling cranelift-codegen-shared v0.91.1
+   Compiling utf8parse v0.2.2
+   Compiling regex v1.12.2
+   Compiling darling v0.21.3
+   Compiling anstyle-parse v0.2.7
+   Compiling cranelift-codegen-meta v0.91.1
+   Compiling tempfile v3.23.0
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling rend v0.4.2
+   Compiling fxhash v0.2.1
+   Compiling ntex-io v2.15.1
+   Compiling enumset_derive v0.14.0
+   Compiling socket2 v0.5.10
+   Compiling num_cpus v1.17.0
+   Compiling cranelift-entity v0.91.1
+   Compiling anstyle v1.0.13
+   Compiling seahash v4.1.0
+   Compiling leb128 v0.2.5
+   Compiling colorchoice v1.0.4
+   Compiling adler2 v2.0.1
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling gimli v0.32.3
+   Compiling anstyle-query v1.1.5
+   Compiling bumpalo v3.19.1
+   Compiling unicode-properties v0.1.4
+   Compiling miniz_oxide v0.8.9
+   Compiling anstream v0.6.21
+   Compiling ntex-tokio v0.5.4
+   Compiling stringprep v0.1.5
+   Compiling enumset v1.1.10
+   Compiling core_affinity v0.8.3
+   Compiling ntex-net v2.9.0
+   Compiling cranelift-codegen v0.91.1
+   Compiling enum-iterator v0.7.0
+   Compiling native-tls v0.2.14
+   Compiling futures-intrusive v0.5.0
+   Compiling env_filter v0.1.4
+   Compiling object v0.37.3
+   Compiling signal-hook v0.3.18
+   Compiling rkyv v0.7.45
+   Compiling rand_chacha v0.3.1
+   Compiling chrono v0.4.42
+   Compiling addr2line v0.25.1
+   Compiling hkdf v0.12.4
+   Compiling futures-executor v0.3.31
+   Compiling polling v3.11.0
+   Compiling sha1 v0.10.6
+   Compiling tokio-stream v0.1.17
+   Compiling md-5 v0.10.6
+   Compiling crossbeam-epoch v0.9.18
+   Compiling mach2 v0.4.3
+   Compiling rustc-demangle v0.1.26
+   Compiling xxhash-rust v0.8.15
+   Compiling powerfmt v0.2.0
+   Compiling hashbrown v0.14.5
+   Compiling num-conv v0.1.0
+   Compiling bitflags v1.3.2
+   Compiling dotenvy v0.15.7
+   Compiling slice-group-by v0.3.1
+   Compiling fallible-iterator v0.2.0
+   Compiling nanorand v0.8.0
+   Compiling atomic-waker v1.1.2
+   Compiling more-asserts v0.2.2
+   Compiling jiff v0.2.16
+   Compiling whoami v1.6.1
+   Compiling time-core v0.1.6
+   Compiling home v0.5.12
+   Compiling mime v0.3.17
+   Compiling wasmer-types v4.4.0
+   Compiling dashmap v6.1.0
+   Compiling gimli v0.26.2
+   Compiling time-macros v0.2.24
+   Compiling sqlx-core v0.8.6
+   Compiling regalloc2 v0.5.1
+   Compiling ntex-h2 v1.14.2
+   Compiling backtrace v0.3.76
+   Compiling ntex-server v2.8.1
+   Compiling darling_core v0.20.11
+   Compiling region v3.0.2
+   Compiling deranged v0.5.5
+   Compiling crossbeam-deque v0.8.6
+   Compiling futures v0.3.31
+   Compiling rand v0.8.5
+   Compiling ntex-tls v2.6.2
+   Compiling corosensei v0.1.4
+   Compiling env_logger v0.11.8
+   Compiling memoffset v0.9.1
+   Compiling httparse v1.10.1
+   Compiling cranelift-egraph v0.91.1
+   Compiling cranelift-bforest v0.91.1
+   Compiling ntex-router v0.5.3
+   Compiling atoi v2.0.0
+   Compiling num-integer v0.1.46
+   Compiling serde_urlencoded v0.7.1
+   Compiling memmap2 v0.6.2
+   Compiling encoding_rs v0.8.35
+   Compiling lazy_static v1.5.0
+   Compiling arrayvec v0.7.6
+   Compiling semver v1.0.27
+   Compiling httpdate v1.0.3
+   Compiling unicase v2.8.1
+   Compiling wasmparser v0.121.2
+   Compiling wasmer-vm v4.4.0
+   Compiling mime_guess v2.0.5
+   Compiling sqlx-postgres v0.8.6
+   Compiling num-bigint v0.4.6
+   Compiling ntex v2.17.0
+   Compiling shared-buffer v0.1.4
+   Compiling time v0.3.44
+   Compiling darling_macro v0.20.11
+   Compiling rayon-core v1.13.0
+   Compiling crc32fast v1.5.0
+   Compiling wasm-encoder v0.32.0
+   Compiling ring v0.17.14
+   Compiling inout v0.1.4
+   Compiling zlib-rs v0.5.5
+   Compiling unicode-width v0.1.14
+   Compiling self_cell v1.2.1
+   Compiling zstd-safe v7.2.4
+   Compiling wast v64.0.0
+   Compiling cipher v0.4.4
+   Compiling sqlx-macros-core v0.8.6
+   Compiling wasmer-compiler v4.4.0
+   Compiling rayon v1.11.0
+   Compiling darling v0.20.11
+   Compiling tokio-util v0.7.17
+   Compiling libz-rs-sys v0.5.5
+   Compiling idna v0.4.0
+   Compiling base64ct v1.8.1
+   Compiling ipnet v2.11.0
+   Compiling libbz2-rs-sys v0.2.2
+   Compiling unchecked-index v0.2.2
+   Compiling linked-hash-map v0.5.6
+   Compiling untrusted v0.9.0
+   Compiling simd-adler32 v0.3.8
+   Compiling data-encoding v2.9.0
+   Compiling lru-cache v0.1.2
+   Compiling zopfli v0.8.3
+   Compiling twoway v0.2.2
+   Compiling password-hash v0.5.0
+   Compiling bzip2 v0.6.1
+   Compiling trust-dns-proto v0.23.2
+   Compiling wat v1.0.71
+   Compiling flate2 v1.1.5
+   Compiling validator_derive v0.18.2
+   Compiling zeroize v1.8.2
+   Compiling combine v4.6.7
+   Compiling sqlx-macros v0.8.6
+   Compiling zstd v0.13.3
+   Compiling aes v0.8.4
+   Compiling v_htmlescape v0.15.8
+   Compiling ntex-rt v3.3.0
+   Compiling simple_asn1 v0.6.3
+   Compiling tokio-native-tls v0.3.1
+   Compiling utoipa-gen v4.3.1
+   Compiling itertools v0.13.0
+   Compiling pbkdf2 v0.12.2
+   Compiling pem v3.0.6
+   Compiling lzma-rust2 v0.15.4
+   Compiling idna v0.5.0
+   Compiling ntex-bytes v1.0.0
+   Compiling backon v1.6.0
+   Compiling ntex-service v4.0.0
+   Compiling blake2 v0.10.6
+   Compiling arc-swap v1.7.1
+   Compiling deflate64 v0.1.10
+   Compiling constant_time_eq v0.3.1
+   Compiling sha1_smol v1.0.1
+   Compiling ppmd-rust v1.3.0
+   Compiling resolv-conf v0.7.6
+   Compiling language-tags v0.3.2
+   Compiling ntex-util v3.4.0
+   Compiling zip v7.0.0
+   Compiling trust-dns-resolver v0.23.2
+   Compiling argon2 v0.5.3
+   Compiling cranelift-frontend v0.91.1
+   Compiling ntex-files v2.1.0
+   Compiling sqlx v0.8.6
+   Compiling wasmer-compiler-cranelift v4.4.0
+   Compiling redis v0.27.6
+   Compiling validator v0.18.1
+   Compiling jsonwebtoken v9.3.1
+   Compiling anyhow v1.0.100
+   Compiling utoipa v4.2.3
+   Compiling derive_more v1.0.0
+   Compiling wasmer v4.4.0
+   Compiling ntex-multipart v2.0.0
+   Compiling ntex-cors v2.1.0
+   Compiling urlencoding v2.1.3
    Compiling kyx-kernel v0.1.0 (/Users/beykyu/Developer/kyx-tech/kyx-kernel)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.91s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 01s
      Running `target/debug/kyx-kernel`
-[2025-12-31T02:37:42Z INFO  sqlx::postgres::notice] relation "_sqlx_migrations" already exists, skipping
-[2025-12-31T02:37:42Z INFO  kyx_kernel::core::infrastructure::database] ✅ Database migrations completed successfully.
-[2025-12-31T02:37:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (3 origins)
-[2025-12-31T02:37:42Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=SYSTEM, action=KERNEL_STARTUP, target=None, status=SUCCESS
+[2026-01-04T16:13:37Z INFO  sqlx::postgres::notice] relation "_sqlx_migrations" already exists, skipping
+[2026-01-04T16:13:37Z INFO  kyx_kernel::core::infrastructure::database] ✅ Database migrations completed successfully.
+[2026-01-04T16:13:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:13:37Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=SYSTEM, action=KERNEL_STARTUP, target=None, status=SUCCESS
+[2026-01-04T16:13:37Z INFO  kyx_kernel::core::bootstrap] 🚀 Kernel bootstrap completed successfully.
 🚀 Kyx Kernel v1.0.0 (local) starting on port 8080...
-[2025-12-31T02:37:42Z INFO  ntex_server::manager] Starting 10 workers
-[2025-12-31T02:37:42Z INFO  ntex_server::net::builder] Starting "ntex-web-service-0.0.0.0:8080" service on 0.0.0.0:8080
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(0)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(3)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(2)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(1)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(4)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(5)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(6)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(9)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(7)
-[2025-12-31T02:37:42Z INFO  ntex_server::wrk] Starting worker WorkerId(8)
-[2025-12-31T02:37:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (3 origins)
-[2025-12-31T02:37:42Z INFO  ntex_server::net::accept] Resuming accept loop
-[2025-12-31T02:37:42Z INFO  ntex_server::net::accept] Resuming socket listener on 0.0.0.0:8080 after back-pressure
-[2025-12-31T02:37:42Z INFO  kyx_kernel::modules::system::application::services::theme] 🔄 Updating Default Kyx Light Theme from unified manifest...
-[2025-12-31T02:37:42Z INFO  kyx_kernel::modules::system::application::services::theme] 🔄 Updating Default Kyx Dark Theme from unified manifest...
-[2025-12-31T02:37:47Z INFO  ntex::web::middleware::logger] 127.0.0.1:65198 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.034717
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:7c6b0793-a5b3-492f-9d69-ac3ac7f1a6b7 -> Exists: 1
-[2025-12-31T02:37:47Z INFO  ntex::web::middleware::logger] 127.0.0.1:65202 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002637
-[2025-12-31T02:37:47Z INFO  ntex::web::middleware::logger] 127.0.0.1:65201 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.012310
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65198 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.017777
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65201 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.018281
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65198 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 45 "-" "node" 0.001139
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65223 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.015122
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65227 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.002175
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65229 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001121
-[2025-12-31T02:37:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:65226 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.013781
-[2025-12-31T02:37:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:65248 "GET /api/v1/auth/admin/sessions HTTP/1.1" 401 0 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000251
-[2025-12-31T02:37:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:65249 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.044655
-[2025-12-31T02:37:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:65272 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025278
-[2025-12-31T02:37:55Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=791e1d18-5b86-4d50-bf03-4a10d674b213, action=LOGOUT, target=Some("ac59a061-b271-4d7e-abc2-e69ea726ea51"), status=SUCCESS
-[2025-12-31T02:37:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:65277 "POST /api/v1/auth/logout HTTP/1.1" 200 56 "-" "node" 0.002652
-[2025-12-31T02:37:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:65276 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.015323
-[2025-12-31T02:37:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:65272 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.013227
-[2025-12-31T02:37:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:65276 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.010148
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65272 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.017440
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65276 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.017440
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65272 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 45 "-" "node" 0.001695
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65299 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/signin?from=%2Fconsole%2Fmonitoring%2Fsessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.015106
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65302 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/signin?from=%2Fconsole%2Fmonitoring%2Fsessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001119
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65305 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/signin?from=%2Fconsole%2Fmonitoring%2Fsessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001086
-[2025-12-31T02:37:56Z INFO  ntex::web::middleware::logger] 127.0.0.1:65303 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/signin?from=%2Fconsole%2Fmonitoring%2Fsessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.010767
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65363 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.022594
-[2025-12-31T02:38:08Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=791e1d18-5b86-4d50-bf03-4a10d674b213, action=LOGIN_SUCCESS, target=Some("ac59a061-b271-4d7e-abc2-e69ea726ea51"), status=SUCCESS
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1 "POST /api/v1/auth/login HTTP/1.1" 200 3948 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.316207
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65363 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025171
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:9679e728-a2ce-4546-b244-cb0ccfd1010c -> Exists: 1
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65365 "GET /api/v1/system/context HTTP/1.1" 200 51 "-" "node" 0.002611
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:9679e728-a2ce-4546-b244-cb0ccfd1010c -> Exists: 1
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65383 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001443
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65363 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.010046
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65385 "GET /api/v1/auth/admin/sessions HTTP/1.1" 401 0 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000216
-[2025-12-31T02:38:08Z INFO  ntex::web::middleware::logger] 127.0.0.1:65387 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.027630
-[2025-12-31T02:38:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (3 origins)
-[2025-12-31T02:39:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (3 origins)
-[2025-12-31T02:40:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (3 origins)
-[2025-12-31T02:40:48Z INFO  ntex::web::middleware::logger] 127.0.0.1:49815 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.031431
-[2025-12-31T02:40:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:49819 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.016204
-[2025-12-31T02:40:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:49821 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/profile HTTP/1.1" 404 45 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.001408
-[2025-12-31T02:40:50Z INFO  ntex::web::middleware::logger] 127.0.0.1:49815 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.039999
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:40:50Z INFO  ntex::web::middleware::logger] 127.0.0.1:49819 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001675
-[2025-12-31T02:40:53Z INFO  ntex::web::middleware::logger] 127.0.0.1:49815 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.027423
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:40:53Z INFO  ntex::web::middleware::logger] 127.0.0.1:49819 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001792
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:40:53Z INFO  ntex::web::middleware::logger] 127.0.0.1:49841 "GET /api/v1/admin/cors HTTP/1.1" 200 289 "http://localhost:5175/console/settings/cors" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.002137
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:41:35Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
-[2025-12-31T02:41:35Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=SuperAdmin, action=CORS_ORIGIN_ADDED, target=Some("http://192.168.1.180:5175"), status=SUCCESS
-[2025-12-31T02:41:35Z INFO  ntex::web::middleware::logger] 127.0.0.1:50059 "POST /api/v1/admin/cors HTTP/1.1" 201 86 "http://localhost:5175/console/settings/cors" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.010402
-[2025-12-31T02:41:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:9679e728-a2ce-4546-b244-cb0ccfd1010c -> Exists: 1
-[2025-12-31T02:42:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:50216 "GET /api/v1/auth/admin/sessions HTTP/1.1" 200 1116 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.011081
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50318 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.037655
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:9679e728-a2ce-4546-b244-cb0ccfd1010c -> Exists: 1
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50322 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001912
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50321 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.017420
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50318 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.015939
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50321 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.016019
-[2025-12-31T02:42:23Z INFO  ntex::web::middleware::logger] 127.0.0.1:50318 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 45 "-" "node" 0.000983
-[2025-12-31T02:42:24Z INFO  ntex::web::middleware::logger] 127.0.0.1:50340 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.016699
-[2025-12-31T02:42:24Z INFO  ntex::web::middleware::logger] 127.0.0.1:50344 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001046
-[2025-12-31T02:42:24Z INFO  ntex::web::middleware::logger] 127.0.0.1:50343 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.013194
-[2025-12-31T02:42:24Z INFO  ntex::web::middleware::logger] 127.0.0.1:50346 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001075
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:9679e728-a2ce-4546-b244-cb0ccfd1010c -> Exists: 1
-[2025-12-31T02:42:27Z INFO  ntex::web::middleware::logger] 127.0.0.1:50368 "GET /api/v1/auth/admin/sessions HTTP/1.1" 200 1116 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.006999
-[2025-12-31T02:42:27Z INFO  ntex::web::middleware::logger] 127.0.0.1:50369 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.025258
-[2025-12-31T02:42:34Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.020157
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:34Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003046
-[2025-12-31T02:42:35Z INFO  ntex::web::middleware::logger] 127.0.0.1:50410 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.025337
-[2025-12-31T02:42:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.033462
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002709
-[2025-12-31T02:42:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:50425 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.017809
-[2025-12-31T02:42:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:50429 "GET /api/v1/media/ac59a061-b271-4d7e-abc2-e69ea726ea51/1f6a6708-1eec-4fcb-924b-526a303de837.png HTTP/1.1" 304 0 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.000421
-[2025-12-31T02:42:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:50427 "GET /api/v1/media/ac59a061-b271-4d7e-abc2-e69ea726ea51/76021c98-ef7c-48dd-922b-b522ab9efbb9.webp HTTP/1.1" 304 0 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.000450
-[2025-12-31T02:42:38Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.026819
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:38Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001735
-[2025-12-31T02:42:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.028130
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001530
-[2025-12-31T02:42:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.023129
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001511
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:40Z INFO  ntex::web::middleware::logger] 127.0.0.1:50449 "GET /api/v1/admin/tenants?limit=1 HTTP/1.1" 200 1492 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.005142
-[2025-12-31T02:42:40Z INFO  ntex::web::middleware::logger] 127.0.0.1:50451 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.014006
-[2025-12-31T02:42:40Z INFO  ntex::web::middleware::logger] 127.0.0.1:50457 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.011611
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:40Z INFO  ntex::web::middleware::logger] 127.0.0.1:50459 "GET /api/v1/admin/users?limit=1 HTTP/1.1" 200 632 "http://localhost:5175/console/settings/branding" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.003281
-[2025-12-31T02:42:42Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025696
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:42Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001343
-[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4f67ed8e-8efb-46ab-8486-f18e676682f7 -> Exists: 1
-[2025-12-31T02:42:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
-[2025-12-31T02:42:42Z INFO  ntex::web::middleware::logger] 127.0.0.1:50471 "GET /api/v1/auth/admin/sessions HTTP/1.1" 200 1116 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.011776
-[2025-12-31T02:42:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:50405 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.032852
-[2025-12-31T02:42:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:50408 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.012744
-[2025-12-31T02:42:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:50489 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/profile HTTP/1.1" 404 45 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15" 0.001146
-[2025-12-31T02:43:42Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:13:37Z INFO  ntex_server::manager] Starting 10 workers
+[2026-01-04T16:13:37Z INFO  ntex_server::net::builder] Starting "ntex-web-service-0.0.0.0:8080" service on 0.0.0.0:8080
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(2)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(1)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(4)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(9)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(3)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(5)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(6)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(8)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(0)
+[2026-01-04T16:13:37Z INFO  ntex_server::wrk] Starting worker WorkerId(7)
+[2026-01-04T16:13:37Z INFO  ntex_server::net::accept] Resuming accept loop
+[2026-01-04T16:13:37Z INFO  ntex_server::net::accept] Resuming socket listener on 0.0.0.0:8080 after back-pressure
+[2026-01-04T16:13:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:13:37Z INFO  kyx_kernel::modules::system::application::services::theme] 🔄 Updating Default Kyx Light Theme from unified manifest...
+[2026-01-04T16:13:37Z INFO  kyx_kernel::modules::system::application::services::theme] 🔄 Updating Default Kyx Dark Theme from unified manifest...
+[2026-01-04T16:14:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55456 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.023622
+[2026-01-04T16:14:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55460 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.015260
+[2026-01-04T16:14:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55459 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.016533
+[2026-01-04T16:14:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55456 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "-" "node" 0.000096
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55456 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.024877
+[2026-01-04T16:14:13Z INFO  kyx_kernel::core::infrastructure::audit] AUDIT: actor=791e1d18-5b86-4d50-bf03-4a10d674b213, action=SESSION_REFRESH, target=Some("ac59a061-b271-4d7e-abc2-e69ea726ea51"), status=SUCCESS
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55459 "POST /api/v1/auth/refresh HTTP/1.1" 200 3948 "-" "node" 0.010336
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55456 "GET /api/v1/system/context HTTP/1.1" 200 51 "-" "node" 0.001694
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55460 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.020810
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55459 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.020810
+[2026-01-04T16:14:13Z INFO  ntex::web::middleware::logger] 127.0.0.1:55456 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "-" "node" 0.000086
+[2026-01-04T16:14:17Z INFO  ntex::web::middleware::logger] 127.0.0.1:55483 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000147
+[2026-01-04T16:14:17Z INFO  ntex::web::middleware::logger] 127.0.0.1:55485 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.017982
+[2026-01-04T16:14:17Z INFO  ntex::web::middleware::logger] 127.0.0.1:55489 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001341
+[2026-01-04T16:14:17Z INFO  ntex::web::middleware::logger] 127.0.0.1:55488 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.010374
+[2026-01-04T16:14:17Z INFO  ntex::web::middleware::logger] 127.0.0.1:55492 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001117
+[2026-01-04T16:14:21Z INFO  ntex::web::middleware::logger] 127.0.0.1:55501 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.029174
+[2026-01-04T16:14:21Z INFO  ntex::web::middleware::logger] 127.0.0.1:55505 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.025190
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55525 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.023046
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55527 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001800
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55529 "GET /api/v1/admin/tenants?limit=1 HTTP/1.1" 200 1492 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.004472
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55531 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.016470
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55533 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.010599
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55535 "GET /api/v1/admin/users?limit=1 HTTP/1.1" 200 632 "http://localhost:5175/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.003596
+[2026-01-04T16:14:32Z INFO  ntex::web::middleware::logger] 127.0.0.1:55537 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.022319
+[2026-01-04T16:14:34Z INFO  ntex::web::middleware::logger] 127.0.0.1:55525 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.034914
+[2026-01-04T16:14:34Z INFO  ntex::web::middleware::logger] 127.0.0.1:55527 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.026492
+[2026-01-04T16:14:34Z INFO  ntex::web::middleware::logger] 127.0.0.1:55542 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000240
+[2026-01-04T16:14:35Z INFO  ntex::web::middleware::logger] 127.0.0.1:55525 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.083242
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:55527 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.010870
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:36Z INFO  ntex::web::middleware::logger] 127.0.0.1:55552 "GET /api/v1/auth/admin/sessions HTTP/1.1" 200 372 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.002213
+[2026-01-04T16:14:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:14:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:55525 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.038149
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:39Z INFO  ntex::web::middleware::logger] 127.0.0.1:55527 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001652
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:40Z INFO  ntex::web::middleware::logger] 127.0.0.1:55571 "GET /api/v1/admin/logs?page=1&limit=24&sort=timestamp%3Adesc HTTP/1.1" 200 5063 "http://localhost:5175/console/monitoring/logs" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.011695
+[2026-01-04T16:14:42Z INFO  ntex::web::middleware::logger] 127.0.0.1:55525 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.034328
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:42Z INFO  ntex::web::middleware::logger] 127.0.0.1:55527 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003977
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55578 "GET /api/v1/auth/admin/sessions HTTP/1.1" 200 372 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.005537
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55596 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.033443
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55598 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.021395
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55600 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000295
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55596 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.028536
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55598 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.019298
+[2026-01-04T16:14:49Z INFO  ntex::web::middleware::logger] 127.0.0.1:55608 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/console/settings/api-keys HTTP/1.1" 404 45 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.003510
+[2026-01-04T16:14:51Z INFO  ntex::web::middleware::logger] 127.0.0.1:55596 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.021274
+[2026-01-04T16:14:51Z INFO  ntex::web::middleware::logger] 127.0.0.1:55598 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.018025
+[2026-01-04T16:14:51Z INFO  ntex::web::middleware::logger] 127.0.0.1:55615 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/monitoring/sessions" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000176
+[2026-01-04T16:14:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55596 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.030048
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55598 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003745
+[2026-01-04T16:14:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55623 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.023734
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:14:59Z INFO  kyx_kernel::modules::system::interface::http::handlers::theme] 🎨 Theme 'Kyx Light' activated for dark mode
+[2026-01-04T16:14:59Z INFO  ntex::web::middleware::logger] 127.0.0.1:55635 "PATCH /api/v1/system/themes/e4100bf8-6e10-45e8-95fe-b0afcfe8e044/activate HTTP/1.1" 200 109 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.086481
+[2026-01-04T16:14:59Z INFO  ntex::web::middleware::logger] 127.0.0.1:55639 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.016267
+[2026-01-04T16:14:59Z INFO  ntex::web::middleware::logger] 127.0.0.1:55643 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.028070
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:02Z INFO  kyx_kernel::modules::system::interface::http::handlers::theme] 🎨 Theme 'Kyx Dark' activated for dark mode
+[2026-01-04T16:15:02Z INFO  ntex::web::middleware::logger] 127.0.0.1:55650 "PATCH /api/v1/system/themes/e23b7ab6-c460-4afd-b68e-3b6f54b0e05e/activate HTTP/1.1" 200 108 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.061650
+[2026-01-04T16:15:02Z INFO  ntex::web::middleware::logger] 127.0.0.1:55654 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.100211
+[2026-01-04T16:15:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:55659 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.030772
+[2026-01-04T16:15:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55683 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.050014
+[2026-01-04T16:15:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55682 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.049657
+[2026-01-04T16:15:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:55683 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 45 "-" "node" 0.002824
+[2026-01-04T16:15:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55841 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.032022
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55845 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003674
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55844 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.028340
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55844 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.035128
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55841 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.035131
+[2026-01-04T16:15:43Z INFO  ntex::web::middleware::logger] 127.0.0.1:55844 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 45 "-" "node" 0.001792
+[2026-01-04T16:15:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:55864 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.022312
+[2026-01-04T16:15:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:55868 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.002630
+[2026-01-04T16:15:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:55867 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.013467
+[2026-01-04T16:15:44Z INFO  ntex::web::middleware::logger] 127.0.0.1:55870 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001997
+[2026-01-04T16:15:47Z INFO  ntex::web::middleware::logger] 127.0.0.1:55896 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.070011
+[2026-01-04T16:15:47Z INFO  ntex::web::middleware::logger] 127.0.0.1:55900 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.048890
+[2026-01-04T16:15:51Z INFO  ntex::web::middleware::logger] 127.0.0.1:55925 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.031459
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:51Z INFO  ntex::web::middleware::logger] 127.0.0.1:55927 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003666
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55925 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.042290
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55927 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002335
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55935 "GET /api/v1/admin/tenants?limit=1 HTTP/1.1" 200 1492 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.010237
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55937 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.025890
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55939 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.030642
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:52Z INFO  ntex::web::middleware::logger] 127.0.0.1:55943 "GET /api/v1/admin/users?limit=1 HTTP/1.1" 200 632 "http://localhost:5175/console/settings/themes" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.005580
+[2026-01-04T16:15:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:55925 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.034505
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:15:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:55927 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003233
+[2026-01-04T16:15:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:55925 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.040083
+[2026-01-04T16:15:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:55927 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025343
+[2026-01-04T16:15:55Z INFO  ntex::web::middleware::logger] 127.0.0.1:55966 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000170
+[2026-01-04T16:16:01Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.043083
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:01Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002274
+[2026-01-04T16:16:01Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.035144
+[2026-01-04T16:16:01Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.022347
+[2026-01-04T16:16:01Z INFO  ntex::web::middleware::logger] 127.0.0.1:56018 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000176
+[2026-01-04T16:16:02Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.035066
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:02Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.003645
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56029 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.003316
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.035436
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002453
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56038 "GET /api/v1/admin/tenants?limit=1 HTTP/1.1" 200 1492 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.008431
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56040 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.019948
+[2026-01-04T16:16:03Z INFO  ntex::web::middleware::logger] 127.0.0.1:56042 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.024492
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:04Z INFO  ntex::web::middleware::logger] 127.0.0.1:56044 "GET /api/v1/admin/users?limit=1 HTTP/1.1" 200 632 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.006525
+[2026-01-04T16:16:04Z INFO  ntex::web::middleware::logger] 127.0.0.1:56048 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.024105
+[2026-01-04T16:16:04Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.040476
+[2026-01-04T16:16:04Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025333
+[2026-01-04T16:16:04Z INFO  ntex::web::middleware::logger] 127.0.0.1:56052 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000210
+[2026-01-04T16:16:05Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.025819
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:05Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002267
+[2026-01-04T16:16:06Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.034199
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:06Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002002
+[2026-01-04T16:16:06Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.044205
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:06Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002238
+[2026-01-04T16:16:07Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.039953
+[2026-01-04T16:16:07Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.024966
+[2026-01-04T16:16:07Z INFO  ntex::web::middleware::logger] 127.0.0.1:56075 "GET /api/v1/public/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 404 0 "http://localhost:5175/console/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.000160
+[2026-01-04T16:16:07Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.037631
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:07Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.002322
+[2026-01-04T16:16:09Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.023503
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:09Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001826
+[2026-01-04T16:16:11Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.027062
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:11Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001572
+[2026-01-04T16:16:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.043933
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/admin/tenants/me HTTP/1.1" 200 1371 "-" "node" 0.001377
+[RequirePermission] Checking key: auth:session:791e1d18-5b86-4d50-bf03-4a10d674b213:4a8e6283-c840-40d6-a535-1535bf366050 -> Exists: 1
+[2026-01-04T16:16:12Z INFO  ntex::web::middleware::logger] 127.0.0.1:56113 "GET /api/v1/admin/cms/pages HTTP/1.1" 200 522 "http://localhost:5175/workspace/dashboard" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001904
+[2026-01-04T16:16:14Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.040110
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56008 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.024929
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56129 "GET /api/v1/system/status HTTP/1.1" 200 1045 "-" "node" 0.022175
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56130 "GET /api/v1/public/system/tenants/kyx-technologies-coltd HTTP/1.1" 200 660 "-" "node" 0.002970
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56006 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 200 520 "-" "node" 0.000866
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56147 "GET /api/v1/public/system/tenants/kyx-technologies-coltd HTTP/1.1" 200 660 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001921
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56149 "GET /api/v1/public/system/cms/pages/ac59a061-b271-4d7e-abc2-e69ea726ea51/home HTTP/1.1" 200 520 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001153
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56151 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.014594
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56155 "GET /api/v1/system/i18n/locales HTTP/1.1" 200 303 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.001700
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56154 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.011699
+[2026-01-04T16:16:15Z INFO  ntex::web::middleware::logger] 127.0.0.1:56160 "GET /api/v1/system/i18n/en HTTP/1.1" 200 182 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.002248
+[2026-01-04T16:16:19Z INFO  ntex::web::middleware::logger] 127.0.0.1:56181 "GET /api/v1/system/status HTTP/1.1" 200 1045 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.033387
+[2026-01-04T16:16:19Z INFO  ntex::web::middleware::logger] 127.0.0.1:56185 "GET /api/v1/system/themes HTTP/1.1" 200 223691 "http://localhost:5175/s/kyx-technologies-coltd/home" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" 0.022959
+[2026-01-04T16:16:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:17:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:18:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:19:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:20:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:21:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:22:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:23:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:24:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:25:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:26:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:27:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:28:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:29:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:30:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:31:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:32:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:33:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:34:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:35:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:36:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:37:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:38:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:39:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:40:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:41:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:42:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:43:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:44:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:45:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:46:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:47:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)
+[2026-01-04T16:48:37Z INFO  kyx_kernel::core::infrastructure::cors] ✅ CORS Registry synced (4 origins)

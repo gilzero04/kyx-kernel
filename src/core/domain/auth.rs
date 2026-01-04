@@ -11,6 +11,7 @@ pub enum UserRole {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[allow(dead_code)]
 pub struct Permission {
     pub id: Uuid,
     pub slug: String,
@@ -18,6 +19,7 @@ pub struct Permission {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[allow(dead_code)]
 pub struct RoleDescriptor {
     pub id: Uuid,
     pub slug: String,

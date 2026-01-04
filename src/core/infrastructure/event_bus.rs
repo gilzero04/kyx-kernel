@@ -9,6 +9,7 @@ use tokio::sync::Mutex;
 
 pub struct InMemoryEventBus {
     // Mapping from topic to broadcast sender
+    #[allow(dead_code)]
     channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
