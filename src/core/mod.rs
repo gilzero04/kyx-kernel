@@ -3,6 +3,7 @@ use ntex::web;
 pub mod domain;
 pub mod application;
 pub mod infrastructure;
+pub mod bootstrap;
 pub mod utils;
 
 /// Every module in `src/modules` must implement this trait or

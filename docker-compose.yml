@@ -21,18 +21,63 @@ services:
     container_name: kyx-redis-secure
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-    command: [ "--tls-port", "6380", "--port", "0", "--tls-cert-file", "/etc/redis/certs/redis.crt", "--tls-key-file", "/etc/redis/certs/redis.key", "--tls-auth-clients", "no", "--requirepass", "${REDIS_PASSWORD}", "--loadmodule", "/opt/redis-stack/lib/rejson.so", "--loadmodule", "/opt/redis-stack/lib/redisearch.so", "--appendonly", "yes" ]
+    command:
+      [
+        "--tls-port",
+        "6380",
+        "--port",
+        "0",
+        "--tls-cert-file",
+        "/etc/redis/certs/redis.crt",
+        "--tls-key-file",
+        "/etc/redis/certs/redis.key",
+        "--tls-auth-clients",
+        "no",
+        "--requirepass",
+        "${REDIS_PASSWORD}",
+        "--loadmodule",
+        "/opt/redis-stack/lib/rejson.so",
+        "--loadmodule",
+        "/opt/redis-stack/lib/redisearch.so",
+        "--appendonly",
+        "yes",
+      ]
     ports:
       - "6380:6380"
     volumes:
       - redis_data:/data
     restart: always
 
+  kernel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kyx-kernel-app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8080
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6380
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENGINE_SECRET_KEY=${ENGINE_SECRET_KEY}
+      - APP_VERSION=${APP_VERSION:-0.1.0}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./assets:/app/assets
+      - ./uploads:/app/uploads
+    restart: always
+
 volumes:
   kyx_postgres_data_success:
   postgres_data:
   redis_data:
-
 
 networks:
   default:
