@@ -238,3 +238,199 @@ where
         ctx.call(&self.service, req).await
     }
 }
+
+// ==========================================
+// Plan-Aware Rate Limit (reads from JWT claims)
+// Phase 3: Multi-layer rate limiting
+// ==========================================
+
+use crate::core::utils::jwt::{Claims, PlanFeatures};
+
+/// Rate limit key combining user, tenant, and endpoint
+#[derive(Hash, Eq, PartialEq, Clone)]
+struct PlanRateLimitKey {
+    tenant_id: String,
+    user_id: String,
+    endpoint_category: String,
+}
+
+/// Plan-aware rate limiting that reads limits from JWT claims
+/// Supports multi-layer limiting: per-plan, per-tenant, per-endpoint
+pub struct PlanAwareRateLimit {
+    store: Arc<RwLock<HashMap<String, RateLimitEntry>>>,
+    endpoint_category: String,
+}
+
+impl PlanAwareRateLimit {
+    pub fn new(endpoint_category: impl Into<String>) -> Self {
+        Self {
+            store: Arc::new(RwLock::new(HashMap::new())),
+            endpoint_category: endpoint_category.into(),
+        }
+    }
+
+    /// For signal endpoints (WebSocket connections, messaging)
+    #[allow(dead_code)]
+    pub fn signal() -> Self {
+        Self::new("signal")
+    }
+
+    /// For AI endpoints (face search, etc.)
+    #[allow(dead_code)]
+    pub fn ai() -> Self {
+        Self::new("ai")
+    }
+
+    /// For general API endpoints
+    #[allow(dead_code)]
+    pub fn api() -> Self {
+        Self::new("api")
+    }
+}
+
+impl<S> Middleware<S> for PlanAwareRateLimit {
+    type Service = PlanAwareRateLimitMiddleware<S>;
+
+    fn create(&self, service: S) -> Self::Service {
+        PlanAwareRateLimitMiddleware {
+            service,
+            store: self.store.clone(),
+            endpoint_category: self.endpoint_category.clone(),
+        }
+    }
+}
+
+pub struct PlanAwareRateLimitMiddleware<S> {
+    service: S,
+    store: Arc<RwLock<HashMap<String, RateLimitEntry>>>,
+    endpoint_category: String,
+}
+
+impl<S, Err> Service<web::WebRequest<Err>> for PlanAwareRateLimitMiddleware<S>
+where
+    S: Service<web::WebRequest<Err>, Response = web::WebResponse, Error = web::Error>,
+{
+    type Response = web::WebResponse;
+    type Error = web::Error;
+
+    ntex::forward_ready!(service);
+
+    async fn call(&self, req: web::WebRequest<Err>, ctx: ServiceCtx<'_, Self>) -> Result<Self::Response, Self::Error> {
+        // Try to get claims from request extensions
+        let (max_requests, window_secs, rate_limit_key) = {
+            let extensions = req.extensions();
+            
+            if let Some(claims) = extensions.get::<Claims>() {
+                // Get plan features from claims or derive from plan_type
+                let features = claims.features.clone().unwrap_or_else(|| {
+                    let plan_type = claims.plan_type.as_deref().unwrap_or("free");
+                    PlanFeatures::for_plan(plan_type)
+                });
+
+                // Determine max requests based on endpoint category
+                let max_req = match self.endpoint_category.as_str() {
+                    "signal" => features.messages_per_minute,
+                    "ai" => if features.ai_enabled { 20 } else { 0 }, // AI disabled for free
+                    _ => features.messages_per_minute.max(100), // At least 100 for general API
+                };
+
+                // Create composite key: tenant + user + endpoint
+                let key = format!(
+                    "{}:{}:{}",
+                    claims.tenant_id,
+                    claims.sub,
+                    self.endpoint_category
+                );
+
+                (max_req, 60u64, key)
+            } else {
+                // No claims - use IP-based limiting with default free tier limits
+                let ip = req.peer_addr()
+                    .map(|addr| addr.to_string())
+                    .unwrap_or_else(|| "unknown".to_string());
+                
+                let key = format!("anon:{}:{}", ip, self.endpoint_category);
+                (30u32, 60u64, key) // Free tier defaults
+            }
+        };
+
+        // Check if this endpoint category is disabled for the plan
+        if max_requests == 0 {
+            return Ok(req.into_response(
+                web::HttpResponse::Forbidden()
+                    .json(&serde_json::json!({
+                        "status": "error",
+                        "message": "This feature is not available on your plan.",
+                        "upgrade_required": true
+                    }))
+            ));
+        }
+
+        let now = Instant::now();
+        let window_duration = Duration::from_secs(window_secs);
+
+        // Check rate limit
+        let (should_block, remaining, reset_after) = {
+            let mut store = self.store.write().await;
+            
+            if let Some(entry) = store.get_mut(&rate_limit_key) {
+                let elapsed = now.duration_since(entry.window_start);
+                if elapsed > window_duration {
+                    // Reset window
+                    entry.count = 1;
+                    entry.window_start = now;
+                    (false, max_requests - 1, window_secs)
+                } else {
+                    entry.count += 1;
+                    let blocked = entry.count > max_requests;
+                    let remaining = if blocked { 0 } else { max_requests - entry.count };
+                    let reset = window_secs - elapsed.as_secs();
+                    (blocked, remaining, reset)
+                }
+            } else {
+                // New key
+                store.insert(rate_limit_key.clone(), RateLimitEntry {
+                    count: 1,
+                    window_start: now,
+                });
+                (false, max_requests - 1, window_secs)
+            }
+        };
+
+        if should_block {
+            return Ok(req.into_response(
+                web::HttpResponse::TooManyRequests()
+                    .set_header("X-RateLimit-Limit", max_requests.to_string())
+                    .set_header("X-RateLimit-Remaining", "0")
+                    .set_header("X-RateLimit-Reset", reset_after.to_string())
+                    .set_header("Retry-After", reset_after.to_string())
+                    .json(&serde_json::json!({
+                        "status": "error",
+                        "message": "Rate limit exceeded. Please try again later.",
+                        "retry_after": reset_after,
+                        "limit": max_requests,
+                        "category": self.endpoint_category
+                    }))
+            ));
+        }
+
+        // Call the underlying service
+        let mut response = ctx.call(&self.service, req).await?;
+        
+        // Add rate limit headers to response
+        response.headers_mut().insert(
+            ntex::http::header::HeaderName::from_static("x-ratelimit-limit"),
+            ntex::http::header::HeaderValue::from_str(&max_requests.to_string()).unwrap_or_else(|_| ntex::http::header::HeaderValue::from_static("0")),
+        );
+        response.headers_mut().insert(
+            ntex::http::header::HeaderName::from_static("x-ratelimit-remaining"),
+            ntex::http::header::HeaderValue::from_str(&remaining.to_string()).unwrap_or_else(|_| ntex::http::header::HeaderValue::from_static("0")),
+        );
+        response.headers_mut().insert(
+            ntex::http::header::HeaderName::from_static("x-ratelimit-reset"),
+            ntex::http::header::HeaderValue::from_str(&reset_after.to_string()).unwrap_or_else(|_| ntex::http::header::HeaderValue::from_static("0")),
+        );
+        
+        Ok(response)
+    }
+}
