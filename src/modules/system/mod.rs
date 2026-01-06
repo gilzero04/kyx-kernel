@@ -25,6 +25,7 @@ use crate::modules::system::infrastructure::repositories::theme::PostgresThemeRe
 use crate::modules::system::application::services::theme::ThemeService;
 use crate::modules::system::infrastructure::repositories::cms::PostgresCmsRepository;
 use crate::modules::system::application::services::cms::CmsService;
+use crate::modules::system::domain::plugin::registry::PluginRegistry;
 use std::sync::Arc;
 
 pub mod domain;
@@ -48,6 +49,7 @@ pub struct SystemModule {
     theme_service: Arc<ThemeService>,
     audit_query_service: Arc<AuditQueryService>,
     cms_service: Arc<CmsService>,
+    plugin_registry: Arc<PluginRegistry>,
 }
 
 impl SystemModule {
@@ -94,6 +96,9 @@ impl SystemModule {
         let cms_repo = Arc::new(PostgresCmsRepository::new(db.clone()));
         let cms_service = Arc::new(CmsService::new(cms_repo));
 
+        // Plugin Registry
+        let plugin_registry = Arc::new(PluginRegistry::new(db.clone(), redis.clone()));
+
         Self {
             _redis: redis,
             db,
@@ -110,6 +115,7 @@ impl SystemModule {
             user_service,
             theme_service,
             cms_service,
+            plugin_registry,
         }
     }
 
@@ -183,6 +189,7 @@ impl AppModule for SystemModule {
                 .state(i18n_s.clone())
                 .state(theme_s.clone())
                 .state(cms_s.clone())
+                .state(self.plugin_registry.clone())
                 // Business level operations
                 .configure(|conf| interface::http::routers::user::user_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
                 .configure(|conf| interface::http::routers::rbac::rbac_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
@@ -194,6 +201,8 @@ impl AppModule for SystemModule {
                 .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
                 .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
                 .configure(|conf| interface::http::routers::cms::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Plugin Management (wired via handler.configure)
+                .configure(interface::http::handlers::plugin::configure)
         );
         
         // 4. Headless/Public Scope

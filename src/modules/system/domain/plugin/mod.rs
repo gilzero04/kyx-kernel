@@ -1,2 +1,4 @@
 pub mod entity;
-pub use entity::{Manifest, Plugin, PluginStatus};
+pub mod registry;
+
+pub use entity::{Manifest, Plugin, Capability};
