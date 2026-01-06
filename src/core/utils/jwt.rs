@@ -53,6 +53,11 @@ impl JwtService {
         }
     }
 
+    /// Get encoding key for generating tokens (e.g., signal tickets)
+    pub fn get_encoding_key(&self) -> &EncodingKey {
+        &self.encoding_key
+    }
+
     pub fn generate_access_token(&self, user_id: &str, role: &str, tenant_id: Uuid, permissions: Vec<String>, is_system_owner: bool, sid: Option<String>) -> Result<String, AppError> {
         self.generate_token(user_id, role, tenant_id, permissions, is_system_owner, TokenType::Access, Duration::minutes(30), sid)
     }

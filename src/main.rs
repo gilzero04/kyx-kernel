@@ -122,6 +122,11 @@ async fn main() -> io::Result<()> {
         let auth_m = kernel.auth_module.clone();
         let system_m = kernel.system_module.clone();
         let media_m = kernel.media_module.clone();
+        
+        // Signal integration
+        let signal_jwt = kernel.jwt_service.clone();
+        let signal_audit = kernel.audit_service.clone();
+        let signal_redis = Some(kernel.redis.clone());
 
         web::App::new()
             .state(redis)
@@ -162,6 +167,12 @@ async fn main() -> io::Result<()> {
                     .configure(move |cfg| { let _ = auth_m.try_configure(cfg); })
                     .configure(move |cfg| { let _ = system_m.try_configure(cfg); })
                     .configure(move |cfg| { let _ = media_m.try_configure(cfg); })
+                    // Signal integration for kyx-signal token exchange
+                    .configure(move |cfg| {
+                        modules::signal::interface::http::routers::signal_routes(
+                            cfg, signal_jwt, signal_audit, signal_redis
+                        );
+                    })
             )
             .service(
                 web::scope("/internal")
