@@ -408,7 +408,7 @@ pub async fn revoke_session(
 /// List All Active Sessions (Admin)
 #[utoipa::path(
     get,
-    path = "/api/v1/admin/auth/sessions",
+    path = "/api/v1/auth/admin/sessions",
     responses(
         (status = 200, description = "List of all active sessions", body = [AdminSessionInfo])
     ),
@@ -434,7 +434,7 @@ pub async fn admin_list_sessions(
 /// Revoke Any Session (Admin)
 #[utoipa::path(
     delete,
-    path = "/api/v1/admin/auth/sessions/{user_id}/{sid}",
+    path = "/api/v1/auth/admin/sessions/{user_id}/{sid}",
     responses(
         (status = 200, description = "Session revoked"),
         (status = 404, description = "Session not found")

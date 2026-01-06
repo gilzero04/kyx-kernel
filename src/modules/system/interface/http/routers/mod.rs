@@ -9,3 +9,4 @@ pub mod theme;
 pub mod rbac;
 pub mod user;
 pub mod cms;
+pub mod plugin;

@@ -73,7 +73,7 @@ pub fn rbac_routes(
 ) {
     use crate::core::infrastructure::permission_middleware::RequirePermission;
 
-    // Tenant Admin RBAC: Managing local roles for their staff
+    // Roles Management
     config.service(
         web::scope("/roles")
             .wrap(RequirePermission::new("role:read", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
@@ -106,7 +106,34 @@ pub fn rbac_routes(
                         web::resource("/permissions")
                             .guard(web::guard::Post())
                             .route(web::post().to(rbac::update_role_permissions))
-                            .wrap(RequirePermission::new("role:update", jwt.clone(), audit.clone()).with_redis_opt(redis))
+                            .wrap(RequirePermission::new("role:update", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    )
+            )
+    );
+
+    // Permissions Management (added for unified /admin scope)
+    config.service(
+        web::scope("/permissions")
+            .wrap(RequirePermission::new("permission:read", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+            .route("", web::get().to(rbac::list_permissions))
+            .service(
+                web::resource("")
+                    .wrap(RequirePermission::new("permission:create", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    .route(web::post().to(rbac::create_permission))
+            )
+            .service(
+                web::scope("/{id}")
+                    .service(
+                        web::resource("")
+                            .guard(web::guard::Patch())
+                            .route(web::patch().to(rbac::update_permission))
+                            .wrap(RequirePermission::new("permission:update", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    )
+                    .service(
+                        web::resource("")
+                            .guard(web::guard::Delete())
+                            .route(web::delete().to(rbac::delete_permission))
+                            .wrap(RequirePermission::new("permission:delete", jwt.clone(), audit.clone()).with_redis_opt(redis))
                     )
             )
     );

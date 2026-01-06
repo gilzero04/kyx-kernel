@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kyx Platform - Official Summary</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        color: #1a73e8;
+        border-bottom: 3px solid #1a73e8;
+        padding-bottom: 10px;
+      }
+      h2 {
+        color: #202124;
+        margin-top: 30px;
+        border-bottom: 1px solid #dadce0;
+        padding-bottom: 8px;
+      }
+      h3 {
+        color: #5f6368;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 15px 0;
+      }
+      th,
+      td {
+        border: 1px solid #dadce0;
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+      }
+      .highlight {
+        background-color: #e8f0fe;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+      }
+      .emoji {
+        font-size: 1.2em;
+      }
+      pre {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+      .status-ready {
+        color: #137333;
+        font-weight: bold;
+      }
+      .status-dev {
+        color: #b06000;
+      }
+      .status-planned {
+        color: #5f6368;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🚀 Kyx Platform</h1>
+    <p style="font-size: 1.3em; color: #5f6368">
+      <strong>Enterprise-Grade Intelligent Business Platform</strong>
+    </p>
+
+    <hr />
+
+    <h2>Overview</h2>
+    <p>
+      <strong>Kyx Platform</strong> is a production-ready software
+      infrastructure designed to power modern digital businesses, from
+      e-commerce storefronts to full-scale marketplaces, hospital systems, HR
+      management, and financial services.
+    </p>
+
+    <hr />
+
+    <h2>Core Differentiators</h2>
+
+    <h3>1. Hierarchical Multi-Tenancy</h3>
+    <ul>
+      <li>
+        Supports recursive organizational structures: Platform Owner → Branch →
+        Vendor → Partner
+      </li>
+      <li>Independent branding and configuration at each level</li>
+      <li>Custom domain support per tenant</li>
+    </ul>
+
+    <h3>2. Financial-Ready Architecture</h3>
+    <ul>
+      <li>ACID-compliant transaction layer using PostgreSQL</li>
+      <li>Isolated Ledger Interface for audit compliance</li>
+      <li>Designed for payment integration from day one</li>
+      <li>PostgreSQL as the single source of truth for financial data</li>
+    </ul>
+
+    <h3>3. Realtime-Native Design</h3>
+    <ul>
+      <li>
+        Built-in WebSocket infrastructure for chat, video, and notifications
+      </li>
+      <li>LiveChat with per-room message ordering and idempotent delivery</li>
+      <li>WebRTC/LiveKit integration for video conferencing</li>
+      <li>TTL-based presence system</li>
+      <li>
+        Supports thousands of concurrent connections with graceful degradation
+      </li>
+    </ul>
+
+    <h3>4. Extensible Plugin System</h3>
+    <ul>
+      <li>Lean kernel with optional WASM-based plugins</li>
+      <li>
+        Extend with wallet, payment gateway, analytics without modifying core
+      </li>
+      <li>Capability-based security for each plugin</li>
+      <li>Sandboxed execution environment</li>
+    </ul>
+
+    <h3>5. AI Governance Framework</h3>
+    <ul>
+      <li>32 governance rules controlling AI agent behavior</li>
+      <li>Prevents AI from making destructive changes in production</li>
+      <li>Knowledge base with semantic search</li>
+      <li>Incident tracking for continuous learning</li>
+    </ul>
+
+    <hr />
+
+    <h2>Technology Stack</h2>
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><strong>kyx-kernel</strong></td>
+        <td>Rust + Ntex + PostgreSQL</td>
+        <td>Core Auth, RBAC, Multi-tenancy</td>
+      </tr>
+      <tr>
+        <td><strong>kyx-signal</strong></td>
+        <td>Rust + Ntex + SurrealDB</td>
+        <td>Realtime Communication</td>
+      </tr>
+      <tr>
+        <td><strong>kyx-platform</strong></td>
+        <td>SvelteKit + TypeScript</td>
+        <td>Frontend Application</td>
+      </tr>
+      <tr>
+        <td><strong>kyx-governance</strong></td>
+        <td>Rust + SurrealDB</td>
+        <td>AI Knowledge & Rules</td>
+      </tr>
+      <tr>
+        <td><strong>kyx-infra</strong></td>
+        <td>Redis + Docker + TLS</td>
+        <td>Caching, Sessions, Deployment</td>
+      </tr>
+    </table>
+
+    <hr />
+
+    <h2>Enterprise Features</h2>
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Hierarchical Tenants</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>Custom Branding per Tenant</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>Role-based Landing Pages</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>API Key Management</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>Audit Logging</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>i18n (English/Thai)</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>Theme System</td>
+        <td class="status-ready">✅ Ready</td>
+      </tr>
+      <tr>
+        <td>Plugin System</td>
+        <td class="status-dev">🔄 In Development</td>
+      </tr>
+      <tr>
+        <td>Payment Gateway</td>
+        <td class="status-planned">📋 Planned</td>
+      </tr>
+    </table>
+
+    <hr />
+
+    <h2>Ideal Use Cases</h2>
+
+    <h3>🛒 Retail & Commerce</h3>
+    <ul>
+      <li>
+        <strong>E-commerce & Marketplaces</strong>: Multi-vendor platforms with
+        complex hierarchies
+      </li>
+      <li>
+        <strong>POS (Point of Sale)</strong>: In-store sales with inventory and
+        multi-branch support
+      </li>
+    </ul>
+
+    <h3>🏥 Service Industries</h3>
+    <ul>
+      <li>
+        <strong>Hospital Management Systems</strong>: Appointments, patient
+        records, real-time notifications
+      </li>
+      <li>
+        <strong>HR Management</strong>: Employee management, organizational
+        hierarchy, leave management
+      </li>
+    </ul>
+
+    <h3>💰 Financial Services</h3>
+    <ul>
+      <li>
+        <strong>Finance/Fintech</strong>: Digital wallets, transfers, financial
+        reporting
+      </li>
+      <li>
+        <strong>SaaS Applications</strong>: White-label solutions with tenant
+        isolation
+      </li>
+    </ul>
+
+    <h3>💬 Communication Platforms</h3>
+    <ul>
+      <li>
+        <strong>Communication Platforms</strong>: Built-in chat, video, and
+        presence systems
+      </li>
+      <li>
+        <strong>AI-Powered Services</strong>: Safe AI integration with
+        governance guardrails
+      </li>
+    </ul>
+
+    <hr />
+
+    <h2>Competitive Advantages</h2>
+    <table>
+      <tr>
+        <th>vs Competitor</th>
+        <th>Kyx Advantage</th>
+      </tr>
+      <tr>
+        <td>Shopify</td>
+        <td>Self-hosted, true multi-tier tenancy</td>
+      </tr>
+      <tr>
+        <td>Firebase</td>
+        <td>PostgreSQL ACID, financial compliance</td>
+      </tr>
+      <tr>
+        <td>Supabase</td>
+        <td>Realtime-native design, Plugin architecture</td>
+      </tr>
+      <tr>
+        <td>Custom Build</td>
+        <td>80% ready, governance included</td>
+      </tr>
+    </table>
+
+    <hr />
+
+    <h2>Architecture Overview</h2>
+    <pre>
+┌─────────────────────────────────────────────────────────────┐
+│                      kyx-platform (UI)                       │
+│                        SvelteKit                             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   kyx-kernel    │  │   kyx-signal    │  │ kyx-governance  │
+│   (Core API)    │  │  (Realtime)     │  │  (AI Rules)     │
+│  PostgreSQL     │  │   SurrealDB     │  │   SurrealDB     │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+              │               │               │
+              └───────────────┼───────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      kyx-infra                               │
+│              Redis · Docker · TLS · Monitoring               │
+└─────────────────────────────────────────────────────────────┘
+</pre
+    >
+
+    <hr />
+
+    <p style="text-align: center; color: #5f6368">
+      <em>This document is part of the Kyx Platform Documentation</em><br />
+      <em>Last updated: January 2026</em>
+    </p>
+  </body>
+</html>

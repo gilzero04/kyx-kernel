@@ -88,7 +88,7 @@ pub async fn get_system_settings(
 /// Get system status and branding
 #[utoipa::path(
     get,
-    path = "/api/v1/system/status",
+    path = "/api/v1/public/system/status",
     responses(
         (status = 200, description = "System status fetched successfully")
     ),
@@ -191,7 +191,7 @@ pub async fn get_system_status(
 /// Get authenticated system context
 #[utoipa::path(
     get,
-    path = "/api/v1/system/context",
+    path = "/api/v1/admin/context",
     responses(
         (status = 200, description = "System context fetched successfully")
     ),

@@ -96,6 +96,11 @@ impl PluginRegistry {
         self.repository.find_by_id(id).await
     }
     
+    /// Find available plugins (Private + Shared/Global from parent)
+    pub async fn find_available_plugins(&self, tenant_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<Plugin>> {
+        self.repository.find_available_plugins(tenant_id, parent_id).await
+    }
+
     /// Install a new plugin
     pub async fn install(
         &self,
@@ -422,7 +427,7 @@ impl PluginRegistry {
 }
 
 /// Security summary for a plugin
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, utoipa::ToSchema)]
 pub struct SecuritySummary {
     pub risk_level: RiskLevel,
     pub dangerous_capabilities: Vec<String>,
@@ -434,7 +439,7 @@ pub struct SecuritySummary {
 }
 
 /// Plugin risk level
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, utoipa::ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum RiskLevel {
     Low,      // No special permissions

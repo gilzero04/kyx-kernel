@@ -187,6 +187,15 @@ fn extract_theme_config(bytes: &[u8]) -> AppResult<serde_json::Value> {
     Ok(config)
 }
 
+/// List available themes
+#[utoipa::path(
+    get,
+    path = "/api/v1/public/themes",
+    responses(
+        (status = 200, description = "List of available themes")
+    ),
+    tag = "themes"
+)]
 pub async fn list_themes(
     req: web::HttpRequest,
     service: web::types::State<std::sync::Arc<ThemeService>>,
@@ -223,6 +232,19 @@ pub async fn list_themes(
     Ok(web::HttpResponse::Ok().json(&themes))
 }
 
+/// Import a theme from ZIP file
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/themes/import",
+    responses(
+        (status = 201, description = "Theme imported successfully"),
+        (status = 400, description = "Invalid theme package")
+    ),
+    tag = "themes",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn import_theme(
     mut payload: Multipart,
     service: web::types::State<std::sync::Arc<ThemeService>>,
@@ -288,6 +310,23 @@ pub async fn import_theme(
     Ok(web::HttpResponse::Created().json(&theme))
 }
 
+/// Activate a theme for a specific mode
+#[utoipa::path(
+    patch,
+    path = "/api/v1/admin/themes/{id}/activate",
+    request_body = ActivateThemeRequest,
+    responses(
+        (status = 200, description = "Theme activated"),
+        (status = 404, description = "Theme not found")
+    ),
+    tag = "themes",
+    params(
+        ("id" = Uuid, Path, description = "Theme ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn set_active_theme(
     path: web::types::Path<Uuid>, // Theme ID
     body: web::types::Json<ActivateThemeRequest>,
@@ -327,6 +366,23 @@ pub async fn set_active_theme(
     })))
 }
 
+/// Delete a theme
+#[utoipa::path(
+    delete,
+    path = "/api/v1/admin/themes/{id}",
+    responses(
+        (status = 204, description = "Theme deleted"),
+        (status = 400, description = "Cannot delete theme in use"),
+        (status = 404, description = "Theme not found")
+    ),
+    tag = "themes",
+    params(
+        ("id" = Uuid, Path, description = "Theme ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_theme(
     path: web::types::Path<Uuid>,
     service: web::types::State<std::sync::Arc<ThemeService>>,
@@ -385,6 +441,24 @@ pub async fn delete_theme(
     Ok(web::HttpResponse::NoContent().finish())
 }
 
+/// Update theme visibility
+#[utoipa::path(
+    patch,
+    path = "/api/v1/admin/themes/{id}/visibility",
+    request_body = UpdateVisibilityRequest,
+    responses(
+        (status = 200, description = "Visibility updated"),
+        (status = 400, description = "Cannot change visibility"),
+        (status = 404, description = "Theme not found")
+    ),
+    tag = "themes",
+    params(
+        ("id" = Uuid, Path, description = "Theme ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn set_visibility(
     path: web::types::Path<Uuid>,
     body: web::types::Json<UpdateVisibilityRequest>,

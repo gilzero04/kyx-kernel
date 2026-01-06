@@ -42,7 +42,7 @@ pub async fn create_api_key(
 /// List API keys (Hierarchical)
 #[utoipa::path(
     get,
-    path = "/api/v1/system/api-keys",
+    path = "/api/v1/admin/api-keys",
     responses(
         (status = 200, description = "API keys retrieved successfully", body = Vec<ApiKey>)
     ),
@@ -65,7 +65,7 @@ pub async fn list_api_keys(
 /// Revoke an API key (Hierarchical)
 #[utoipa::path(
     delete,
-    path = "/api/v1/system/api-keys/{id}",
+    path = "/api/v1/admin/api-keys/{id}",
     params(
         ("id" = Uuid, Path, description = "API Key ID to revoke")
     ),

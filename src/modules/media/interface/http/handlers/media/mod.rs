@@ -112,6 +112,19 @@ pub async fn upload_file(
 }
 
 /// Create a folder
+#[utoipa::path(
+    post,
+    path = "/api/v1/media/folders",
+    request_body = CreateFolderRequest,
+    responses(
+        (status = 201, description = "Folder created successfully"),
+        (status = 400, description = "Invalid request")
+    ),
+    tag = "media",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn create_folder(
     body: web::types::Json<CreateFolderRequest>,
     service: web::types::State<Arc<MediaService>>,
@@ -126,6 +139,20 @@ pub async fn create_folder(
 }
 
 /// List assets and folders
+#[utoipa::path(
+    get,
+    path = "/api/v1/media/assets",
+    params(
+        AssetQuery
+    ),
+    responses(
+        (status = 200, description = "List of assets and folders")
+    ),
+    tag = "media",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn list_assets(
     query: web::types::Query<AssetQuery>,
     service: web::types::State<Arc<MediaService>>,
@@ -172,6 +199,21 @@ pub async fn serve_file(
 }
 
 /// Delete an asset
+#[utoipa::path(
+    delete,
+    path = "/api/v1/media/assets/{id}",
+    responses(
+        (status = 200, description = "Asset deleted successfully"),
+        (status = 404, description = "Asset not found")
+    ),
+    tag = "media",
+    params(
+        ("id" = Uuid, Path, description = "Asset ID")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_asset(
     path: web::types::Path<(Uuid,)>,
     service: web::types::State<Arc<MediaService>>,

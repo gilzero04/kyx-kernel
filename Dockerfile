@@ -39,6 +39,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
     curl \
+    netcat-openbsd \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder

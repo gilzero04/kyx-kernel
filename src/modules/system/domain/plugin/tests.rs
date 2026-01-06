@@ -63,6 +63,67 @@ mod plugin_api_tests {
         assert!(manifest.author.is_some());
         assert_eq!(manifest.author.unwrap().name, "Test Developer");
     }
+
+    #[test]
+    fn test_ui_extensions_parsing() {
+        use crate::modules::system::domain::plugin::{Manifest, MenuExtension};
+
+        let ui_manifest = json!({
+            "id": "ui-plugin",
+            "name": "UI Plugin",
+            "version": "1.0.0",
+            "runtime": "frontend",
+            "ui": {
+                "menus": [
+                    {
+                        "id": "blog-dashboard",
+                        "label": "plugin.ui-plugin.menu.dashboard", // i18n key with namespace
+                        "path": "/blog",
+                        "icon": "layout",
+                        "parentId": "sidebar.main",
+                        "order": 1,
+                        "permissions": ["blog:read"]
+                    },
+                    {
+                        "id": "blog-mobile-nav",
+                        "label": "plugin.ui-plugin.menu.blog",
+                        "path": "/blog",
+                        "icon": "<svg>...</svg>", // Custom SVG
+                        "parentId": "mobile.bottom_nav",
+                        "order": 2
+                    },
+                    {
+                        "id": "user-tabs-posts",
+                        "label": "plugin.ui-plugin.tabs.posts",
+                        "path": "/users/:id/posts",
+                        "parentId": "pages.tabs", // Contextual zone
+                        "order": 0
+                    }
+                ]
+            }
+        });
+
+        let manifest: Manifest = serde_json::from_value(ui_manifest).unwrap();
+        
+        assert!(manifest.ui.is_some());
+        let ui = manifest.ui.unwrap();
+        assert_eq!(ui.menus.len(), 3);
+
+        // Verify Web Sidebar Item
+        let web_item = ui.menus.iter().find(|m| m.id == "blog-dashboard").unwrap();
+        assert_eq!(web_item.label, "plugin.ui-plugin.menu.dashboard");
+        assert_eq!(web_item.parent_id.as_deref(), Some("sidebar.main"));
+        assert!(web_item.permissions.contains(&"blog:read".to_string()));
+
+        // Verify Mobile Item with Custom SVG
+        let mobile_item = ui.menus.iter().find(|m| m.id == "blog-mobile-nav").unwrap();
+        assert_eq!(mobile_item.label, "plugin.ui-plugin.menu.blog");
+        assert!(mobile_item.icon.as_ref().unwrap().starts_with("<svg>"));
+
+        // Verify Contextual Tab
+        let tab_item = ui.menus.iter().find(|m| m.id == "user-tabs-posts").unwrap();
+        assert_eq!(tab_item.parent_id.as_deref(), Some("pages.tabs"));
+    }
     
     #[test]
     fn test_plugin_from_manifest() {
@@ -159,5 +220,36 @@ mod plugin_api_tests {
             "runtime": "wasm"
         })).unwrap();
         assert_eq!(wasm.runtime, RuntimeType::Wasm);
+    }
+
+    #[test]
+    fn test_plugin_visibility() {
+        use crate::modules::system::domain::plugin::entity::{Manifest, PluginVisibility};
+
+        // Test Shared Visibility
+        let shared: Manifest = serde_json::from_value(json!({
+            "id": "shared-plugin",
+            "name": "Shared Plugin",
+            "version": "1.0.0",
+            "visibility": "shared"
+        })).unwrap();
+        assert_eq!(shared.visibility, PluginVisibility::Shared);
+
+        // Test Global Visibility
+        let global: Manifest = serde_json::from_value(json!({
+            "id": "global-plugin",
+            "name": "Global Plugin",
+            "version": "1.0.0",
+            "visibility": "global"
+        })).unwrap();
+        assert_eq!(global.visibility, PluginVisibility::Global);
+
+        // Test Default (Private)
+        let private: Manifest = serde_json::from_value(json!({
+            "id": "private-plugin",
+            "name": "Private Plugin",
+            "version": "1.0.0"
+        })).unwrap();
+        assert_eq!(private.visibility, PluginVisibility::Private);
     }
 }

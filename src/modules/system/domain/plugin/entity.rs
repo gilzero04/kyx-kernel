@@ -14,7 +14,7 @@ use chrono::{DateTime, Utc};
 
 /// Plugin manifest describing capabilities and metadata
 /// Compatible with pixco/kyx-engine external plugin format
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     // ─── Core Identity ───────────────────────────────────────────────────────
@@ -93,6 +93,78 @@ pub struct Manifest {
     pub license: Option<String>,
     #[serde(default)]
     pub privacy_policy: Option<String>,
+    
+    // ─── Sharing & Inheritance ───────────────────────────────────────────────
+    #[serde(default)]
+    pub visibility: PluginVisibility, // private, shared, global
+
+    // ─── UI Extensions ───────────────────────────────────────────────────────
+    #[serde(default)]
+    pub ui: Option<UIExtensions>,
+}
+
+/// Helper to default visibility
+fn default_visibility() -> PluginVisibility {
+    PluginVisibility::Private
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, utoipa::ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum PluginVisibility {
+    Private,
+    Shared,
+    Global,
+}
+
+impl Default for PluginVisibility {
+    fn default() -> Self {
+        Self::Private
+    }
+}
+
+/// UI Definitions for the plugin
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct UIExtensions {
+    #[serde(default)]
+    pub menus: Vec<MenuExtension>,
+}
+
+/// A single menu item definition
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MenuExtension {
+    /// Unique ID for the menu item (e.g. "blog-dashboard")
+    pub id: String,
+    
+    /// i18n Translation Key
+    /// MUST follow pattern: `plugin.{plugin_id}.{suffix}`
+    /// e.g. "plugin.blog.menu.dashboard"
+    pub label: String,
+    
+    /// Target path or URL
+    pub path: String,
+    
+    /// Icon definition
+    /// - Standard: Lucide/Material string (e.g. "users")
+    /// - Custom: SVG string (starts with "<svg>")
+    /// - Remote: URL (starts with "http")
+    pub icon: Option<String>,
+    
+    /// Target Zone ID (e.g. "sidebar.main", "mobile.bottom_nav")
+    pub parent_id: Option<String>,
+    
+    /// Sort order
+    #[serde(default)]
+    pub order: i32,
+    
+    /// Required RBAC permissions to view this item
+    #[serde(default)]
+    pub permissions: Vec<String>,
+    
+    /// Open in new tab?
+    #[serde(default)]
+    pub external: bool,
 }
 
 fn default_runtime() -> RuntimeType {
@@ -100,7 +172,7 @@ fn default_runtime() -> RuntimeType {
 }
 
 /// Author information
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, utoipa::ToSchema)]
 pub struct Author {
     pub name: String,
     #[serde(default)]
@@ -113,7 +185,7 @@ pub struct Author {
 // Plugin Capabilities (Kernel-level Permissions)
 // ════════════════════════════════════════════════════════════════════════════
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Capability {
     // ─── Storage ─────────────────────────────────────────────────────────────
@@ -203,7 +275,7 @@ impl Capability {
 // Runtime Type
 // ════════════════════════════════════════════════════════════════════════════
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, utoipa::ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum RuntimeType {
     #[default]
@@ -289,6 +361,9 @@ pub struct Plugin {
     pub is_active: bool,
     pub error_message: Option<String>,
     
+    // ─── UI Extensions ───────────────────────────────────────────────────────
+    pub ui: Option<serde_json::Value>,
+
     // ─── Timestamps ──────────────────────────────────────────────────────────
     pub installed_at: DateTime<Utc>,
     pub enabled_at: Option<DateTime<Utc>>,
@@ -346,6 +421,9 @@ impl Plugin {
             network_access: manifest.network_access.clone(),
             config: serde_json::Value::Object(serde_json::Map::new()),
             
+            // UI
+            ui: manifest.ui.as_ref().map(|ui| serde_json::to_value(ui).unwrap_or_default()),
+
             // WASM
             wasm_path: None,
             wasm_hash: None,

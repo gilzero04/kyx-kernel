@@ -1,5 +1,5 @@
 use ntex::web;
-use crate::modules::system::interface::http::handlers::theme; // Correct path to handlers
+use crate::modules::system::interface::http::handlers::theme;
 use crate::core::infrastructure::permission_middleware::RequirePermission;
 
 pub fn theme_routes(
@@ -14,24 +14,33 @@ pub fn theme_routes(
             .route(web::get().to(theme::list_themes))
     );
 
-    // Protected theme management routes
+    // Protected theme management routes with granular permissions
     cfg.service(
         web::scope("/themes")
-            .wrap(RequirePermission::system("theme:write", jwt.clone(), audit.clone()).with_redis_opt(redis))
-            
-            // POST /themes/import (Multipart)
+            // POST /themes/import - Import new theme
             .service(
                 web::resource("/import")
+                    .wrap(RequirePermission::new("theme:import", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
                     .route(web::post().to(theme::import_theme))
             )
-            
-            // PATCH /themes/{id}/activate
-            .route("/{id}/activate", web::patch().to(theme::set_active_theme))
-
-            // PATCH /themes/{id}/visibility
-            .route("/{id}/visibility", web::patch().to(theme::set_visibility))
-            
-            // DELETE /themes/{id}
-            .route("/{id}", web::delete().to(theme::delete_theme))
+            // PATCH /themes/{id}/activate - Activate theme
+            .service(
+                web::resource("/{id}/activate")
+                    .wrap(RequirePermission::new("theme:activate", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    .route(web::patch().to(theme::set_active_theme))
+            )
+            // PATCH /themes/{id}/visibility - Update visibility
+            .service(
+                web::resource("/{id}/visibility")
+                    .wrap(RequirePermission::new("theme:update", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    .route(web::patch().to(theme::set_visibility))
+            )
+            // DELETE /themes/{id} - Delete theme
+            .service(
+                web::resource("/{id}")
+                    .guard(web::guard::Delete())
+                    .wrap(RequirePermission::new("theme:delete", jwt, audit).with_redis_opt(redis))
+                    .route(web::delete().to(theme::delete_theme))
+            )
     );
 }

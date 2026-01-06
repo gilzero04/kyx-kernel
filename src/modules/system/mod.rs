@@ -139,84 +139,92 @@ impl AppModule for SystemModule {
         let tenant_s = self.tenant_service.clone();
         let domain_verification_s = self.domain_verification_service.clone();
         let theme_s = self.theme_service.clone();
-        
-// DELETED: Global admin_auth wrapper replaced by granular guards in routers
-
-        
-        // 1. System Scope (Public & Protected Platform Management)
         let cms_s = self.cms_service.clone();
-        config.service(
-            web::scope("/system")
-                .state(self.db.clone())
-                .state(config_service.clone())
-                .state(audit_service.clone())
-                .state(i18n_s.clone()) 
-                .state(self.jwt.clone()) 
-                .state(audit_query_s.clone()) 
-                .state(api_key_s.clone())
-                .state(cors_s.clone())
-                .state(tenant_s.clone())
-                .state(domain_verification_s.clone())
-                .state(self.rbac_service.clone())
-                .state(theme_s.clone())
-                // Public Routes
-                .service(interface::http::routers::system::public_routes())
-                .service(interface::http::routers::i18n::public_routes())
-                // Protected Platform Routes (Each router is now self-protected)
-                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::rbac::rbac_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::config::config_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::api_key::api_key_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-        );
-
-        // 3. Tenant Admin Scope (Business Management)
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 1. UNIFIED ADMIN SCOPE - All protected management endpoints
+        // ═══════════════════════════════════════════════════════════════════════════
         config.service(
             web::scope("/admin")
                 .state(self.db.clone())
                 .state(self.jwt.clone()) 
                 .state(config_service.clone())
-                .state(audit_service.clone()) 
+                .state(audit_service.clone())
+                .state(i18n_s.clone())
+                .state(audit_query_s)
+                .state(api_key_s.clone())
+                .state(cors_s.clone())
+                .state(tenant_s.clone())
+                .state(domain_verification_s)
                 .state(self.rbac_service.clone())
                 .state(self.user_service.clone())
-                .state(tenant_s.clone())
-                .state(cors_s.clone())
-                .state(audit_query_s)
-                .state(i18n_s.clone())
                 .state(theme_s.clone())
                 .state(cms_s.clone())
                 .state(self.plugin_registry.clone())
-                // Business level operations
-                .configure(|conf| interface::http::routers::user::user_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::rbac::rbac_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Config & Settings
                 .configure(|conf| interface::http::routers::config::config_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
                 .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Users
+                .configure(|conf| interface::http::routers::user::user_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Tenants
+                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // RBAC (Roles & Permissions)
+                .configure(|conf| interface::http::routers::rbac::rbac_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Sessions (Admin) - handled by auth module
+                // Audit Logs
+                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // API Keys
+                .configure(|conf| interface::http::routers::api_key::api_key_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // CORS
+                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // i18n
+                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Themes
+                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Plugins
+                .configure(|conf| interface::http::routers::plugin::plugin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // CMS
                 .configure(|conf| interface::http::routers::cms::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                // Plugin Management (wired via handler.configure)
-                .configure(interface::http::handlers::plugin::configure)
         );
         
-        // 4. Headless/Public Scope
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 2. PUBLIC SCOPE - Unauthenticated access  
+        // ═══════════════════════════════════════════════════════════════════════════
         config.service(
-            web::scope("/public/system")
+            web::scope("/public")
                 .state(api_key_s)
                 .state(self.cms_service.clone())
                 .state(self.tenant_service.clone())
-                .route("/info", web::get().to(interface::http::handlers::system::get_system_info))
+                .state(theme_s)
+                .state(i18n_s)
+                // System Info
+                .route("/system/info", web::get().to(interface::http::handlers::system::get_system_info))
+                .route("/system/status", web::get().to(interface::http::handlers::system::get_system_status))
+                // Public Tenant Info
                 .route("/tenants/{slug}", web::get().to(interface::http::handlers::tenant::get_tenant_by_slug))
+                // Public Theme List
+                .route("/themes", web::get().to(interface::http::handlers::theme::list_themes))
+                // Public i18n
+                .service(interface::http::routers::i18n::public_routes())
+                // System Info
+                .service(interface::http::routers::system::public_routes())
+                // CMS Pages
                 .service(
                     web::scope("/cms/pages/{tenant_id}")
                         .default_service(web::get().to(interface::http::handlers::cms::get_page_by_slug))
                 )
+        );
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // 3. ME SCOPE - Authenticated User Context
+        // ═══════════════════════════════════════════════════════════════════════════
+        config.service(
+            web::scope("/me")
+                .wrap(crate::core::infrastructure::permission_middleware::RequirePermission::new("", self.jwt.clone(), self.audit.clone()).with_redis_opt(None))
+                .state(self.plugin_registry.clone())
+                .state(self.tenant_service.clone())
+                .configure(interface::http::handlers::plugin::configure_me)
+                .service(crate::modules::auth::interface::http::routers::user_preferences::user_preferences_routes())
         );
 
         Ok(())

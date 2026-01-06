@@ -113,6 +113,17 @@ impl TenantService {
         })
     }
 
+    pub async fn get_parent_id(&self, tenant_id: sqlx::types::Uuid) -> Result<Option<sqlx::types::Uuid>, AppError> {
+        match self.repo.get_by_id(tenant_id, None).await {
+            Ok(Some(tenant)) => Ok(tenant.parent_id),
+            Ok(None) => Ok(None),
+            Err(e) => Err(AppError {
+                code: 500,
+                message: e.to_string(),
+            }),
+        }
+    }
+
     pub async fn get_tenant_by_slug(&self, slug: String) -> Result<Option<crate::modules::system::domain::tenant::entity::TenantEntry>, AppError> {
         self.repo.get_by_slug(slug).await.map_err(|e| AppError {
             code: 500,

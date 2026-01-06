@@ -64,7 +64,8 @@ impl AppModule for AuthModule {
 
         // User preferences routes (any authenticated user)
         config.service(
-            interface::http::routers::user_preferences::user_preferences_routes(user_auth)
+            interface::http::routers::user_preferences::user_preferences_routes()
+                .wrap(user_auth)
                 .state(self.db.clone())
         );
 

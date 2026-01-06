@@ -13,7 +13,7 @@ use crate::modules::system::interface::http::dto::i18n::{TranslationsResponse, C
 /// List all available i18n locales
 #[utoipa::path(
     get,
-    path = "/api/v1/system/locales",
+    path = "/api/v1/public/i18n/locales",
     responses(
         (status = 200, description = "List of locales")
     ),
@@ -31,7 +31,7 @@ pub async fn list_locales(
 /// Get translations for a specific locale
 #[utoipa::path(
     get,
-    path = "/api/v1/system/translations/{locale}",
+    path = "/api/v1/public/i18n/translations/{locale}",
     responses(
         (status = 200, description = "Translations fetched successfully", body = TranslationsResponse)
     ),
@@ -200,5 +200,26 @@ pub async fn delete_locale(
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
         },
         Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.to_string() }))
+    }
+}
+
+/// List all translations for admin management
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/i18n/translations",
+    responses(
+        (status = 200, description = "All translations retrieved")
+    ),
+    tag = "i18n",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn list_all_translations(
+    service: web::types::State<Arc<I18nService>>,
+) -> impl web::Responder {
+    match service.list_all_translations().await {
+        Ok(data) => web::HttpResponse::Ok().json(&data),
+        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.to_string() })),
     }
 }

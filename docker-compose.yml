@@ -1,4 +1,7 @@
+version: "3.8"
+
 services:
+  # Kyx Kernel Application
   kyx-kernel:
     build:
       context: .
@@ -6,7 +9,7 @@ services:
     image: kyx/kernel
     container_name: kyx-kernel-app
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT:-local}
       - PORT=8080
       - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@host.docker.internal:5435/${DB_NAME}
       - REDIS_URL=rediss://host.docker.internal:6381
@@ -14,6 +17,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ENGINE_SECRET_KEY=${ENGINE_SECRET_KEY}
       - APP_VERSION=${APP_VERSION:-0.1.0}
+      - RUST_LOG=${RUST_LOG:-info}
+      - DOCS_USER=${DOCS_USER}
+      - DOCS_PASSWORD=${DOCS_PASSWORD}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -21,12 +27,13 @@ services:
     volumes:
       - ./assets:/app/assets
       - ./uploads:/app/uploads
-    restart: always
-
-volumes:
-  kyx_postgres_data_success:
-  postgres_data:
-  redis_data:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
 
 networks:
   default:

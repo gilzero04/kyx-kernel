@@ -9,29 +9,32 @@ use serde::{Deserialize, Serialize};
 
 use crate::modules::system::domain::plugin::registry::PluginRegistry;
 use crate::modules::system::domain::plugin::{Manifest, Plugin};
+use crate::modules::system::domain::plugin::entity::{MenuExtension, UIExtensions};
+use crate::modules::system::application::services::tenant::TenantService;
+use crate::core::utils::jwt::Claims;
 
 // ════════════════════════════════════════════════════════════════════════════
 // Request/Response DTOs
 // ════════════════════════════════════════════════════════════════════════════
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct TenantQuery {
-    pub tenant_id: Uuid,
+    pub tenant_id: Option<Uuid>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct InstallPluginRequest {
     pub tenant_id: Uuid,
     pub manifest: Manifest,
     pub config: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdatePluginConfigRequest {
     pub config: serde_json::Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct PluginResponse {
     pub id: Uuid,
     pub plugin_id: String,
@@ -58,22 +61,27 @@ impl From<Plugin> for PluginResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct PluginListResponse {
     pub plugins: Vec<PluginResponse>,
     pub total: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SuccessResponse {
     pub status: String,
     pub message: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ErrorResponse {
     pub error: String,
     pub message: String,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct AggregatedMenuResponse {
+    pub menus: Vec<MenuExtension>,
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -94,8 +102,9 @@ pub struct ErrorResponse {
 pub async fn list_plugins(
     registry: web::types::State<Arc<PluginRegistry>>,
     query: web::types::Query<TenantQuery>,
+    claims: Claims,
 ) -> web::HttpResponse {
-    let tenant_id = query.tenant_id;
+    let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     
     match registry.list_plugins(tenant_id).await {
         Ok(plugins) => {
@@ -204,9 +213,10 @@ pub async fn enable_plugin(
     registry: web::types::State<Arc<PluginRegistry>>,
     path: web::types::Path<Uuid>,
     query: web::types::Query<TenantQuery>,
+    claims: Claims,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    let tenant_id = query.tenant_id;
+    let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     
     match registry.enable(tenant_id, plugin_id).await {
         Ok(()) => {
@@ -217,8 +227,8 @@ pub async fn enable_plugin(
         }
         Err(e) => {
             log::error!("Failed to enable plugin: {}", e);
-            web::HttpResponse::BadRequest().json(&ErrorResponse {
-                error: "Failed to enable plugin".to_string(),
+            web::HttpResponse::NotFound().json(&ErrorResponse {
+                error: "Plugin not found".to_string(),
                 message: e.to_string()
             })
         }
@@ -241,9 +251,10 @@ pub async fn disable_plugin(
     registry: web::types::State<Arc<PluginRegistry>>,
     path: web::types::Path<Uuid>,
     query: web::types::Query<TenantQuery>,
+    claims: Claims,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    let tenant_id = query.tenant_id;
+    let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     
     match registry.disable(tenant_id, plugin_id).await {
         Ok(()) => {
@@ -254,8 +265,8 @@ pub async fn disable_plugin(
         }
         Err(e) => {
             log::error!("Failed to disable plugin: {}", e);
-            web::HttpResponse::BadRequest().json(&ErrorResponse {
-                error: "Failed to disable plugin".to_string(),
+            web::HttpResponse::NotFound().json(&ErrorResponse {
+                error: "Plugin not found".to_string(),
                 message: e.to_string()
             })
         }
@@ -278,9 +289,10 @@ pub async fn uninstall_plugin(
     registry: web::types::State<Arc<PluginRegistry>>,
     path: web::types::Path<Uuid>,
     query: web::types::Query<TenantQuery>,
+    claims: Claims,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    let tenant_id = query.tenant_id;
+    let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     
     match registry.uninstall(tenant_id, plugin_id).await {
         Ok(()) => {
@@ -317,9 +329,10 @@ pub async fn update_plugin_config(
     path: web::types::Path<Uuid>,
     query: web::types::Query<TenantQuery>,
     body: web::types::Json<UpdatePluginConfigRequest>,
+    claims: Claims,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    let tenant_id = query.tenant_id;
+    let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     let config = body.into_inner().config;
     
     match registry.update_config(tenant_id, plugin_id, config).await {
@@ -360,7 +373,7 @@ pub async fn analyze_plugin_security(
     web::HttpResponse::Ok().json(&summary)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct AnalyzePluginRequest {
     pub manifest: Manifest,
 }
@@ -408,7 +421,7 @@ pub async fn install_plugin_with_approval(
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct InstallWithApprovalRequest {
     pub tenant_id: Uuid,
     pub manifest: Manifest,
@@ -460,11 +473,71 @@ pub async fn get_plugin_security(
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SecurityWarningsResponse {
     pub plugin_id: String,
     pub warnings: Vec<String>,
     pub warning_count: usize,
+}
+
+/// Get aggregated dynamic menus for current user
+#[utoipa::path(
+    get,
+    path = "/api/v1/me/menus",
+    responses(
+        (status = 200, description = "Aggregated menus returned", body = AggregatedMenuResponse)
+    ),
+    tag = "plugins",
+    security(("bearer_auth" = []))
+)]
+pub async fn get_menus(
+    registry: web::types::State<Arc<PluginRegistry>>,
+    tenant_service: web::types::State<Arc<TenantService>>,
+    claims: Claims,
+) -> web::HttpResponse {
+    let tenant_id = claims.tenant_id;
+    
+    // 1. Get Parent Tenant ID (for inheritance)
+    let parent_id = match tenant_service.get_ref().get_parent_id(tenant_id).await {
+        Ok(pid) => pid,
+        Err(_) => None, // If error (e.g. root tenant or db error), assume no parent
+    };
+
+    // 2. Fetch Available Plugins (Own + Global + Shared Parent)
+    let plugins = match registry.get_ref().find_available_plugins(tenant_id, parent_id).await {
+        Ok(p) => p,
+        Err(e) => {
+            log::error!("Failed to fetch available plugins for menus: {}", e);
+            return web::HttpResponse::InternalServerError().json(&ErrorResponse {
+                error: "Internal Error".to_string(),
+                message: "Failed to fetch plugins".to_string(),
+            });
+        }
+    };
+
+    // 3. Aggregate Menus
+    let mut all_menus = Vec::new();
+    let user_permissions = &claims.permissions;
+
+    for plugin in plugins {
+        if let Some(ui_val) = &plugin.ui {
+            if let Ok(ui) = serde_json::from_value::<crate::modules::system::domain::plugin::entity::UIExtensions>(ui_val.clone()) {
+                for menu in ui.menus {
+                    // 4. Permission Filtering
+                    if menu.permissions.is_empty() || menu.permissions.iter().any(|p| user_permissions.contains(p)) {
+                        all_menus.push(menu);
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Sort by order
+    all_menus.sort_by(|a, b| a.order.cmp(&b.order));
+
+    web::HttpResponse::Ok().json(&AggregatedMenuResponse {
+        menus: all_menus,
+    })
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -473,7 +546,7 @@ pub struct SecurityWarningsResponse {
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/api/v1/admin/plugins")
+        web::scope("/plugins")  // Relative path - already inside /api/v1/admin scope
             .route("", web::get().to(list_plugins))
             .route("", web::post().to(install_plugin))
             .route("/analyze", web::post().to(analyze_plugin_security))
@@ -484,5 +557,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/{id}/disable", web::post().to(disable_plugin))
             .route("/{id}/config", web::put().to(update_plugin_config))
             .route("/{id}/security", web::get().to(get_plugin_security))
+    );
+}
+
+pub fn configure_me(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/menus")
+            .route("", web::get().to(get_menus))
     );
 }

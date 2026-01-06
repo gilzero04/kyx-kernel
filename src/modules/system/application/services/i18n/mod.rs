@@ -77,4 +77,22 @@ impl I18nService {
     pub async fn delete_locale(&self, code: &str) -> Result<()> {
         self.repo.delete_locale(code).await
     }
+
+    pub async fn list_all_translations(&self) -> Result<Vec<serde_json::Value>> {
+        let locales = self.repo.list_locales().await?;
+        let mut result = Vec::new();
+        for locale in locales {
+            let translations = self.repo.get_translations(&locale.code).await?;
+            result.push(serde_json::json!({
+                "locale": locale.code,
+                "name": locale.name,
+                "count": translations.len(),
+                "translations": translations.into_iter().map(|t| serde_json::json!({
+                    "key": t.key,
+                    "message": t.message
+                })).collect::<Vec<_>>()
+            }));
+        }
+        Ok(result)
+    }
 }

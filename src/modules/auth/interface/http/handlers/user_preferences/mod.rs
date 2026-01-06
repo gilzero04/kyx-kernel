@@ -2,6 +2,7 @@ use ntex::web::{self, HttpResponse};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::core::utils::jwt::Claims;
 
 use crate::core::infrastructure::database::Database;
 use crate::modules::auth::application::services::user_preferences::UserPreferencesService;
@@ -32,16 +33,29 @@ pub struct PreferencesResponse {
 }
 
 /// GET /users/me/preferences - Get current user's preferences
+#[utoipa::path(
+    get,
+    path = "/api/v1/me/preferences",
+    responses(
+        (status = 200, description = "User preferences retrieved", body = PreferencesResponse),
+        (status = 401, description = "Not authenticated")
+    ),
+    tag = "users",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_my_preferences(
-    req: web::HttpRequest,
+    _req: web::HttpRequest,
     db: web::types::State<Arc<Database>>,
+    claims: Claims,
 ) -> HttpResponse {
-    // Get user_id from request extensions (set by auth middleware)
-    let user_id = match req.extensions().get::<Uuid>().cloned() {
-        Some(id) => id,
-        None => {
+    // Get user_id from claims
+    let user_id = match Uuid::parse_str(&claims.sub) {
+        Ok(id) => id,
+        Err(_) => {
             return HttpResponse::Unauthorized().json(&serde_json::json!({
-                "error": "Not authenticated"
+                "error": "Invalid user ID in token"
             }))
         }
     };
@@ -66,17 +80,31 @@ pub async fn get_my_preferences(
 }
 
 /// PATCH /users/me/preferences - Update current user's preferences
+#[utoipa::path(
+    patch,
+    path = "/api/v1/me/preferences",
+    request_body = UpdatePreferencesRequest,
+    responses(
+        (status = 200, description = "User preferences updated", body = PreferencesResponse),
+        (status = 401, description = "Not authenticated")
+    ),
+    tag = "users",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn update_my_preferences(
-    req: web::HttpRequest,
+    _req: web::HttpRequest,
     db: web::types::State<Arc<Database>>,
     body: web::types::Json<UpdatePreferencesRequest>,
+    claims: Claims,
 ) -> HttpResponse {
-    // Get user_id from request extensions
-    let user_id = match req.extensions().get::<Uuid>().cloned() {
-        Some(id) => id,
-        None => {
+    // Get user_id from claims
+    let user_id = match Uuid::parse_str(&claims.sub) {
+        Ok(id) => id,
+        Err(_) => {
             return HttpResponse::Unauthorized().json(&serde_json::json!({
-                "error": "Not authenticated"
+                "error": "Invalid user ID in token"
             }))
         }
     };

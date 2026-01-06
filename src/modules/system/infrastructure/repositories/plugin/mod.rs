@@ -81,6 +81,50 @@ impl PluginRepository {
         
         Ok(plugins)
     }
+
+    /// Get all available active plugins for a tenant (including Global and Shared from Parent)
+    pub async fn find_available_plugins(&self, tenant_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<Plugin>> {
+        let parent_id = parent_id.unwrap_or(Uuid::nil()); // Use nil if no parent, effectively ignoring that clause
+        
+        let rows = sqlx::query(
+            r#"
+            SELECT 
+                id, tenant_id, plugin_id, name, version, description,
+                author, author_email, author_website,
+                icon, banner, category, tags,
+                homepage_url, documentation_url, repository_url, support_url,
+                runtime, entry_point, capabilities, permissions, data_access, network_access, config,
+                ui,
+                wasm_path, wasm_hash, wasm_size_bytes,
+                verified, official, featured, is_core_plugin,
+                min_app_version, max_app_version,
+                status, is_active, error_message,
+                installed_at, enabled_at, disabled_at, created_at, updated_at
+            FROM sys_plugins
+            WHERE 
+                (tenant_id = $1) -- Own plugins
+                OR (
+                    (visibility = 'global') -- System-wide global plugins
+                )
+                OR (
+                    ($2 != '00000000-0000-0000-0000-000000000000'::uuid) 
+                    AND (tenant_id = $2 AND visibility = 'shared') -- Shared from parent
+                )
+            AND is_active = true
+            ORDER BY name ASC
+            "#
+        )
+        .bind(tenant_id)
+        .bind(parent_id)
+        .fetch_all(&self.pool)
+        .await?;
+        
+        let plugins = rows.into_iter()
+            .map(|row| Self::row_to_plugin(&row))
+            .collect::<Result<Vec<_>, _>>()?;
+        
+        Ok(plugins)
+    }
     
     /// Find plugin by ID
     pub async fn find_by_id(&self, id: Uuid) -> Result<Option<Plugin>> {
@@ -148,6 +192,7 @@ impl PluginRepository {
         let data_access_json = serde_json::to_value(&plugin.data_access)?;
         let network_access_json = serde_json::to_value(&plugin.network_access)?;
         let tags_json = serde_json::to_value(&plugin.tags)?;
+        let ui_json = serde_json::to_value(&plugin.ui)?;
         
         let row = sqlx::query(
             r#"
@@ -161,12 +206,14 @@ impl PluginRepository {
                 verified, official, featured, is_core_plugin,
                 min_app_version, max_app_version,
                 status, is_active, error_message,
+                ui,
                 installed_at, enabled_at, disabled_at
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
                 $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
                 $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-                $31, $32, $33, $34, $35, $36, $37, $38
+                $31, $32, $33, $34, $35, $36, $37, 
+                $38, $39, $40, $41
             )
             RETURNING 
                 id, tenant_id, plugin_id, name, version, description,
@@ -178,6 +225,7 @@ impl PluginRepository {
                 verified, official, featured, is_core_plugin,
                 min_app_version, max_app_version,
                 status, is_active, error_message,
+                ui,
                 installed_at, enabled_at, disabled_at, created_at, updated_at
             "#
         )
@@ -217,6 +265,7 @@ impl PluginRepository {
         .bind(&plugin.status)
         .bind(plugin.is_active)
         .bind(&plugin.error_message)
+        .bind(&ui_json)
         .bind(plugin.installed_at)
         .bind(plugin.enabled_at)
         .bind(plugin.disabled_at)
@@ -369,6 +418,9 @@ impl PluginRepository {
                 .collect(),
             _ => vec![],
         };
+
+        // Extract UI JSON
+        let ui: Option<JsonValue> = row.try_get("ui")?;
         
         Ok(Plugin {
             id: row.try_get("id")?,
@@ -395,6 +447,7 @@ impl PluginRepository {
             data_access,
             network_access,
             config: row.try_get("config")?,
+            ui, 
             wasm_path: row.try_get("wasm_path")?,
             wasm_hash: row.try_get("wasm_hash")?,
             wasm_size_bytes: row.try_get("wasm_size_bytes")?,
