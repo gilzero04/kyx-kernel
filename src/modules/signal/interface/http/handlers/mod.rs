@@ -69,8 +69,9 @@ pub async fn generate_signal_token(
     // Validate TTL (max 300 seconds = 5 minutes)
     let ttl = body.ttl.map(|t| t.clamp(10, 300));
     
-    // Get plan from claims (default to "free" if not present)
-    let plan = "pro"; // TODO: Get from tenant/user
+    // Get plan and features from claims (populated by kyx-plan plugin if installed)
+    let plan = claims.plan_type.clone();
+    let features = claims.features.as_ref();
     
     // Create signal service
     let signal_service = SignalService::new(jwt.get_ref().clone());
@@ -81,6 +82,7 @@ pub async fn generate_signal_token(
         claims.tenant_id,
         &claims.permissions,
         plan,
+        features,
         ttl,
     ) {
         Ok(response) => {

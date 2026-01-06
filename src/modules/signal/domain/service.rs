@@ -4,7 +4,7 @@ use uuid::Uuid;
 use jsonwebtoken::{encode, Header};
 
 use crate::core::utils::jwt::JwtService;
-use super::super::domain::entity::{SignalTicketClaims, PermissionMapper};
+use super::super::domain::entity::{SignalTicketClaims, SignalRateLimits, PermissionMapper};
 
 /// Service for generating signal tickets
 pub struct SignalService {
@@ -34,12 +34,14 @@ impl SignalService {
     }
 
     /// Generate a signal ticket for the given user
+    /// features should come from kyx-plan plugin via Claims
     pub fn generate_ticket(
         &self,
         user_id: Uuid,
         tenant_id: Uuid,
         kernel_permissions: &[String],
-        plan: &str,
+        plan: Option<String>,
+        features: Option<&serde_json::Value>,
         ttl: Option<i64>,
     ) -> Result<SignalTicketResponse> {
         let signal_permissions = PermissionMapper::map(kernel_permissions);
@@ -49,12 +51,16 @@ impl SignalService {
             return Err(anyhow::anyhow!("User has no signal permissions"));
         }
 
+        // Get rate limits from features (or use defaults)
+        let rate_limits = SignalRateLimits::from_features(features);
+        
         let ttl_seconds = ttl.unwrap_or(self.default_ttl);
         let claims = SignalTicketClaims::new(
             user_id,
             tenant_id,
             signal_permissions,
-            plan.to_string(),
+            plan,
+            rate_limits,
             ttl_seconds,
         );
 
@@ -74,3 +80,4 @@ impl SignalService {
         })
     }
 }
+

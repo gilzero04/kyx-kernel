@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Rate limits for signal connections based on plan
+/// Rate limits for signal connections
+/// Values should be provided by kyx-plan plugin, not hardcoded
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignalRateLimits {
     pub messages_per_minute: u32,
@@ -9,35 +10,40 @@ pub struct SignalRateLimits {
     pub rooms: u32,
 }
 
+// Default values when no plan plugin is installed
 impl Default for SignalRateLimits {
     fn default() -> Self {
         Self {
-            messages_per_minute: 60,
-            connections: 3,
-            rooms: 10,
+            messages_per_minute: 100,  // Generous default
+            connections: 10,
+            rooms: 20,
         }
     }
 }
 
 impl SignalRateLimits {
-    pub fn for_plan(plan: &str) -> Self {
-        match plan {
-            "free" => Self {
-                messages_per_minute: 30,
-                connections: 2,
-                rooms: 5,
-            },
-            "pro" => Self {
-                messages_per_minute: 200,
-                connections: 10,
-                rooms: 50,
-            },
-            "enterprise" => Self {
-                messages_per_minute: 1000,
-                connections: 100,
-                rooms: 500,
-            },
-            _ => Self::default(),
+    /// Create rate limits with specific values
+    pub fn new(messages_per_minute: u32, connections: u32, rooms: u32) -> Self {
+        Self { messages_per_minute, connections, rooms }
+    }
+    
+    /// Parse rate limits from features JSON (from kyx-plan plugin)
+    /// Falls back to defaults if fields missing
+    pub fn from_features(features: Option<&serde_json::Value>) -> Self {
+        if let Some(f) = features {
+            Self {
+                messages_per_minute: f.get("messages_per_minute")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(100) as u32,
+                connections: f.get("max_connections")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(10) as u32,
+                rooms: f.get("max_rooms")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(20) as u32,
+            }
+        } else {
+            Self::default()
         }
     }
 }
@@ -53,8 +59,8 @@ pub struct SignalTicketClaims {
     pub signal_permissions: Vec<String>,
     /// Allowed rooms ("*" = all)
     pub allowed_rooms: Vec<String>,
-    /// Plan type
-    pub plan: String,
+    /// Plan type (optional, for display only)
+    pub plan: Option<String>,
     /// Rate limits
     pub rate_limits: SignalRateLimits,
     /// Unique ticket ID (for single-use tracking)
@@ -76,7 +82,8 @@ impl SignalTicketClaims {
         user_id: Uuid,
         tenant_id: Uuid,
         signal_permissions: Vec<String>,
-        plan: String,
+        plan: Option<String>,
+        rate_limits: SignalRateLimits,
         ttl_seconds: i64,
     ) -> Self {
         let now = chrono::Utc::now().timestamp();
@@ -85,8 +92,8 @@ impl SignalTicketClaims {
             tenant_id,
             signal_permissions,
             allowed_rooms: vec!["*".to_string()],
-            plan: plan.clone(),
-            rate_limits: SignalRateLimits::for_plan(&plan),
+            plan,
+            rate_limits,
             jti: Uuid::new_v4(),
             iss: "kyx-kernel".to_string(),
             aud: "kyx-signal".to_string(),
@@ -142,13 +149,28 @@ mod tests {
     }
 
     #[test]
-    fn test_rate_limits_by_plan() {
-        let free = SignalRateLimits::for_plan("free");
-        let pro = SignalRateLimits::for_plan("pro");
-        let enterprise = SignalRateLimits::for_plan("enterprise");
+    fn test_rate_limits_from_features() {
+        // Test with JSON features (as kyx-plan plugin would provide)
+        let features = serde_json::json!({
+            "messages_per_minute": 200,
+            "max_connections": 10,
+            "max_rooms": 50
+        });
+        let limits = SignalRateLimits::from_features(Some(&features));
+        
+        assert_eq!(limits.messages_per_minute, 200);
+        assert_eq!(limits.connections, 10);
+        assert_eq!(limits.rooms, 50);
+    }
 
-        assert_eq!(free.connections, 2);
-        assert_eq!(pro.connections, 10);
-        assert_eq!(enterprise.connections, 100);
+    #[test]
+    fn test_rate_limits_defaults() {
+        // Test without features (no kyx-plan plugin)
+        let limits = SignalRateLimits::from_features(None);
+        
+        assert_eq!(limits.messages_per_minute, 100);
+        assert_eq!(limits.connections, 10);
+        assert_eq!(limits.rooms, 20);
     }
 }
+

@@ -29,9 +29,9 @@ pub struct Claims {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plan_type: Option<String>,
     
-    /// Feature flags enabled for this user/tenant
+    /// Feature flags enabled for this user/tenant (flexible JSON from plugin)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub features: Option<PlanFeatures>,
+    pub features: Option<serde_json::Value>,
     
     // Phase 2: Signal-specific claims (for kyx-signal integration)
     /// Mapped signal permissions (subscribe, publish, join, etc.)
@@ -39,66 +39,9 @@ pub struct Claims {
     pub signal_permissions: Option<Vec<String>>,
 }
 
-/// Plan-based feature flags and rate limits
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct PlanFeatures {
-    /// Maximum WebSocket connections
-    #[serde(default)]
-    pub max_connections: u32,
-    
-    /// Messages per minute rate limit
-    #[serde(default)]
-    pub messages_per_minute: u32,
-    
-    /// Maximum rooms user can join
-    #[serde(default)]
-    pub max_rooms: u32,
-    
-    /// AI features enabled (face search, etc.)
-    #[serde(default)]
-    pub ai_enabled: bool,
-    
-    /// Custom domain enabled
-    #[serde(default)]
-    pub custom_domain: bool,
-    
-    /// White-label branding
-    #[serde(default)]
-    pub white_label: bool,
-}
-
-impl PlanFeatures {
-    /// Create features for a specific plan type
-    pub fn for_plan(plan_type: &str) -> Self {
-        match plan_type {
-            "free" => Self {
-                max_connections: 2,
-                messages_per_minute: 30,
-                max_rooms: 5,
-                ai_enabled: false,
-                custom_domain: false,
-                white_label: false,
-            },
-            "pro" => Self {
-                max_connections: 10,
-                messages_per_minute: 200,
-                max_rooms: 50,
-                ai_enabled: true,
-                custom_domain: true,
-                white_label: false,
-            },
-            "enterprise" => Self {
-                max_connections: 100,
-                messages_per_minute: 1000,
-                max_rooms: 500,
-                ai_enabled: true,
-                custom_domain: true,
-                white_label: true,
-            },
-            _ => Self::default(),
-        }
-    }
-}
+// Note: PlanFeatures moved to kyx-plan plugin
+// Claims.features is now Option<serde_json::Value> for flexibility
+// Plan data should be fetched from database via plugin, not hardcoded
 
 impl web::FromRequest<web::DefaultError> for Claims {
     type Error = web::Error;
@@ -142,6 +85,7 @@ impl JwtService {
     }
 
     /// Generate access token with plan information (for kyx-signal integration)
+    /// Features should be fetched from database via kyx-plan plugin
     pub fn generate_access_token_with_plan(
         &self,
         user_id: &str,
@@ -150,23 +94,14 @@ impl JwtService {
         permissions: Vec<String>,
         is_system_owner: bool,
         sid: Option<String>,
-        plan_type: &str,
+        plan_type: Option<String>,
+        features: Option<serde_json::Value>,
+        signal_permissions: Option<Vec<String>>,
     ) -> Result<String, AppError> {
         let expiration = chrono::Utc::now()
             .checked_add_signed(Duration::minutes(30))
             .expect("invalid timestamp")
             .timestamp();
-
-        // Map kernel permissions to signal permissions
-        let signal_perms = permissions.iter()
-            .filter_map(|p| match p.as_str() {
-                "chat:read" => Some("subscribe".to_string()),
-                "chat:send" => Some("publish".to_string()),
-                "room:join" => Some("join".to_string()),
-                "room:admin" => Some("moderate".to_string()),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
 
         let claims = Claims {
             sub: user_id.to_owned(),
@@ -177,9 +112,9 @@ impl JwtService {
             sid,
             exp: expiration as usize,
             token_type: TokenType::Access,
-            plan_type: Some(plan_type.to_string()),
-            features: Some(PlanFeatures::for_plan(plan_type)),
-            signal_permissions: if signal_perms.is_empty() { None } else { Some(signal_perms) },
+            plan_type,
+            features,
+            signal_permissions,
         };
 
         encode(&Header::default(), &claims, &self.encoding_key)

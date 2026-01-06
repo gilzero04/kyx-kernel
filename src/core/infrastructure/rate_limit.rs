@@ -242,9 +242,29 @@ where
 // ==========================================
 // Plan-Aware Rate Limit (reads from JWT claims)
 // Phase 3: Multi-layer rate limiting
+// Features should come from kyx-plan plugin via Claims
 // ==========================================
 
-use crate::core::utils::jwt::{Claims, PlanFeatures};
+use crate::core::utils::jwt::Claims;
+
+// Default rate limits when no plan plugin is installed
+const DEFAULT_MAX_CONNECTIONS: u32 = 100;
+const DEFAULT_MESSAGES_PER_MINUTE: u32 = 100;
+
+/// Helper to extract u32 from serde_json::Value
+fn get_u32_from_json(value: &serde_json::Value, key: &str, default: u32) -> u32 {
+    value.get(key)
+        .and_then(|v| v.as_u64())
+        .map(|v| v as u32)
+        .unwrap_or(default)
+}
+
+/// Helper to extract bool from serde_json::Value
+fn get_bool_from_json(value: &serde_json::Value, key: &str, default: bool) -> bool {
+    value.get(key)
+        .and_then(|v| v.as_bool())
+        .unwrap_or(default)
+}
 
 /// Rate limit key combining user, tenant, and endpoint
 #[derive(Hash, Eq, PartialEq, Clone)]
@@ -321,17 +341,23 @@ where
             let extensions = req.extensions();
             
             if let Some(claims) = extensions.get::<Claims>() {
-                // Get plan features from claims or derive from plan_type
-                let features = claims.features.clone().unwrap_or_else(|| {
-                    let plan_type = claims.plan_type.as_deref().unwrap_or("free");
-                    PlanFeatures::for_plan(plan_type)
-                });
+                // Parse features from JSON Value (populated by kyx-plan plugin)
+                // If no features, use defaults (no rate limiting by plan)
+                let (messages_per_minute, ai_enabled) = if let Some(ref features) = claims.features {
+                    (
+                        get_u32_from_json(features, "messages_per_minute", DEFAULT_MESSAGES_PER_MINUTE),
+                        get_bool_from_json(features, "ai_enabled", true),
+                    )
+                } else {
+                    // No plan plugin installed - use generous defaults
+                    (DEFAULT_MESSAGES_PER_MINUTE, true)
+                };
 
                 // Determine max requests based on endpoint category
                 let max_req = match self.endpoint_category.as_str() {
-                    "signal" => features.messages_per_minute,
-                    "ai" => if features.ai_enabled { 20 } else { 0 }, // AI disabled for free
-                    _ => features.messages_per_minute.max(100), // At least 100 for general API
+                    "signal" => messages_per_minute,
+                    "ai" => if ai_enabled { 20 } else { 0 },
+                    _ => messages_per_minute.max(100),
                 };
 
                 // Create composite key: tenant + user + endpoint
@@ -344,13 +370,13 @@ where
 
                 (max_req, 60u64, key)
             } else {
-                // No claims - use IP-based limiting with default free tier limits
+                // No claims - use IP-based limiting with default limits
                 let ip = req.peer_addr()
                     .map(|addr| addr.to_string())
                     .unwrap_or_else(|| "unknown".to_string());
                 
                 let key = format!("anon:{}:{}", ip, self.endpoint_category);
-                (30u32, 60u64, key) // Free tier defaults
+                (DEFAULT_MESSAGES_PER_MINUTE, 60u64, key)
             }
         };
 
