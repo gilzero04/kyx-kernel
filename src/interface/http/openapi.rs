@@ -2,6 +2,7 @@ use utoipa::{OpenApi, Modify, openapi::security::{SecurityScheme, HttpBuilder, H
 use crate::modules::system::interface::http::handlers::{config, system, rbac, tenant, user, audit, api_key, cors, i18n, plugin, theme};
 use crate::modules::auth::interface::http::handlers::{auth, user_preferences};
 use crate::modules::media::interface::http::handlers::media;
+use crate::modules::signal::interface::http::handlers as signal;
 
 // Schemas
 use crate::modules::system::interface::http::dto::config::ConfigUpdate;
@@ -138,6 +139,10 @@ use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capabilit
         plugin::analyze_plugin_security,
         plugin::install_plugin_with_approval,
         plugin::get_plugin_security,
+
+        // Signal
+        signal::generate_signal_token,
+        signal::signal_health,
     ),
     components(
         schemas(

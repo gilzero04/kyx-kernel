@@ -73,6 +73,12 @@ test_multi "GET" "/api/v1/docs" "200,401"
 test_multi "GET" "/api/v1/redoc" "200,401"
 
 # ═══════════════════════════════════════════════════════════════════════════════
+log_section "SIGNAL ENDPOINTS (/api/v1/signal/*)"
+# ═══════════════════════════════════════════════════════════════════════════════
+test_endpoint "GET" "/api/v1/signal/health" "200"
+test_endpoint "POST" "/api/v1/signal/token" "401" "" '{}'  # Requires auth
+
+# ═══════════════════════════════════════════════════════════════════════════════
 log_section "AUTH ENDPOINTS (/api/v1/auth/*)"
 # ═══════════════════════════════════════════════════════════════════════════════
 test_endpoint "GET" "/api/v1/auth/setup/status" "200"

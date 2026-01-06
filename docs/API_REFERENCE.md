@@ -13,6 +13,7 @@
 - [Me Endpoints](#me-endpoints-user-context)
 - [Admin Endpoints](#admin-endpoints)
 - [Media Endpoints](#media-endpoints)
+- [Signal Endpoints](#signal-endpoints-kyx-signal-integration)
 
 ---
 
@@ -217,6 +218,55 @@
 | DELETE | `/api/v1/media/assets/{id}`            | `media:delete` | Delete asset            |
 | POST   | `/api/v1/media/folders`                | `media:folder` | Create folder           |
 | GET    | `/api/v1/media/{tenant_id}/{filename}` | (public)       | Serve file              |
+
+---
+
+## Signal Endpoints (kyx-signal Integration)
+
+> **Note:** Signal endpoints are used for WebSocket connection to kyx-signal realtime server.
+
+### Token Exchange
+
+| Method | Endpoint                | Permission  | Description                                     |
+| ------ | ----------------------- | ----------- | ----------------------------------------------- |
+| GET    | `/api/v1/signal/health` | (public)    | Health check for signal integration             |
+| POST   | `/api/v1/signal/token`  | `chat:read` | Generate signal ticket for WebSocket connection |
+
+### Request: `/api/v1/signal/token`
+
+```json
+{
+  "rooms": ["room-uuid-1", "room-uuid-2"], // Optional: restrict to rooms
+  "ttl": 60 // Optional: TTL in seconds (10-300)
+}
+```
+
+### Response
+
+```json
+{
+  "ticket": "eyJhbGciOiJIUzI1NiIsInR5cCI6...",
+  "expires_at": "2026-01-07T03:05:00Z",
+  "signal_url": "wss://signal.kyx.io/ws"
+}
+```
+
+### Permission Mapping
+
+| Kernel Permission | Signal Permission | Description                |
+| ----------------- | ----------------- | -------------------------- |
+| `chat:read`       | `subscribe`       | Subscribe to room messages |
+| `chat:send`       | `publish`         | Publish messages to room   |
+| `room:join`       | `join`            | Join/leave rooms           |
+| `room:admin`      | `moderate`        | Kick/ban/mute users        |
+
+### Rate Limits by Plan
+
+| Plan       | Messages/min | Connections | Rooms |
+| ---------- | ------------ | ----------- | ----- |
+| Free       | 30           | 2           | 5     |
+| Pro        | 200          | 10          | 50    |
+| Enterprise | 1000         | 100         | 500   |
 
 ---
 
