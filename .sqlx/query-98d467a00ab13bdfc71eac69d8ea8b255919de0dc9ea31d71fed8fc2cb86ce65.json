@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO sys_pages (id, tenant_id, slug, title, content, is_published)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT (id) DO UPDATE\n            SET slug = EXCLUDED.slug, title = EXCLUDED.title, content = EXCLUDED.content, is_published = EXCLUDED.is_published, updated_at = NOW()\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Jsonb",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "98d467a00ab13bdfc71eac69d8ea8b255919de0dc9ea31d71fed8fc2cb86ce65"
+}

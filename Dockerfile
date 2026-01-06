@@ -19,11 +19,12 @@ RUN rm -rf src
 # Copy actual source code
 COPY src ./src
 COPY migrations ./migrations
-
+COPY .sqlx ./.sqlx
 # Touch main.rs to ensure rebuild
 RUN touch src/main.rs
 
-# Build the actual application
+# Build the actual application with offline metadata
+ENV SQLX_OFFLINE=true
 RUN cargo build --release
 
 # ============================================

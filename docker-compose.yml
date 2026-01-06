@@ -1,72 +1,21 @@
 services:
-  db:
-    build:
-      context: .
-      dockerfile: infra/docker/postgres/Dockerfile
-    container_name: kyx-postgres-secure
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "${DB_PORT:-8082}:5432"
-    volumes:
-      - kyx_postgres_data_success:/var/lib/postgresql/data
-    restart: always
-
-  redis:
-    build:
-      context: .
-      dockerfile: infra/docker/redis/Dockerfile
-    container_name: kyx-redis-secure
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    command:
-      [
-        "--tls-port",
-        "6380",
-        "--port",
-        "0",
-        "--tls-cert-file",
-        "/etc/redis/certs/redis.crt",
-        "--tls-key-file",
-        "/etc/redis/certs/redis.key",
-        "--tls-auth-clients",
-        "no",
-        "--requirepass",
-        "${REDIS_PASSWORD}",
-        "--loadmodule",
-        "/opt/redis-stack/lib/rejson.so",
-        "--loadmodule",
-        "/opt/redis-stack/lib/redisearch.so",
-        "--appendonly",
-        "yes",
-      ]
-    ports:
-      - "${REDIS_PORT:-8083}:6380"
-    volumes:
-      - redis_data:/data
-    restart: always
-
   kyx-kernel:
     build:
       context: .
       dockerfile: Dockerfile
+    image: kyx/kernel
     container_name: kyx-kernel-app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     environment:
       - ENVIRONMENT=production
       - PORT=8080
-      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
-      - REDIS_URL=redis://redis:6380
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@host.docker.internal:5435/${DB_NAME}
+      - REDIS_URL=rediss://host.docker.internal:6381
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - ENGINE_SECRET_KEY=${ENGINE_SECRET_KEY}
       - APP_VERSION=${APP_VERSION:-0.1.0}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
     volumes:

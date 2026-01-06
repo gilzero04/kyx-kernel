@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE sys_pages\n            SET deleted_at = NOW()\n            WHERE tenant_id = $1 AND id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b08a201bc5f00b7502c33bd0b908352dcbd99e878db53779f71a9d63659b9aaf"
+}
