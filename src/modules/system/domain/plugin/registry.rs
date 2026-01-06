@@ -268,6 +268,179 @@ impl PluginRegistry {
             false
         }
     }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // Security Methods (Phase 3)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    /// Install a plugin WITH dangerous capabilities (requires explicit approval)
+    /// This is a privileged operation that bypasses the dangerous capability check.
+    /// Caller must verify `plugin:approve` permission before calling.
+    pub async fn install_with_approval(
+        &self,
+        tenant_id: Uuid,
+        manifest: Manifest,
+        wasm_bytes: Option<Vec<u8>>,
+        config: Option<serde_json::Value>,
+        approved_by: Uuid,  // Admin user who approved
+        approval_reason: &str,
+    ) -> Result<Plugin> {
+        // Log the dangerous capabilities being approved
+        let dangerous_caps: Vec<_> = manifest.capabilities.iter()
+            .filter(|c| c.is_dangerous())
+            .collect();
+        
+        if !dangerous_caps.is_empty() {
+            warn!("SECURITY: Admin {} approving dangerous capabilities {:?} for plugin {} - Reason: {}",
+                approved_by, dangerous_caps, manifest.id, approval_reason
+            );
+        }
+        
+        // Check if already installed
+        if let Some(_) = self.repository.find_by_plugin_id(tenant_id, &manifest.id).await? {
+            return Err(anyhow!("Plugin {} is already installed", manifest.id));
+        }
+        
+        // Create plugin record
+        let mut plugin = Plugin::from_manifest(&manifest, Some(tenant_id));
+        
+        // Set config if provided
+        if let Some(cfg) = config {
+            plugin.config = cfg;
+        }
+        
+        // Save WASM bytes if provided
+        if let Some(bytes) = wasm_bytes {
+            let wasm_path = format!("plugins/{}/{}.wasm", tenant_id, manifest.id);
+            plugin.wasm_path = Some(wasm_path);
+            plugin.wasm_size_bytes = Some(bytes.len() as i64);
+            plugin.wasm_hash = Some(simple_hash_hex(&bytes));
+        }
+        
+        // Insert into database
+        let installed = self.repository.insert(&plugin).await?;
+        
+        // Log approval event with full audit trail
+        self.repository.log_event(
+            installed.id,
+            tenant_id,
+            "installed_with_approval",
+            serde_json::json!({
+                "version": installed.version,
+                "capabilities": installed.capabilities,
+                "dangerous_capabilities": dangerous_caps.iter().map(|c| format!("{:?}", c)).collect::<Vec<_>>(),
+                "approved_by": approved_by,
+                "approval_reason": approval_reason
+            })
+        ).await?;
+        
+        info!("SECURITY: Installed plugin {} v{} with approval from {} for tenant {}",
+            installed.name, installed.version, approved_by, tenant_id
+        );
+        
+        Ok(installed)
+    }
+    
+    /// Check if plugin has any dangerous capabilities
+    pub fn has_dangerous_capabilities(&self, manifest: &Manifest) -> bool {
+        manifest.capabilities.iter().any(|c| c.is_dangerous())
+    }
+    
+    /// Get list of dangerous capabilities in manifest
+    pub fn get_dangerous_capabilities<'a>(&self, manifest: &'a Manifest) -> Vec<&'a Capability> {
+        manifest.capabilities.iter()
+            .filter(|c| c.is_dangerous())
+            .collect()
+    }
+    
+    /// Get capabilities that require approval
+    pub fn get_capabilities_requiring_approval<'a>(&self, manifest: &'a Manifest) -> Vec<&'a Capability> {
+        manifest.capabilities.iter()
+            .filter(|c| c.requires_approval())
+            .collect()
+    }
+    
+    /// Validate plugin security before enabling
+    /// Returns list of security warnings (empty if all safe)
+    pub fn validate_plugin_security(&self, plugin: &Plugin) -> Vec<String> {
+        let mut warnings = Vec::new();
+        
+        // Check for dangerous capabilities
+        for cap in &plugin.capabilities {
+            match cap.as_str() {
+                "financial_write" => {
+                    warnings.push("Plugin has FINANCIAL_WRITE capability - can modify financial data".to_string());
+                }
+                "tenant_data_write" => {
+                    warnings.push("Plugin has TENANT_DATA_WRITE capability - can modify tenant data".to_string());
+                }
+                _ => {}
+            }
+        }
+        
+        // Check for network access
+        if !plugin.network_access.is_empty() {
+            warnings.push(format!("Plugin has network access to: {}", plugin.network_access.join(", ")));
+        }
+        
+        // Check for data access
+        if !plugin.data_access.is_empty() {
+            warnings.push(format!("Plugin has data access to: {}", plugin.data_access.join(", ")));
+        }
+        
+        // Check for unverified plugin
+        if !plugin.verified {
+            warnings.push("Plugin is not verified by the platform".to_string());
+        }
+        
+        warnings
+    }
+    
+    /// Get security summary for a plugin
+    pub fn get_security_summary(&self, manifest: &Manifest) -> SecuritySummary {
+        let dangerous = self.get_dangerous_capabilities(manifest);
+        let requires_approval = self.get_capabilities_requiring_approval(manifest);
+        
+        SecuritySummary {
+            risk_level: if !dangerous.is_empty() {
+                RiskLevel::Critical
+            } else if !requires_approval.is_empty() {
+                RiskLevel::High
+            } else if !manifest.network_access.is_empty() || !manifest.data_access.is_empty() {
+                RiskLevel::Medium
+            } else {
+                RiskLevel::Low
+            },
+            dangerous_capabilities: dangerous.iter().map(|c| format!("{:?}", c)).collect(),
+            requires_approval: !requires_approval.is_empty(),
+            network_access: manifest.network_access.clone(),
+            data_access: manifest.data_access.clone(),
+            is_verified: manifest.verified,
+            is_official: manifest.official,
+        }
+    }
+}
+
+/// Security summary for a plugin
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct SecuritySummary {
+    pub risk_level: RiskLevel,
+    pub dangerous_capabilities: Vec<String>,
+    pub requires_approval: bool,
+    pub network_access: Vec<String>,
+    pub data_access: Vec<String>,
+    pub is_verified: bool,
+    pub is_official: bool,
+}
+
+/// Plugin risk level
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RiskLevel {
+    Low,      // No special permissions
+    Medium,   // Network/data access
+    High,     // Requires approval
+    Critical, // Dangerous capabilities (financial_write, etc)
 }
 
 /// Helper: compute simple hash of bytes (using std only)
@@ -280,3 +453,4 @@ fn simple_hash_hex(data: &[u8]) -> String {
     let hash = hasher.finish();
     format!("{:016x}", hash)
 }
+
