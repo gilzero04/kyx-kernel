@@ -5,6 +5,7 @@ pub mod application;
 pub mod infrastructure;
 pub mod bootstrap;
 pub mod utils;
+pub mod clients;
 
 /// Every module in `src/modules` must implement this trait or
 /// provide a function to register its routes following this pattern.
