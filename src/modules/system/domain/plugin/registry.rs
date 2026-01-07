@@ -80,6 +80,27 @@ impl PluginRegistry {
         self.plugins.get(&key)
     }
     
+    /// Get a loaded plugin by slug (e.g., "kyx-plan", "kyx-affiliate")
+    /// This is the primary method for optional plugin lookups
+    /// Returns cloned Plugin since we're iterating
+    pub fn get_by_slug(&self, tenant_id: Uuid, slug: &str) -> Option<Plugin> {
+        // Search through loaded plugins for matching plugin_id
+        for entry in self.plugins.iter() {
+            if entry.value().plugin.plugin_id == slug {
+                // Check if it's for this tenant or a global plugin
+                if entry.value().plugin.tenant_id == Some(tenant_id) || entry.value().plugin.tenant_id.is_none() {
+                    return Some(entry.value().plugin.clone());
+                }
+            }
+        }
+        None
+    }
+    
+    /// Check if a plugin is installed and active (for optional integrations)
+    pub fn is_available(&self, tenant_id: Uuid, slug: &str) -> bool {
+        self.get_by_slug(tenant_id, slug).is_some()
+    }
+    
     /// Check if a plugin is loaded
     pub fn is_loaded(&self, tenant_id: Uuid, plugin_id: &str) -> bool {
         let key = format!("{}:{}", tenant_id, plugin_id);
