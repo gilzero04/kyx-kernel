@@ -78,15 +78,26 @@ impl DomainVerificationService {
             }
         }
 
-        // 4. Update Status
         let now = Utc::now();
         self.repo.update_tenant(
             tenant_id,
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, // name
+            None, // slug
+            None, // is_active
+            None, // branding_id
+            None, // contact_email
+            None, // contact_phone
+            None, // website_url
+            None, // social_links
+            None, // address
+            None, // business_type
+            None, // config
             None, // actor_tenant_id
-            None, None, None,
-            Some(now),
-            None // verification_token doesn't change
+            None, // custom_domain
+            None, // allow_child_subdomains
+            None, // use_parent_subdomain
+            Some(now), // domain_verified_at
+            None // verification_token
         ).await.map_err(|e| AppError {
             code: 500,
             message: e.to_string(),

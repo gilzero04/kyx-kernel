@@ -10,24 +10,22 @@ pub struct TenantsQuery {
     pub search: Option<String>,
 }
 
+/// Update owner tenant request - branding is now managed separately via branding_id
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateOwnerRequest {
     pub name: Option<String>,
     pub slug: Option<String>,
-    pub logo_url: Option<String>,
-    pub logo_dark_url: Option<String>,
-    pub favicon_url: Option<String>,
-    pub icon_app_url: Option<String>,
-    pub primary_color: Option<String>,
-    pub secondary_color: Option<String>,
-    pub accent_color: Option<String>,
-    pub app_name_override: Option<String>,
+    // Branding reference (use BrandingService to create/update branding)
+    pub branding_id: Option<sqlx::types::Uuid>,
+    // Contact info
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
     pub website_url: Option<String>,
     pub social_links: Option<serde_json::Value>,
     pub address: Option<String>,
     pub business_type: Option<String>,
+    pub tax_id: Option<String>,
+    // Config and domain
     pub config: Option<serde_json::Value>,
     pub custom_domain: Option<String>,
     pub allow_child_subdomains: Option<bool>,
@@ -35,6 +33,7 @@ pub struct UpdateOwnerRequest {
     pub verification_token: Option<String>,
 }
 
+/// Create tenant request - branding is managed separately via branding_id
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateTenantRequest {
     pub name: String,
@@ -45,12 +44,9 @@ pub struct CreateTenantRequest {
     pub admin_password: Option<String>,
     pub admin_name: Option<String>,
     pub parent_id: Option<sqlx::types::Uuid>,
-    pub favicon_url: Option<String>,
-    pub icon_app_url: Option<String>,
-    pub primary_color: Option<String>,
-    pub secondary_color: Option<String>,
-    pub accent_color: Option<String>,
-    pub app_name_override: Option<String>,
+    // Branding reference
+    pub branding_id: Option<sqlx::types::Uuid>,
+    // Contact info
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
     pub website_url: Option<String>,
@@ -59,25 +55,22 @@ pub struct CreateTenantRequest {
     pub business_type: Option<String>,
 }
 
+/// Update tenant request - branding is managed separately via branding_id
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateTenantRequest {
     pub name: Option<String>,
     pub slug: Option<String>,
     pub is_active: Option<bool>,
-    pub logo_url: Option<String>,
-    pub logo_dark_url: Option<String>,
-    pub favicon_url: Option<String>,
-    pub icon_app_url: Option<String>,
-    pub primary_color: Option<String>,
-    pub secondary_color: Option<String>,
-    pub accent_color: Option<String>,
-    pub app_name_override: Option<String>,
+    // Branding reference
+    pub branding_id: Option<sqlx::types::Uuid>,
+    // Contact info
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
     pub website_url: Option<String>,
     pub social_links: Option<serde_json::Value>,
     pub address: Option<String>,
     pub business_type: Option<String>,
+    // Config and domain
     pub config: Option<serde_json::Value>,
     pub custom_domain: Option<String>,
     pub allow_child_subdomains: Option<bool>,

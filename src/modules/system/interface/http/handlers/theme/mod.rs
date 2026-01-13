@@ -5,7 +5,6 @@ use std::io::Read;
 use serde::Deserialize;
 use uuid::Uuid;
 use crate::core::AppResult;
-use crate::core::infrastructure::config_service::ConfigService;
 use crate::modules::system::application::services::theme::ThemeService;
 use crate::modules::system::domain::theme::ThemeVisibility;
 use crate::modules::system::interface::http::dto::theme::CreateThemeDto;
@@ -271,6 +270,7 @@ pub async fn import_theme(
     }
 
     let name = manifest["name"].as_str().unwrap_or("Imported Theme").to_string();
+    let code = manifest["id"].as_str().map(|s| s.to_string());
     let description = manifest["description"].as_str().map(|s| s.to_string());
     let author = manifest["author"].as_str().map(|s| s.to_string());
     let preview_url = manifest["preview"].as_str().map(|s| s.to_string());
@@ -296,6 +296,7 @@ pub async fn import_theme(
     
     // Create the theme
     let dto = CreateThemeDto {
+        code,
         name,
         description,
         config,
@@ -331,7 +332,7 @@ pub async fn set_active_theme(
     path: web::types::Path<Uuid>, // Theme ID
     body: web::types::Json<ActivateThemeRequest>,
     service: web::types::State<std::sync::Arc<ThemeService>>,
-    config_service: web::types::State<std::sync::Arc<ConfigService>>,
+    db: web::types::State<std::sync::Arc<crate::core::infrastructure::database::Database>>,
 ) -> Result<web::HttpResponse, crate::core::AppError> {
     let theme_id = path.into_inner();
     let mode = body.mode.clone().unwrap_or_else(|| "light".to_string());
@@ -344,19 +345,38 @@ pub async fn set_active_theme(
     
     let theme = theme.unwrap();
     
-    // Update the appropriate config key based on mode
-    let config_key = if mode == "dark" {
-        "theme_dark_id"
-    } else {
-        "theme_light_id"
+    // Update the owner's branding in sys_brandings
+    // First, get the owner's branding_id from auth_tenants
+    let branding_id: Option<sqlx::types::Uuid> = sqlx::query_scalar(r#"
+        SELECT branding_id FROM auth_tenants 
+        WHERE parent_id = id AND deleted_at IS NULL
+        LIMIT 1
+    "#)
+    .fetch_optional(&db.pool)
+    .await
+    .map_err(|e| crate::core::AppError::internal_server_error(format!("DB error: {}", e)))?
+    .flatten();
+    
+    let branding_id = match branding_id {
+        Some(id) => id,
+        None => return Err(crate::core::AppError::not_found("Owner branding not found"))
     };
     
-    // Use theme ID as the identifier (more robust than name)
-    config_service.set(config_key, serde_json::Value::String(theme.id.to_string())).await.map_err(|e| 
-        crate::core::AppError::internal_server_error(format!("Failed to update config: {}", e))
-    )?;
+    // Update the appropriate column based on mode
+    let sql = if mode == "dark" {
+        "UPDATE sys_brandings SET theme_dark_id = $1, updated_at = NOW() WHERE id = $2"
+    } else {
+        "UPDATE sys_brandings SET theme_light_id = $1, updated_at = NOW() WHERE id = $2"
+    };
     
-    log::info!("🎨 Theme '{}' activated for {} mode", theme.name, mode);
+    sqlx::query(sql)
+        .bind(theme_id) // Theme UUID
+        .bind(branding_id)
+        .execute(&db.pool)
+        .await
+        .map_err(|e| crate::core::AppError::internal_server_error(format!("Failed to update branding: {}", e)))?;
+    
+    log::info!("🎨 Theme '{}' activated for {} mode (branding_id: {})", theme.name, mode, branding_id);
     
     Ok(web::HttpResponse::Ok().json(&serde_json::json!({
         "status": "updated",
@@ -472,6 +492,7 @@ pub async fn set_visibility(
     };
 
     let dto = crate::modules::system::interface::http::dto::theme::UpdateThemeDto {
+        code: None,
         visibility: Some(visibility),
         name: None,
         description: None,

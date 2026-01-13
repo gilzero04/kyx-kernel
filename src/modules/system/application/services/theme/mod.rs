@@ -22,6 +22,7 @@ impl ThemeService {
     #[allow(dead_code)]
     pub async fn create_system_theme(&self, name: String, config: serde_json::Value, visibility: ThemeVisibility) -> AppResult<Theme> {
         let dto = CreateThemeDto {
+            code: None,
             name,
             description: None,
             config,
@@ -38,6 +39,7 @@ impl ThemeService {
     #[allow(dead_code)]
     pub async fn create_tenant_theme(&self, tenant_id: Uuid, name: String, description: Option<String>, config: serde_json::Value) -> AppResult<Theme> {
         let dto = CreateThemeDto {
+            code: None,
             name,
             description,
             config,
@@ -90,6 +92,7 @@ impl ThemeService {
              // Verify access to source? Assumed yes if they can see it to click Fork.
              // Create new theme
              let dto = CreateThemeDto {
+                 code: None,
                  name: new_name,
                  description: Some(format!("Forked from {}", src.name)),
                  config: src.config,
@@ -112,7 +115,7 @@ impl ThemeService {
     pub async fn seed_default_themes(&self) -> AppResult<()> {
         let available = self.repo.find_available(None).await?;
         
-        let folders = vec!["light", "dark"];
+        let folders = vec!["kyx-light", "kyx-dark"];
 
         for folder in folders {
             let path = format!("assets/themes/presets/{}", folder);
@@ -126,6 +129,7 @@ impl ThemeService {
             };
 
             let name = manifest["name"].as_str().unwrap_or(folder);
+            let code = manifest["id"].as_str().map(|s| s.to_string());
             let author = manifest["author"].as_str().map(|s| s.to_string());
             
             // Check for preview image
@@ -167,6 +171,7 @@ impl ThemeService {
             if let Some(theme) = existing_theme {
                 log::info!("🔄 Updating Default {} Theme from unified manifest...", name);
                 let update_dto = UpdateThemeDto {
+                    code: code.clone(),
                     name: Some(name.to_string()),
                     description: manifest["description"].as_str().map(|s| s.to_string()),
                     config: Some(config_val),
@@ -180,6 +185,7 @@ impl ThemeService {
             } else {
                 log::info!("🌱 Seeding Default {} Theme from unified manifest...", name);
                 let dto = CreateThemeDto {
+                    code: code.clone(),
                     name: name.to_string(),
                     description: manifest["description"].as_str().map(|s| s.to_string()),
                     config: config_val,

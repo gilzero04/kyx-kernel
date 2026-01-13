@@ -20,17 +20,19 @@ pub struct AuthModule {
     redis: Arc<Redis>,
     jwt: Arc<JwtService>,
     audit: Arc<AuditService>,
+    config: Arc<ConfigService>,
 }
 
 impl AuthModule {
     pub fn new(db: Arc<Database>, redis: Arc<Redis>, jwt: Arc<JwtService>, audit: Arc<AuditService>, config: Arc<ConfigService>) -> Self {
-        let auth_service = Arc::new(AuthService::new(db.clone(), redis.clone(), jwt.clone(), audit.clone(), config));
+        let auth_service = Arc::new(AuthService::new(db.clone(), redis.clone(), jwt.clone(), audit.clone(), config.clone()));
         Self { 
             service: auth_service,
             db,
             redis,
             jwt,
             audit,
+            config,
         }
     }
 }
@@ -60,6 +62,7 @@ impl AppModule for AuthModule {
         config.service(
             interface::http::routers::auth::auth_routes(admin_auth, user_auth.clone())
                 .state(self.service.clone())
+                .state(self.config.clone())
         );
 
         // User preferences routes (any authenticated user)

@@ -4,6 +4,7 @@ use crate::modules::system::domain::theme::ThemeVisibility;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateThemeDto {
+    pub code: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub config: serde_json::Value,
@@ -16,6 +17,7 @@ pub struct CreateThemeDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateThemeDto {
+    pub code: Option<String>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub config: Option<serde_json::Value>,

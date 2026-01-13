@@ -1,0 +1,27 @@
+{
+  "id": "kyx-dark",
+  "name": "Kyx Dark",
+  "description": "Night Sea Obsidian",
+  "version": "1.0.0",
+  "author": "Kyx Technologies Co., Ltd.",
+  "preview": "images/preview.png",
+  "logo": "images/logo.png",
+  "config": {
+    "splash": {
+      "type": "text",
+      "text": "KYX PLATFORM",
+      "subtext": "Initializing Platform..."
+    },
+    "background": {
+      "particleCount": 15,
+      "showWaves": true
+    },
+    "layout": {
+      "cardStyle": "glass",
+      "contentWidth": "normal"
+    },
+    "customText": {
+      "footer_message": "Secure. Stable. Scalable."
+    }
+  }
+}

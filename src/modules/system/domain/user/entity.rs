@@ -3,6 +3,7 @@ use sqlx::FromRow;
 use chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
+/// User entry - tenant branding is now fetched separately via branding_id
 #[derive(Debug, Serialize, Deserialize, FromRow, ToSchema)]
 pub struct UserEntry {
     pub id: sqlx::types::Uuid,
@@ -15,8 +16,8 @@ pub struct UserEntry {
     pub role_slug: Option<String>,
     pub tenant_name: Option<String>,
     pub tenant_id: Option<sqlx::types::Uuid>,
-    pub tenant_logo_url: Option<String>,
-    pub tenant_logo_dark_url: Option<String>,
+    // Branding reference (fetch branding separately if needed)
+    pub tenant_branding_id: Option<sqlx::types::Uuid>,
     pub permissions: Option<Vec<String>>,
 }
 

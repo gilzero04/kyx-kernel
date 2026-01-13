@@ -6,6 +6,7 @@ use crate::modules::auth::domain::login::UserCredentials;
 use crate::modules::auth::interface::http::dto::auth::{RefreshRequest, SetupRequest, CreateUserRequest, SignupRequest};
 #[allow(unused_imports)]
 use crate::modules::auth::interface::http::dto::auth::{AuthResponse, SessionInfo, AdminSessionInfo};
+use crate::core::infrastructure::config_service::ConfigService;
 use uuid::Uuid;
 
 /// User Login
@@ -120,9 +121,32 @@ pub async fn logout(
     ),
     tag = "auth"
 )]
-pub async fn get_setup_status(service: web::types::State<Arc<AuthService>>) -> Result<web::HttpResponse, web::Error> {
+pub async fn get_setup_status(
+    service: web::types::State<Arc<AuthService>>,
+    config: web::types::State<Arc<ConfigService>>,
+) -> Result<web::HttpResponse, web::Error> {
     match service.is_setup_done().await {
-        Ok(is_done) => Ok(web::HttpResponse::Ok().json(&json!({ "is_setup": is_done }))),
+        Ok(is_done) => {
+            // Fetch branding data for theme switching
+            let theme_light_id = config.get_string("theme_light_id", "").await;
+            let theme_dark_id = config.get_string("theme_dark_id", "").await;
+            let app_name = config.get_string("branding_app_name", "").await;
+            let splash_text = config.get_string("branding_splash_text", "").await;
+            let splash_init_text = config.get_string("branding_splash_init_text", "").await;
+            
+            Ok(web::HttpResponse::Ok().json(&json!({ 
+                "is_setup": is_done,
+                "branding": {
+                    "app_name": if app_name.is_empty() { None } else { Some(app_name) },
+                    "theme_light_id": theme_light_id,
+                    "theme_dark_id": theme_dark_id,
+                    "splash": {
+                        "text": if splash_text.is_empty() { None } else { Some(splash_text) },
+                        "subtext": if splash_init_text.is_empty() { None } else { Some(splash_init_text) }
+                    }
+                }
+            })))
+        },
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message

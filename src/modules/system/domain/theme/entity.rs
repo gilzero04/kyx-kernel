@@ -14,6 +14,7 @@ pub enum ThemeVisibility {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Theme {
     pub id: Uuid,
+    pub code: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub config: serde_json::Value,

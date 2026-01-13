@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Kyx Kernel Application
   kyx-kernel:

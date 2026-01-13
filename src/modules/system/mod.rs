@@ -192,6 +192,8 @@ impl AppModule for SystemModule {
         // ═══════════════════════════════════════════════════════════════════════════
         config.service(
             web::scope("/public")
+                .state(self.db.clone())
+                .state(config_service.clone())
                 .state(api_key_s)
                 .state(self.cms_service.clone())
                 .state(self.tenant_service.clone())
@@ -208,6 +210,11 @@ impl AppModule for SystemModule {
                 .service(interface::http::routers::i18n::public_routes())
                 // System Info
                 .service(interface::http::routers::system::public_routes())
+                // Workspace Status (tenant-specific branding)
+                .service(
+                    web::scope("/workspace")
+                        .service(interface::http::routers::workspace::public_routes())
+                )
                 // CMS Pages
                 .service(
                     web::scope("/cms/pages/{tenant_id}")

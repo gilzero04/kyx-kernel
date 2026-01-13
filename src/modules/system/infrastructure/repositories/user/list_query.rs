@@ -70,8 +70,7 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
             r.slug as role_slug,
             t.name as tenant_name,
             t.id as tenant_id,
-            t.logo_url as tenant_logo_url,
-            t.logo_dark_url as tenant_logo_dark_url,
+            t.branding_id as tenant_branding_id,
             NULL::text[] as permissions
         FROM auth_users u
         LEFT JOIN auth_memberships m ON u.id = m.user_id AND m.is_active = TRUE AND m.deleted_at IS NULL

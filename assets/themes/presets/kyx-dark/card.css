@@ -3,8 +3,8 @@
 .card {
     background: var(--glass-bg, rgba(255, 255, 255, 0.03));
     border: 1px solid var(--glass-border, var(--color-border));
-    backdrop-filter: var(--glass-blur, blur(12px));
-    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
+    backdrop-filter: var(--glass-blur, blur(40px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(40px));
     border-radius: var(--radius-xl, 24px);
     /* overflow: hidden; <-- Removed to allow Select dropdowns */
     padding: 16px;

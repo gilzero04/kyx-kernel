@@ -113,69 +113,158 @@ pub async fn get_system_status(
     
     let is_installed = count > 0;
 
-    // 2. Fetch branding metadata
-    let app_name = config.get_string("branding_app_name", "").await;
-    let splash_text = config.get_string("branding_splash_text", "").await;
-    let splash_init_text = config.get_string("branding_splash_init_text", "").await;
-    let theme_light_id = config.get_string("theme_light_id", "").await;
-    let theme_dark_id = config.get_string("theme_dark_id", "").await;
-    let logo_url = config.get_string("branding_logo_url", "").await;
-    let logo_dark_url = config.get_string("branding_logo_dark_url", "").await;
-    let favicon_url = config.get_string("branding_favicon_console", "").await;
-    let icon_app_url = config.get_string("branding_icon_app", "").await;
+    // If not installed, return minimal response (Option A)
+    if !is_installed {
+        return Ok(web::HttpResponse::Ok().json(&serde_json::json!({
+            "installed": false,
+            "status": "online"
+        })));
+    }
 
-    // 3. Fetch owner info from auth_tenants (owner = parent_id = id)
-    let owner_row = sqlx::query("SELECT id, name, slug, logo_url, logo_dark_url, favicon_url, icon_app_url, primary_color, secondary_color, accent_color, custom_domain, allow_child_subdomains, domain_verified_at, verification_token FROM auth_tenants WHERE parent_id = id AND deleted_at IS NULL LIMIT 1")
+    // 2. Fetch owner tenant with branding from sys_brandings (single source of truth)
+    // JOIN with sys_themes to get theme codes (portable identifiers) for each context
+    let owner_row = sqlx::query(r#"
+        SELECT 
+            t.id,
+            t.name,
+            t.slug,
+            t.custom_domain,
+            t.allow_child_subdomains,
+            t.domain_verified_at,
+            t.verification_token,
+            b.app_name,
+            b.logo_light_url,
+            b.logo_dark_url,
+            b.favicon_url,
+            b.icon_app_url,
+            b.primary_color,
+            b.secondary_color,
+            b.accent_color,
+            b.splash_text,
+            b.splash_subtext,
+            -- Legacy theme codes (backward compatibility)
+            COALESCE(tl.code, twl.code) AS theme_light_code,
+            COALESCE(td.code, twd.code) AS theme_dark_code,
+            -- Per-context theme codes
+            tcl.code AS theme_console_light_code,
+            tcd.code AS theme_console_dark_code,
+            COALESCE(twl.code, tl.code) AS theme_workspace_light_code,
+            COALESCE(twd.code, td.code) AS theme_workspace_dark_code,
+            COALESCE(tal.code, twl.code, tl.code) AS theme_app_light_code,
+            COALESCE(tad.code, twd.code, td.code) AS theme_app_dark_code
+        FROM auth_tenants t
+        LEFT JOIN sys_brandings b ON t.branding_id = b.id
+        -- Legacy theme joins
+        LEFT JOIN sys_themes tl ON b.theme_light_id = tl.id
+        LEFT JOIN sys_themes td ON b.theme_dark_id = td.id
+        -- Per-context theme joins
+        LEFT JOIN sys_themes tcl ON b.theme_console_light_id = tcl.id
+        LEFT JOIN sys_themes tcd ON b.theme_console_dark_id = tcd.id
+        LEFT JOIN sys_themes twl ON b.theme_workspace_light_id = twl.id
+        LEFT JOIN sys_themes twd ON b.theme_workspace_dark_id = twd.id
+        LEFT JOIN sys_themes tal ON b.theme_app_light_id = tal.id
+        LEFT JOIN sys_themes tad ON b.theme_app_dark_id = tad.id
+        WHERE t.parent_id = t.id AND t.deleted_at IS NULL
+        LIMIT 1
+    "#)
         .fetch_optional(&db.pool)
         .await
         .ok()
         .flatten();
     
-    let (owner_id, owner_name, owner_slug, o_logo, o_logo_dark, o_favicon, o_icon_app, p_color, s_color, a_color, c_domain, a_children, d_verified, v_token): (Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<bool>, Option<chrono::DateTime<chrono::Utc>>, Option<String>) = match owner_row {
+    // Extract all theme codes including per-context themes
+    let (
+        owner_id, owner_name, owner_slug, 
+        c_domain, a_children, d_verified, v_token,
+        app_name, logo, logo_dark, favicon, icon_app,
+        p_color, s_color, a_color,
+        splash_text, splash_subtext,
+        theme_light_code, theme_dark_code,
+        theme_console_light, theme_console_dark,
+        theme_workspace_light, theme_workspace_dark,
+        theme_app_light, theme_app_dark
+    ): (
+        Option<String>, Option<String>, Option<String>,
+        Option<String>, Option<bool>, Option<chrono::DateTime<chrono::Utc>>, Option<String>,
+        Option<String>, Option<String>, Option<String>, Option<String>, Option<String>,
+        Option<String>, Option<String>, Option<String>,
+        Option<String>, Option<String>,
+        Option<String>, Option<String>,
+        Option<String>, Option<String>,
+        Option<String>, Option<String>,
+        Option<String>, Option<String>
+    ) = match owner_row {
         Some(row) => (
             Some(row.get::<sqlx::types::Uuid, _>("id").to_string()),
             Some(row.get::<String, _>("name")),
             Some(row.get::<String, _>("slug")),
-            row.get::<Option<String>, _>("logo_url"),
+            row.get::<Option<String>, _>("custom_domain"),
+            row.get::<Option<bool>, _>("allow_child_subdomains"),
+            row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("domain_verified_at"),
+            row.get::<Option<String>, _>("verification_token"),
+            row.get::<Option<String>, _>("app_name"),
+            row.get::<Option<String>, _>("logo_light_url"),
             row.get::<Option<String>, _>("logo_dark_url"),
             row.get::<Option<String>, _>("favicon_url"),
             row.get::<Option<String>, _>("icon_app_url"),
             row.get::<Option<String>, _>("primary_color"),
             row.get::<Option<String>, _>("secondary_color"),
             row.get::<Option<String>, _>("accent_color"),
-            row.get::<Option<String>, _>("custom_domain"),
-            row.get::<Option<bool>, _>("allow_child_subdomains"),
-            row.get::<Option<chrono::DateTime<chrono::Utc>>, _>("domain_verified_at"),
-            row.get::<Option<String>, _>("verification_token")
+            row.get::<Option<String>, _>("splash_text"),
+            row.get::<Option<String>, _>("splash_subtext"),
+            row.get::<Option<String>, _>("theme_light_code"),
+            row.get::<Option<String>, _>("theme_dark_code"),
+            row.get::<Option<String>, _>("theme_console_light_code"),
+            row.get::<Option<String>, _>("theme_console_dark_code"),
+            row.get::<Option<String>, _>("theme_workspace_light_code"),
+            row.get::<Option<String>, _>("theme_workspace_dark_code"),
+            row.get::<Option<String>, _>("theme_app_light_code"),
+            row.get::<Option<String>, _>("theme_app_dark_code"),
         ),
-        None => (None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+        None => (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
     };
     
-    // Additional owner info from sys_configs
+    // Additional owner info from sys_configs (non-branding)
     let owner_address = config.get_string("owner_address", "").await;
     let owner_tax_id = config.get_string("owner_tax_id", "").await;
 
     Ok(web::HttpResponse::Ok().json(&serde_json::json!({
-        "installed": is_installed,
+        "installed": true,
         "status": "online",
         "branding": {
-            "app_name": if app_name.is_empty() { None } else { Some(app_name) },
+            "app_name": app_name,
             "splash": {
-                "text": if splash_text.is_empty() { None } else { Some(splash_text) },
-                "subtext": if splash_init_text.is_empty() { None } else { Some(splash_init_text) }
+                "text": splash_text,
+                "subtext": splash_subtext
             },
-            "theme_light_id": theme_light_id,
-            "theme_dark_id": theme_dark_id,
-            "logo": if logo_url.is_empty() { o_logo } else { Some(logo_url) },
-            "logo_dark": if logo_dark_url.is_empty() { o_logo_dark } else { Some(logo_dark_url) },
-            "favicon_console": if favicon_url.is_empty() { o_favicon } else { Some(favicon_url) },
-            "icon_app": if icon_app_url.is_empty() { o_icon_app } else { Some(icon_app_url) },
+            // Legacy fields (backward compatibility)
+            "theme_light_id": theme_light_code.clone().unwrap_or_default(),
+            "theme_dark_id": theme_dark_code.clone().unwrap_or_default(),
+            // Per-context themes
+            "themes": {
+                "console": {
+                    "light": theme_console_light.or(theme_light_code.clone()).unwrap_or_default(),
+                    "dark": theme_console_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                },
+                "workspace": {
+                    "light": theme_workspace_light.or(theme_light_code.clone()).unwrap_or_default(),
+                    "dark": theme_workspace_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                },
+                "app": {
+                    "light": theme_app_light.or(theme_light_code).unwrap_or_default(),
+                    "dark": theme_app_dark.or(theme_dark_code).unwrap_or_default()
+                }
+            },
+            "logo": logo,
+            "logo_dark": logo_dark,
+            "favicon_console": favicon,
+            "icon_app": icon_app,
             "primary_color": p_color,
             "secondary_color": s_color,
             "accent_color": a_color
         },
         "owner": {
-            "id": owner_id, // Required for CMS public page routing
+            "id": owner_id,
             "name": owner_name,
             "slug": owner_slug,
             "address": if owner_address.is_empty() { None } else { Some(owner_address) },

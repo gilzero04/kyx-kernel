@@ -7,6 +7,8 @@
 }
 
 .header-glass {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: var(--glass-blur, blur(40px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(40px));
+    background: var(--glass-bg, rgba(4, 38, 59, 0.35));
+    border-bottom: 1px solid var(--glass-border, rgba(6, 182, 212, 0.08));
 }

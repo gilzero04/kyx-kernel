@@ -26,12 +26,12 @@
 :root {
     /* Brand - Cyan from SplashScreen */
     --color-primary: #06b6d4;
-    /* Cyan 500 */
+    --color-primary-rgb: 6, 182, 212;
     --color-primary-foreground: #ffffff;
 
     /* Backgrounds - Night Sea Obsidian */
     --color-background: #020617;
-    /* Slate 950 - Deepest Night */
+    --color-background-rgb: 2, 6, 23;
     --color-surface: #0f172a;
     /* Slate 900 - Dark Navy Surface */
 
@@ -96,4 +96,11 @@
 
     /* Toggle Icon - Moon Yin-Yang (Silver & Indigo) */
     --theme-toggle-icon: url("data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='12' cy='12' r='11' stroke='%23cbd5e1' stroke-width='1.5'/%3e%3cpath d='M12 1A11 11 0 0 0 12 23A5.5 5.5 0 0 0 12 12A5.5 5.5 0 0 1 12 1z' fill='%23f8fafc'/%3e%3ccircle cx='12' cy='6.5' r='1.5' fill='%231e293b'/%3e%3ccircle cx='12' cy='17.5' r='1.5' fill='white'/%3e%3c/svg%3e");
+    
+    /* Glassmorphism Standards - Ultra Premium */
+    --glass-bg: rgba(15, 23, 42, 0.35); 
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-blur: blur(40px);
+    --glass-shadow: 0 12px 60px 0 rgba(0, 0, 0, 0.6);
+    --bg-opacity: 1.0;
 }

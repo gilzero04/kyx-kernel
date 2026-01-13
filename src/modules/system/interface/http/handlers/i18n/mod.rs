@@ -3,10 +3,17 @@ use crate::modules::system::application::services::i18n::I18nService;
 use crate::core::infrastructure::audit::AuditService;
 use std::sync::Arc;
 use serde_json::Value;
+use serde::Deserialize;
 
 use crate::modules::system::interface::http::dto::i18n::{TranslationsResponse, CreateI18nKeyRequest};
 
-// === Handlers ===
+// === Query Parameters ===
+
+#[derive(Debug, Deserialize)]
+pub struct TranslationsQuery {
+    pub tenant_id: Option<String>,
+    pub context: Option<String>,  // 'console' or 'workspace'
+}
 
 // === Handlers ===
 
@@ -29,6 +36,10 @@ pub async fn list_locales(
 }
 
 /// Get translations for a specific locale
+/// 
+/// Query parameters:
+/// - tenant_id: Optional tenant UUID for tenant-specific translations
+/// - context: Optional context ('console' or 'workspace') for context-specific translations
 #[utoipa::path(
     get,
     path = "/api/v1/public/i18n/translations/{locale}",
@@ -37,16 +48,26 @@ pub async fn list_locales(
     ),
     tag = "i18n",
     params(
-        ("locale" = String, Path, description = "Locale code (e.g. en, th)")
+        ("locale" = String, Path, description = "Locale code (e.g. en, th)"),
+        ("tenant_id" = Option<String>, Query, description = "Tenant ID for tenant-specific translations"),
+        ("context" = Option<String>, Query, description = "Context: 'console' or 'workspace'")
     )
 )]
 pub async fn get_translations(
     service: web::types::State<Arc<I18nService>>,
     path: web::types::Path<String>,
+    query: web::types::Query<TranslationsQuery>,
 ) -> impl web::Responder {
     let locale = path.into_inner();
     
-    match service.get_translations_map(&locale).await {
+    // Parse tenant_id if provided
+    let tenant_id = query.tenant_id.as_ref()
+        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+        .map(|u| sqlx::types::Uuid::from_u128(u.as_u128()));
+    
+    let context = query.context.as_deref();
+    
+    match service.get_translations_map(&locale, tenant_id, context).await {
         Ok(map) => web::HttpResponse::Ok().json(&TranslationsResponse {
             locale,
             translations: map,
@@ -73,7 +94,13 @@ pub async fn create_key(
     audit: web::types::State<Arc<AuditService>>,
     body: web::types::Json<CreateI18nKeyRequest>,
 ) -> impl web::Responder {
-    match service.create_key(&body.key, &body.default_message).await {
+    // Parse optional tenant_id and context from body
+    let tenant_id = body.tenant_id.as_ref()
+        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+        .map(|u| sqlx::types::Uuid::from_u128(u.as_u128()));
+    let context = body.context.as_deref();
+    
+    match service.create_key(&body.key, &body.default_message, tenant_id, context).await {
         Ok(_) => {
             let _ = audit.log("System", "I18N_KEY_CREATED", Some(&body.key), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
@@ -97,16 +124,23 @@ pub async fn create_key(
 pub async fn update_translation(
     service: web::types::State<Arc<I18nService>>,
     audit: web::types::State<Arc<AuditService>>,
-    body: web::types::Json<Value>, // Expect { "locale": "en", "key": "foo", "message": "bar" }
+    body: web::types::Json<Value>, // Expect { "locale": "en", "key": "foo", "message": "bar", "tenant_id"?: "uuid", "context"?: "console" }
 ) -> impl web::Responder {
     let locale = body.get("locale").and_then(|v| v.as_str());
     let key = body.get("key").and_then(|v| v.as_str());
     let message = body.get("message").and_then(|v| v.as_str());
+    let tenant_id_str = body.get("tenant_id").and_then(|v| v.as_str());
+    let context = body.get("context").and_then(|v| v.as_str());
+    
+    // Parse tenant_id
+    let tenant_id = tenant_id_str
+        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+        .map(|u| sqlx::types::Uuid::from_u128(u.as_u128()));
 
     if let (Some(l), Some(k), Some(m)) = (locale, key, message) {
-        match service.update_translation(l, k, m).await {
+        match service.update_translation(l, k, m, tenant_id, context).await {
             Ok(_) => {
-                let _ = audit.log("Admin", "I18N_UPDATED", Some(k), "SUCCESS", Some(serde_json::json!({ "locale": l, "message": m }))).await;
+                let _ = audit.log("Admin", "I18N_UPDATED", Some(k), "SUCCESS", Some(serde_json::json!({ "locale": l, "message": m, "context": context }))).await;
                 web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
             },
             Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.to_string() }))
@@ -152,7 +186,9 @@ pub async fn create_locale(
     ),
     tag = "i18n",
     params(
-        ("key" = String, Path, description = "Translation key to delete")
+        ("key" = String, Path, description = "Translation key to delete"),
+        ("tenant_id" = Option<String>, Query, description = "Tenant ID to delete key for (omit for global)"),
+        ("context" = Option<String>, Query, description = "Context to delete key for")
     ),
     security(
         ("bearer_auth" = [])
@@ -162,9 +198,16 @@ pub async fn delete_key(
     service: web::types::State<Arc<I18nService>>,
     audit: web::types::State<Arc<AuditService>>,
     path: web::types::Path<String>,
+    query: web::types::Query<TranslationsQuery>,
 ) -> impl web::Responder {
     let key = path.into_inner();
-    match service.delete_key(&key).await {
+    
+    let tenant_id = query.tenant_id.as_ref()
+        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+        .map(|u| sqlx::types::Uuid::from_u128(u.as_u128()));
+    let context = query.context.as_deref();
+    
+    match service.delete_key(&key, tenant_id, context).await {
         Ok(_) => {
             let _ = audit.log("Admin", "I18N_KEY_DELETED", Some(&key), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
@@ -189,12 +232,13 @@ pub async fn delete_key(
     )
 )]
 pub async fn delete_locale(
-    service: web::types::State<Arc<I18nService>>,
+    service: web::types::State<Arc<AuditService>>,
     audit: web::types::State<Arc<AuditService>>,
+    i18n_service: web::types::State<Arc<I18nService>>,
     path: web::types::Path<String>,
 ) -> impl web::Responder {
     let code = path.into_inner();
-    match service.delete_locale(&code).await {
+    match i18n_service.delete_locale(&code).await {
         Ok(_) => {
             let _ = audit.log("Admin", "I18N_LOCALE_DELETED", Some(&code), "SUCCESS", None).await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
@@ -223,3 +267,4 @@ pub async fn list_all_translations(
         Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.to_string() })),
     }
 }
+

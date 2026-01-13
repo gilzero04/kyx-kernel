@@ -155,8 +155,7 @@ impl PluginRegistry {
         
         // Save WASM bytes if provided
         if let Some(bytes) = wasm_bytes {
-            let wasm_path = format!("plugins/{}/{}.wasm", tenant_id, manifest.id);
-            // TODO: Save to storage
+            let wasm_path = save_plugin_file(tenant_id, &manifest.id, &bytes)?;
             plugin.wasm_path = Some(wasm_path);
             plugin.wasm_size_bytes = Some(bytes.len() as i64);
             plugin.wasm_hash = Some(simple_hash_hex(&bytes));
@@ -256,7 +255,10 @@ impl PluginRegistry {
         let key = format!("{}:{}", tenant_id, plugin.plugin_id);
         self.plugins.remove(&key);
         
-        // TODO: Delete WASM file from storage
+        // Delete WASM file from storage
+        if let Err(e) = delete_plugin_dir(tenant_id, &plugin.plugin_id) {
+            warn!("Failed to delete plugin files (continuing with DB deletion): {}", e);
+        }
         
         // Delete from database (cascades to events)
         self.repository.delete(plugin_id).await?;
@@ -337,7 +339,7 @@ impl PluginRegistry {
         
         // Save WASM bytes if provided
         if let Some(bytes) = wasm_bytes {
-            let wasm_path = format!("plugins/{}/{}.wasm", tenant_id, manifest.id);
+            let wasm_path = save_plugin_file(tenant_id, &manifest.id, &bytes)?;
             plugin.wasm_path = Some(wasm_path);
             plugin.wasm_size_bytes = Some(bytes.len() as i64);
             plugin.wasm_hash = Some(simple_hash_hex(&bytes));
@@ -478,5 +480,55 @@ fn simple_hash_hex(data: &[u8]) -> String {
     data.hash(&mut hasher);
     let hash = hasher.finish();
     format!("{:016x}", hash)
+}
+
+/// Helper: Get the base path for plugin storage
+fn get_plugin_storage_base() -> std::path::PathBuf {
+    // Use PLUGIN_STORAGE_PATH env var if set, otherwise default to assets/plugins
+    std::env::var("PLUGIN_STORAGE_PATH")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("assets/plugins"))
+}
+
+/// Helper: Save plugin WASM bytes to disk
+/// Returns the relative path where the file was saved
+fn save_plugin_file(tenant_id: Uuid, plugin_id: &str, data: &[u8]) -> Result<String> {
+    use std::fs;
+    use std::io::Write;
+    
+    let base_path = get_plugin_storage_base();
+    let plugin_dir = base_path.join(tenant_id.to_string()).join(plugin_id);
+    
+    // Create directory structure
+    fs::create_dir_all(&plugin_dir)
+        .map_err(|e| anyhow!("Failed to create plugin directory: {}", e))?;
+    
+    // Save WASM file
+    let wasm_path = plugin_dir.join("plugin.wasm");
+    let mut file = fs::File::create(&wasm_path)
+        .map_err(|e| anyhow!("Failed to create plugin.wasm: {}", e))?;
+    file.write_all(data)
+        .map_err(|e| anyhow!("Failed to write plugin.wasm: {}", e))?;
+    
+    info!("Saved plugin file to: {:?}", wasm_path);
+    
+    // Return relative path for database storage
+    Ok(format!("assets/plugins/{}/{}/plugin.wasm", tenant_id, plugin_id))
+}
+
+/// Helper: Delete plugin directory on uninstall
+fn delete_plugin_dir(tenant_id: Uuid, plugin_id: &str) -> Result<()> {
+    use std::fs;
+    
+    let base_path = get_plugin_storage_base();
+    let plugin_dir = base_path.join(tenant_id.to_string()).join(plugin_id);
+    
+    if plugin_dir.exists() {
+        fs::remove_dir_all(&plugin_dir)
+            .map_err(|e| anyhow!("Failed to delete plugin directory: {}", e))?;
+        info!("Deleted plugin directory: {:?}", plugin_dir);
+    }
+    
+    Ok(())
 }
 

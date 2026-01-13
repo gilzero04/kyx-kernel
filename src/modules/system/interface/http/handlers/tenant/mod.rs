@@ -64,7 +64,7 @@ pub async fn list_tenants(
     }
 }
 
-/// Update system owner name (Admin)
+/// Update system owner (branding now managed via branding_id)
 #[utoipa::path(
     patch,
     path = "/api/v1/admin/tenants/owner",
@@ -88,28 +88,23 @@ pub async fn update_owner(
     // Strictly enforce System Owner only
     if let Ok(owner_id) = service.get_owner_id().await {
         if actor_tenant_id != Some(owner_id) {
-             return web::HttpResponse::Forbidden().json(&serde_json::json!({ "error": "Only the system owner can update branding" }));
+             return web::HttpResponse::Forbidden().json(&serde_json::json!({ "error": "Only the system owner can update owner settings" }));
         }
     }
 
-    if body.name.is_some() || body.slug.is_some() || body.logo_url.is_some() || body.logo_dark_url.is_some() || body.favicon_url.is_some() || body.icon_app_url.is_some() || body.primary_color.is_some() || body.secondary_color.is_some() || body.accent_color.is_some() || body.app_name_override.is_some() || body.contact_email.is_some() || body.contact_phone.is_some() || body.website_url.is_some() || body.social_links.is_some() || body.address.is_some() || body.business_type.is_some() {
+    // Check if any fields are being updated
+    if body.name.is_some() || body.slug.is_some() || body.branding_id.is_some() || body.contact_email.is_some() || body.contact_phone.is_some() || body.website_url.is_some() || body.social_links.is_some() || body.address.is_some() || body.business_type.is_some() || body.tax_id.is_some() {
         match service.update_owner(
             body.name.clone(), 
             body.slug.clone(), 
-            body.logo_url.clone(), 
-            body.logo_dark_url.clone(),
-            body.favicon_url.clone(),
-            body.icon_app_url.clone(),
-            body.primary_color.clone(),
-            body.secondary_color.clone(),
-            body.accent_color.clone(),
-            body.app_name_override.clone(),
+            body.branding_id,
             body.contact_email.clone(),
             body.contact_phone.clone(),
             body.website_url.clone(),
             body.social_links.clone(),
             body.address.clone(),
             body.business_type.clone(),
+            body.tax_id.clone(),
             body.config.clone(),
             body.custom_domain.clone(),
             body.allow_child_subdomains,
@@ -117,7 +112,7 @@ pub async fn update_owner(
             body.verification_token.clone()
         ).await {
             Ok(_) => {
-                let _ = audit.log("SuperAdmin", "OWNER_UPDATED", Some("branding"), "SUCCESS", None).await;
+                let _ = audit.log("SuperAdmin", "OWNER_UPDATED", Some("owner"), "SUCCESS", None).await;
                 web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
             },
             Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
@@ -169,7 +164,7 @@ pub async fn get_tenant(
     }
 }
 
-/// Create a new organization (SuperAdmin)
+/// Create a new organization (branding managed via branding_id)
 #[utoipa::path(
     post,
     path = "/api/v1/admin/tenants",
@@ -215,12 +210,7 @@ pub async fn create_tenant(
         body.admin_name.clone(), 
         final_parent_id, 
         actor_tenant_id,
-        body.favicon_url.clone(),
-        body.icon_app_url.clone(),
-        body.primary_color.clone(),
-        body.secondary_color.clone(),
-        body.accent_color.clone(),
-        body.app_name_override.clone(),
+        body.branding_id,
         body.contact_email.clone(),
         body.contact_phone.clone(),
         body.website_url.clone(),
@@ -238,7 +228,7 @@ pub async fn create_tenant(
     }
 }
 
-/// Update organization metadata (SuperAdmin)
+/// Update organization metadata (branding managed via branding_id)
 #[utoipa::path(
     patch,
     path = "/api/v1/admin/tenants/{id}",
@@ -274,14 +264,7 @@ pub async fn update_tenant(
         body.name.clone(), 
         body.slug.clone(), 
         body.is_active, 
-        body.logo_url.clone(),
-        body.logo_dark_url.clone(),
-        body.favicon_url.clone(),
-        body.icon_app_url.clone(),
-        body.primary_color.clone(),
-        body.secondary_color.clone(),
-        body.accent_color.clone(),
-        body.app_name_override.clone(),
+        body.branding_id,
         body.contact_email.clone(),
         body.contact_phone.clone(),
         body.website_url.clone(),
@@ -387,7 +370,7 @@ pub async fn verify_domain(
     }
 }
 
-/// Get public tenant info by slug
+/// Get public tenant info by slug (returns branding_id for separate branding fetch)
 #[utoipa::path(
     get,
     path = "/api/v1/public/tenants/{slug}",
@@ -405,19 +388,15 @@ pub async fn get_tenant_by_slug(
     
     match service.get_tenant_by_slug(slug).await {
         Ok(Some(tenant)) => {
-            // Return only public branding info
+            // Return tenant info with branding_id (branding fetched separately via workspace/status)
             web::HttpResponse::Ok().json(&serde_json::json!({
                 "id": tenant.id,
                 "name": tenant.name,
                 "slug": tenant.slug,
-                "logo_url": tenant.logo_url,
-                "logo_dark_url": tenant.logo_dark_url,
-                "favicon_url": tenant.favicon_url,
-                "icon_app_url": tenant.icon_app_url,
-                "primary_color": tenant.primary_color,
-                "secondary_color": tenant.secondary_color,
-                "accent_color": tenant.accent_color,
-                "app_name_override": tenant.app_name_override
+                "branding_id": tenant.branding_id,
+                "contact_email": tenant.contact_email,
+                "contact_phone": tenant.contact_phone,
+                "website_url": tenant.website_url
             }))
         },
         Ok(None) => web::HttpResponse::NotFound().json(&serde_json::json!({

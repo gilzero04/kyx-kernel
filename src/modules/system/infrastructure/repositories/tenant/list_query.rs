@@ -58,11 +58,11 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
         ("", "")
     };
 
+    // Updated query: uses branding_id instead of branding columns
     let base_sql = format!(
         r#"{}
         SELECT 
-            t.id, t.parent_id, t.name, t.slug, t.logo_url, t.logo_dark_url, t.favicon_url, t.icon_app_url,
-            t.primary_color, t.secondary_color, t.accent_color, t.app_name_override,
+            t.id, t.parent_id, t.name, t.slug, t.branding_id,
             t.contact_email, t.contact_phone, t.website_url, t.social_links, t.address, t.business_type,
             t.config, t.custom_domain, t.allow_child_subdomains, t.use_parent_subdomain,
             t.domain_verified_at, t.verification_token, t.is_active, t.created_at,

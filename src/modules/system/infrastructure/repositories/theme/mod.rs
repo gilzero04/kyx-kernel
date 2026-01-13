@@ -20,11 +20,12 @@ impl ThemeRepository for PostgresThemeRepository {
     async fn create(&self, dto: CreateThemeDto) -> AppResult<Theme> {
         let theme = sqlx::query_as::<_, Theme>(
             r#"
-            INSERT INTO sys_themes (name, description, config, visibility, tenant_id, author, preview_url, logo_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO sys_themes (code, name, description, config, visibility, tenant_id, author, preview_url, logo_url)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
             "#
         )
+        .bind(dto.code)
         .bind(dto.name)
         .bind(dto.description)
         .bind(dto.config)
@@ -93,20 +94,22 @@ impl ThemeRepository for PostgresThemeRepository {
             r#"
             UPDATE sys_themes
             SET 
-                name = COALESCE($2, name),
-                description = COALESCE($3, description),
-                config = COALESCE($4, config),
-                visibility = COALESCE($5, visibility),
-                is_active = COALESCE($6, is_active),
-                author = COALESCE($7, author),
-                preview_url = COALESCE($8, preview_url),
-                logo_url = COALESCE($9, logo_url),
+                code = COALESCE($2, code),
+                name = COALESCE($3, name),
+                description = COALESCE($4, description),
+                config = COALESCE($5, config),
+                visibility = COALESCE($6, visibility),
+                is_active = COALESCE($7, is_active),
+                author = COALESCE($8, author),
+                preview_url = COALESCE($9, preview_url),
+                logo_url = COALESCE($10, logo_url),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING *
             "#
         )
         .bind(id)
+        .bind(dto.code)
         .bind(dto.name)
         .bind(dto.description)
         .bind(dto.config)
@@ -167,24 +170,34 @@ impl ThemeRepository for PostgresThemeRepository {
         if theme.is_none() {
             return Ok(None);
         }
-        let theme_entity = theme.unwrap();
-        let theme_name = theme_entity.name;
-        let theme_tenant_id = theme_entity.tenant_id;
 
-        // 2. Check Tenants (active_theme_id)
-        // Return ID of first tenant using it for debug
-        // Exclude constraint if provided
+        // Check Tenants using this theme via branding relationship
+        // Relationship: auth_tenants.branding_id → sys_brandings.id
+        //              sys_brandings.theme_light_id/theme_dark_id → sys_themes.id
         let used_by_tenant: Option<String> = if let Some(skip_id) = exclude_tenant_id {
             sqlx::query_scalar(
-                "SELECT name FROM auth_tenants WHERE active_theme_id = $1 AND id != $2 LIMIT 1"
+                r#"
+                SELECT t.name 
+                FROM auth_tenants t
+                JOIN sys_brandings b ON t.branding_id = b.id
+                WHERE (b.theme_light_id = $1 OR b.theme_dark_id = $1)
+                AND t.id != $2
+                LIMIT 1
+                "#
             )
             .bind(theme_id)
             .bind(skip_id)
             .fetch_optional(&self.db.pool)
             .await?
         } else {
-             sqlx::query_scalar(
-                "SELECT name FROM auth_tenants WHERE active_theme_id = $1 LIMIT 1"
+            sqlx::query_scalar(
+                r#"
+                SELECT t.name 
+                FROM auth_tenants t
+                JOIN sys_brandings b ON t.branding_id = b.id
+                WHERE b.theme_light_id = $1 OR b.theme_dark_id = $1
+                LIMIT 1
+                "#
             )
             .bind(theme_id)
             .fetch_optional(&self.db.pool)
@@ -193,39 +206,6 @@ impl ThemeRepository for PostgresThemeRepository {
 
         if let Some(tenant_name) = used_by_tenant {
             return Ok(Some(format!("Active in tenant '{}'", tenant_name)));
-        }
-
-        // 3. Check System Config (console_theme_*_id) maps to theme NAME
-        // IMPORTANT: Only System Themes (tenant_id = None) can be System Defaults.
-        // If this is a Tenant Theme, it CANNOT be the System Default (even if name matches).
-        if theme_tenant_id.is_some() {
-            return Ok(None);
-        }
-        // We check each key individually to be specific
-        // Note: value is JSONB. If it's a string "Pixco Dark", value->>0 or value #>> '{}' gets text.
-        // value::text gives "\"Pixco Dark\"".
-        // Let's compare against the exact JSON string representation.
-        let light_check: Option<String> = sqlx::query_scalar(
-            "SELECT value::text FROM sys_configs WHERE key = 'console_theme_light_id' AND value::text = $1"
-        )
-        // Bind the JSON string representation matches what we store
-        .bind(format!("\"{}\"", theme_name))
-        .fetch_optional(&self.db.pool)
-        .await?;
-
-        if light_check.is_some() {
-             return Ok(Some("Active as System Light Theme".to_string()));
-        }
-
-        let dark_check: Option<String> = sqlx::query_scalar(
-            "SELECT value::text FROM sys_configs WHERE key = 'console_theme_dark_id' AND value::text = $1"
-        )
-        .bind(format!("\"{}\"", theme_name))
-        .fetch_optional(&self.db.pool)
-        .await?;
-        
-        if dark_check.is_some() {
-             return Ok(Some("Active as System Dark Theme".to_string()));
         }
 
         Ok(None)

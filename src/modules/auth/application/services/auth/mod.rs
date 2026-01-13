@@ -503,18 +503,41 @@ impl AuthService {
             })?;
 
         let tenant_id = Uuid::new_v4();
+        
+        // Create branding record first (single source of truth for branding)
+        // Use default theme colors if not provided
+        let branding_id = Uuid::new_v4();
+        let default_primary = "#0ea5e9".to_string(); // Sky blue
+        let default_secondary = "#6366f1".to_string(); // Indigo
+        let default_accent = "#f43f5e".to_string(); // Rose
+        
         sqlx::query(
-            "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id, app_name_override, primary_color, secondary_color, accent_color) 
-             VALUES ($1, $1, $2, $3, $4, $5, $6, $7, $8)"
+            "INSERT INTO sys_brandings (id, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())"
+        )
+        .bind(branding_id)
+        .bind(format!("{} Branding", &req.org_name))
+        .bind(&req.app_name)
+        .bind(req.primary_color.as_ref().unwrap_or(&default_primary))
+        .bind(req.secondary_color.as_ref().unwrap_or(&default_secondary))
+        .bind(req.accent_color.as_ref().unwrap_or(&default_accent))
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create branding: {}", e),
+        })?;
+
+        // Create tenant with branding_id reference
+        sqlx::query(
+            "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id, branding_id) 
+             VALUES ($1, $1, $2, $3, $4, $5)"
         )
         .bind(tenant_id)
         .bind(&req.org_name)
         .bind(&tenant_slug)
         .bind(type_id)
-        .bind(&req.app_name)
-        .bind(&req.primary_color)
-        .bind(&req.secondary_color)
-        .bind(&req.accent_color)
+        .bind(branding_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -649,13 +672,8 @@ impl AuthService {
         let access_token = self.jwt.generate_access_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
         let refresh_token = self.jwt.generate_refresh_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
 
-        // 7. Persist Global Branding (PCAL)
-        // owner_name is now stored in auth_tenants.name - no need for sys_configs
-        if let Some(app_name) = req.app_name {
-            if !app_name.is_empty() {
-                let _ = self.config.set("branding_app_name", serde_json::Value::String(app_name)).await;
-            }
-        }
+        // 7. Branding is now stored in sys_brandings (created above)
+        // No need to persist in sys_configs anymore
 
         // 8. Persist Platform Mode
         let _ = self.config.set("platform_type", serde_json::Value::String(req.platform_type)).await;
@@ -672,20 +690,25 @@ impl AuthService {
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to find default dark theme: {}", e) })?;
 
+        // Update branding with theme IDs
         if let Some(row) = light_theme_row {
             let id: Uuid = row.get("id");
-            let _ = self.config.set("theme_light_id", serde_json::Value::String(id.to_string())).await;
-            
-            // Also set as workspace default
-             let _ = self.config.set_tenant_config(Some(tenant_id), "workspace_theme_light_id", serde_json::Value::String(id.to_string()), Some("workspace")).await;
+            sqlx::query("UPDATE sys_brandings SET theme_light_id = $1, updated_at = NOW() WHERE id = $2")
+                .bind(id)
+                .bind(branding_id)
+                .execute(&self.db.pool)
+                .await
+                .ok();
         }
 
         if let Some(row) = dark_theme_row {
             let id: Uuid = row.get("id");
-            let _ = self.config.set("theme_dark_id", serde_json::Value::String(id.to_string())).await;
-
-            // Also set as workspace default
-             let _ = self.config.set_tenant_config(Some(tenant_id), "workspace_theme_dark_id", serde_json::Value::String(id.to_string()), Some("workspace")).await;
+            sqlx::query("UPDATE sys_brandings SET theme_dark_id = $1, updated_at = NOW() WHERE id = $2")
+                .bind(id)
+                .bind(branding_id)
+                .execute(&self.db.pool)
+                .await
+                .ok();
         }
 
         // 10. Audit & Cache

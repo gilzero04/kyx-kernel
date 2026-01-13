@@ -10,3 +10,4 @@ pub mod theme;
 pub mod user;
 pub mod cms;
 pub mod plugin;
+pub mod workspace;
