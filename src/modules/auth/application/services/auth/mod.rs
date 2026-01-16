@@ -694,8 +694,13 @@ impl AuthService {
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to handover themes: {}", e) })?;
 
-        // Update Roles
-        sqlx::query("UPDATE sys_roles SET tenant_id = $1 WHERE tenant_id IS NULL")
+        // Update Roles - EXCLUDE global system roles which should remain tenant_id = NULL
+        // Global roles: superadmin, admin, operator, viewer (seeded in 0002_rbac.sql with tenant_id = NULL)
+        sqlx::query(r#"
+            UPDATE sys_roles SET tenant_id = $1 
+            WHERE tenant_id IS NULL 
+            AND slug NOT IN ('superadmin', 'admin', 'operator', 'viewer')
+        "#)
             .bind(tenant_id)
             .execute(&mut *tx)
             .await
