@@ -1,27 +1,30 @@
 {
-  "id": "kyx-light",
-  "name": "Kyx Light",
-  "description": "Deep Blue & Cyan aesthetic.",
-  "version": "1.0.0",
-  "author": "Kyx Technologies Co., Ltd.",
-  "preview": "images/preview.png",
-  "logo": "images/logo.png",
-  "config": {
-    "splash": {
-      "type": "text",
-      "text": "KYX PLATFORM",
-      "subtext": "Initializing Platform..."
-    },
-    "background": {
-      "particleCount": 15,
-      "showWaves": true
-    },
-    "layout": {
-      "cardStyle": "glass",
-      "contentWidth": "normal"
-    },
-    "customText": {
-      "footer_message": "Secure. Stable. Scalable."
+    "id": "b7859090-98fe-4e49-8d2b-17d402d0d0dd",
+    "slug": "kyx-light",
+    "name": "Kyx Light",
+    "type": "light",
+    "description": "Sunrise Pearl Azure",
+    "version": "1.0.0",
+    "author": "Kyx Technologies Co., Ltd.",
+    "is_system": true,
+    "preview": "images/preview.png",
+    "logo": "images/logo.png",
+    "config": {
+        "splash": {
+            "type": "text",
+            "text": "KYX PLATFORM",
+            "subtext": "Initializing Platform..."
+        },
+        "background": {
+            "particleCount": 15,
+            "showWaves": true
+        },
+        "layout": {
+            "cardStyle": "glass",
+            "contentWidth": "normal"
+        },
+        "customText": {
+            "footer_message": "Secure. Stable. Scalable."
+        }
     }
-  }
 }

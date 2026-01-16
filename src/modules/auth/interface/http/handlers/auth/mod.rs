@@ -486,3 +486,108 @@ pub async fn admin_revoke_session_handler(
         }))),
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROFILE HANDLERS
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Get Current User Profile
+#[utoipa::path(
+    get,
+    path = "/api/v1/auth/me",
+    responses(
+        (status = 200, description = "User profile", body = ProfileResponse),
+        (status = 401, description = "Unauthorized")
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn get_me(
+    claims: crate::core::utils::jwt::Claims,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    
+    match service.get_profile(&user_id).await {
+        Ok(profile) => Ok(web::HttpResponse::Ok().json(&profile)),
+        Err(e) => {
+            let mut status = match e.code {
+                404 => web::HttpResponse::NotFound(),
+                _ => web::HttpResponse::InternalServerError(),
+            };
+            Ok(status.json(&json!({
+                "status": "error",
+                "message": e.message
+            })))
+        }
+    }
+}
+
+/// Update User Profile (name, cover)
+#[utoipa::path(
+    put,
+    path = "/api/v1/auth/me/profile",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated"),
+        (status = 401, description = "Unauthorized")
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_profile(
+    claims: crate::core::utils::jwt::Claims,
+    req: web::types::Json<crate::modules::auth::interface::http::dto::auth::UpdateProfileRequest>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    
+    match service.update_profile(&user_id, req.full_name.clone(), req.cover_url.clone()).await {
+        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
+            "status": "success",
+            "message": "Profile updated"
+        }))),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
+    }
+}
+
+/// Update User Avatar
+#[utoipa::path(
+    put,
+    path = "/api/v1/auth/me/avatar",
+    request_body = UpdateAvatarRequest,
+    responses(
+        (status = 200, description = "Avatar updated"),
+        (status = 401, description = "Unauthorized")
+    ),
+    tag = "auth",
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_avatar(
+    claims: crate::core::utils::jwt::Claims,
+    req: web::types::Json<crate::modules::auth::interface::http::dto::auth::UpdateAvatarRequest>,
+    service: web::types::State<Arc<AuthService>>,
+) -> Result<web::HttpResponse, web::Error> {
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    
+    match service.update_avatar(&user_id, &req.avatar_url).await {
+        Ok(url) => Ok(web::HttpResponse::Ok().json(&json!({
+            "status": "success",
+            "message": "Avatar updated",
+            "data": { "avatar_url": url }
+        }))),
+        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
+            "status": "error",
+            "message": e.message
+        }))),
+    }
+}

@@ -67,10 +67,14 @@ impl MediaRepository for PostgresMediaRepository {
     }
 
     async fn list_assets(&self, tenant_id: Uuid, folder_id: Option<Uuid>) -> Result<Vec<MediaAsset>> {
+        // Include own assets + shared assets (via is_shared broadcast or explicit shares)
         let assets = sqlx::query_as::<_, MediaAsset>(
             "SELECT id, tenant_id, folder_id, filename, original_name, mime_type, file_size, url, metadata, created_at, updated_at 
              FROM media_assets 
-             WHERE tenant_id = $1 AND (folder_id = $2 OR (folder_id IS NULL AND $2 IS NULL)) AND deleted_at IS NULL"
+             WHERE deleted_at IS NULL AND (folder_id = $2 OR (folder_id IS NULL AND $2 IS NULL)) AND (
+                 tenant_id = $1
+                 OR can_access_shared_resource('media', id, $1)
+             )"
         )
         .bind(tenant_id)
         .bind(folder_id)

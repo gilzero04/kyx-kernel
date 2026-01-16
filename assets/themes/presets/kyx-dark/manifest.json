@@ -1,27 +1,30 @@
 {
-  "id": "kyx-dark",
-  "name": "Kyx Dark",
-  "description": "Night Sea Obsidian",
-  "version": "1.0.0",
-  "author": "Kyx Technologies Co., Ltd.",
-  "preview": "images/preview.png",
-  "logo": "images/logo.png",
-  "config": {
-    "splash": {
-      "type": "text",
-      "text": "KYX PLATFORM",
-      "subtext": "Initializing Platform..."
-    },
-    "background": {
-      "particleCount": 15,
-      "showWaves": true
-    },
-    "layout": {
-      "cardStyle": "glass",
-      "contentWidth": "normal"
-    },
-    "customText": {
-      "footer_message": "Secure. Stable. Scalable."
+    "id": "6f29f480-e8bb-4fb8-b03f-8c3859544891",
+    "slug": "kyx-dark",
+    "name": "Kyx Dark",
+    "type": "dark",
+    "description": "Night Sea Obsidian",
+    "version": "1.0.0",
+    "author": "Kyx Technologies Co., Ltd.",
+    "is_system": true,
+    "preview": "images/preview.png",
+    "logo": "images/logo.png",
+    "config": {
+        "splash": {
+            "type": "text",
+            "text": "KYX PLATFORM",
+            "subtext": "Initializing Platform..."
+        },
+        "background": {
+            "particleCount": 15,
+            "showWaves": true
+        },
+        "layout": {
+            "cardStyle": "glass",
+            "contentWidth": "normal"
+        },
+        "customText": {
+            "footer_message": "Secure. Stable. Scalable."
+        }
     }
-  }
 }

@@ -1,1 +1,1 @@
-pub use crate::modules::signal::domain::service::{SignalService, SignalTicketResponse};
+// SignalService and SignalTicketResponse available via domain::service when needed

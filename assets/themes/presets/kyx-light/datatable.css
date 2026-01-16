@@ -84,7 +84,7 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .datatable-toolbar-actions {
@@ -97,9 +97,9 @@
 
 /* Header Standardization */
 .datatable-table thead tr {
-    background: var(--color-sea-foam);
-    /* Soft Cyan tint */
-    border-bottom: 2px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.02);
+    /* Subtle lighter bg for header */
+    border-bottom: 1px solid var(--color-border);
 }
 
 .datatable-table th {
@@ -114,8 +114,7 @@
 
 /* Row Standardization */
 .datatable-table tbody tr {
-    border-bottom: 1px solid var(--glass-border);
-    /* Sea salt border */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     transition: background-color 0.2s;
 }
 
@@ -124,12 +123,12 @@
 }
 
 .datatable-table tbody tr:hover {
-    background-color: var(--glass-bg-hover);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .datatable-table td {
     padding: 12px 16px;
-    color: var(--color-marine-deep);
+    color: var(--color-foreground);
     font-size: 13px;
     vertical-align: middle;
 }
@@ -141,7 +140,7 @@
     justify-content: space-between;
     padding: 12px 16px;
     border-top: 1px solid var(--color-border);
-    background: rgba(255, 255, 255, 0.4);
+    background: transparent;
 }
 
 .datatable-pagination-info {
@@ -220,16 +219,57 @@
 }
 
 .datatable-pagination-btn.active {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(6, 182, 212, 0.15) 100%);
-    color: var(--color-marine-deep, #0c4a6e);
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
     font-weight: 600;
-    border: 1px solid rgba(56, 189, 248, 0.4);
-    box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-/* Checkbox Positioning (Look & Feel inherited from theme.css) */
+/* Checkbox Customization */
 .datatable-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
     vertical-align: middle;
+}
+
+.datatable-checkbox:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.datatable-checkbox:indeterminate,
+.datatable-checkbox.indeterminate {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3crect x='3' y='7' width='10' height='2' rx='1'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.datatable-checkbox:hover:not(:checked) {
+    border-color: var(--color-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.datatable-checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-primary);
+    outline-offset: 1px;
 }
 
 /* --- STRUCTURAL STYLES MIGRATED FROM APP.CSS --- */
@@ -345,7 +385,10 @@
 }
 
 .datatable-checkall-pill input[type="checkbox"] {
-    margin-right: 4px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
 }
 
 .datatable-sort-select {
@@ -481,11 +524,11 @@
 }
 
 .datatable-table tr:hover td {
-    background: var(--glass-bg-hover);
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .datatable-table tr.selected td {
-    background: var(--glass-bg-active);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 /* Card View */
@@ -523,7 +566,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: var(--radius-xl, 16px);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     transition: all 0.3s ease;
@@ -541,13 +584,12 @@
 
 .datatable-grid-card-footer {
     padding: 12px 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: rgba(255, 255, 255, 0.6);
-    /* Sparkling Morning White */
-    backdrop-filter: blur(8px);
+    background-color: rgba(39, 39, 42, 0.5);
+    /* zinc-800/50 */
 }
 
 /* Standardized Action Button (Circular Glass/Solid) */
@@ -558,9 +600,12 @@
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid var(--glass-border-vivid);
-    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.05);
+    /* dark:bg-zinc-800 equivalent */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* dark:border-zinc-700 equivalent */
+    color: #f87171;
+    /* dark:text-red-400 */
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -571,44 +616,44 @@
 }
 
 /* Action Button Variants - Default State Colors */
-/* View: Gray/Neutral - Light Theme Visible */
+/* View: Gray/Neutral */
 .datatable-action-btn.view,
 .datatable-action-btn:not(.edit):not(.delete):not(.reset):not(.warning):not(.caution) {
-    color: #475569;
-    /* text-slate-600 - visible on light bg */
+    color: #94a3b8;
+    /* text-slate-400 */
 }
 
 /* Edit: Blue */
 .datatable-action-btn.edit,
 .datatable-action-btn.add {
-    color: #2563eb;
-    /* text-blue-600 - visible on light */
+    color: #60a5fa;
+    /* dark:text-blue-400 */
 }
 
 /* Warning: Amber/Orange (Reset Password, etc.) */
 .datatable-action-btn.warning,
 .datatable-action-btn.caution,
 .datatable-action-btn.reset {
-    color: #d97706 !important;
-    /* text-amber-600 - cautionary (high priority) */
+    color: #fbbf24 !important;
+    /* text-amber-400 (high priority) */
 }
 
 /* Delete: Red */
 .datatable-action-btn.delete {
-    color: #dc2626;
-    /* text-red-600 - visible on light */
+    color: #f87171;
+    /* text-red-400 */
 }
 
 /* Action Button Variants - Hover States */
-/* View: Gray/Neutral - Light Theme Visible */
+/* View: Gray/Neutral */
 .datatable-action-btn.view:hover,
 .datatable-action-btn:not(.edit):not(.delete):not(.reset):not(.warning):not(.caution):hover {
-    background-color: rgba(71, 85, 105, 0.15);
-    /* bg-slate-600/15 */
-    border-color: rgba(71, 85, 105, 0.3);
-    /* border-slate-600/30 */
-    color: #334155;
-    /* text-slate-700 - visible on light bg */
+    background-color: rgba(148, 163, 184, 0.15);
+    /* bg-slate-400/15 */
+    border-color: rgba(148, 163, 184, 0.3);
+    /* border-slate-400/30 */
+    color: #cbd5e1;
+    /* text-slate-300 - brighter on hover */
 }
 
 /* Edit: Blue */
@@ -628,20 +673,20 @@
     /* bg-red-500/20 */
     border-color: rgba(239, 68, 68, 0.3);
     /* border-red-500/30 */
-    color: #b91c1c;
-    /* text-red-700 - darker on hover for light theme */
+    color: #fca5a5;
+    /* text-red-300 - brighter on hover */
 }
 
 /* Warning: Amber/Orange (Reset Password, etc.) */
 .datatable-action-btn.warning:hover,
 .datatable-action-btn.caution:hover,
 .datatable-action-btn.reset:hover {
-    background-color: rgba(217, 119, 6, 0.15);
-    /* bg-amber-600/15 */
-    border-color: rgba(217, 119, 6, 0.3);
-    /* border-amber-600/30 */
-    color: #92400e;
-    /* text-amber-800 - darker on hover */
+    background-color: rgba(251, 191, 36, 0.2);
+    /* bg-amber-400/20 */
+    border-color: rgba(251, 191, 36, 0.3);
+    /* border-amber-400/30 */
+    color: #fde68a;
+    /* text-amber-200 - brighter on hover */
 }
 
 /* Owner Badge: Golden Crown Circle */
@@ -808,6 +853,21 @@
     height: 20px;
     width: 20px;
     border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+    appearance: none;
+    cursor: pointer;
+}
+
+.datatable-grid-checkbox:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+    background-size: 100% 100%;
 }
 
 .hidden {

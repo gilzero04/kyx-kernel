@@ -1,0 +1,21 @@
+/* AdminTabBar Theme - Light Mode */
+
+.tab-bar-inner {
+	--tab-bar-bg: rgba(255, 255, 255, 0.8);
+	--tab-bar-border: rgba(0, 0, 0, 0.1);
+}
+
+.tab-item {
+	--tab-item-color: rgba(0, 0, 0, 0.6);
+	--tab-item-font-size: var(--font-size-sm);
+	--tab-item-hover-color: rgba(0, 0, 0, 0.9);
+	--tab-item-hover-bg: rgba(0, 0, 0, 0.05);
+	--tab-item-active-color: var(--color-primary);
+	--tab-item-active-bg: #ffffff;
+	--tab-item-active-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.active-indicator {
+	--tab-indicator-color: var(--color-primary);
+	--tab-indicator-height: 3px;
+}

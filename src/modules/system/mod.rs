@@ -185,6 +185,8 @@ impl AppModule for SystemModule {
                 .configure(|conf| interface::http::routers::plugin::plugin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
                 // CMS
                 .configure(|conf| interface::http::routers::cms::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                // Resource Sharing
+                .configure(interface::http::routers::share::configure)
         );
         
         // ═══════════════════════════════════════════════════════════════════════════

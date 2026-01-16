@@ -30,29 +30,33 @@ impl I18nRepository for PostgresI18nRepositoryImpl {
     }
 
     async fn get_translations(&self, locale: &str, tenant_id: Option<Uuid>, context: Option<&str>) -> Result<Vec<Translation>> {
-        // Use a query that returns tenant-specific translations with fallback to global
+        // Get translations with fallback chain:
+        // 1. Tenant-specific translations (highest priority)
+        // 2. Shared translations from ancestors (is_shared = TRUE)
+        // 3. Global translations (fallback)
         let rows = sqlx::query(
             r#"
-            SELECT 
-                COALESCE(t.id, g.id) as id,
-                COALESCE(t.locale, g.locale) as locale,
-                COALESCE(t.key, g.key) as key,
-                COALESCE(t.message, g.message) as message,
-                COALESCE(t.is_auto_generated, g.is_auto_generated) as is_auto_generated,
-                t.tenant_id,
-                t.context,
-                COALESCE(t.created_at, g.created_at) as created_at,
-                COALESCE(t.updated_at, g.updated_at) as updated_at
-            FROM sys_i18n_translations g
-            LEFT JOIN sys_i18n_translations t ON 
-                g.locale = t.locale 
-                AND g.key = t.key 
-                AND t.tenant_id = $2
-                AND (t.context = $3 OR ($3 IS NULL AND t.context IS NULL))
-            WHERE g.locale = $1 
-                AND g.tenant_id IS NULL 
-                AND g.context IS NULL
-            ORDER BY g.key
+            WITH ranked_translations AS (
+                SELECT 
+                    id, locale, key, message, is_auto_generated, tenant_id, context, created_at, updated_at,
+                    CASE 
+                        WHEN tenant_id = $2 THEN 1  -- Own tenant (highest priority)
+                        WHEN tenant_id IS NOT NULL AND is_shared = TRUE THEN 2  -- Shared from ancestor
+                        ELSE 3  -- Global fallback
+                    END as priority
+                FROM sys_i18n_translations
+                WHERE locale = $1
+                    AND (context = $3 OR ($3 IS NULL AND context IS NULL) OR context IS NULL)
+                    AND (
+                        tenant_id IS NULL  -- Global translations
+                        OR tenant_id = $2  -- Own tenant translations
+                        OR (is_shared = TRUE AND get_ancestor_chain($2) @> ARRAY[tenant_id])  -- Shared from ancestors
+                    )
+            )
+            SELECT DISTINCT ON (key)
+                id, locale, key, message, is_auto_generated, tenant_id, context, created_at, updated_at
+            FROM ranked_translations
+            ORDER BY key, priority ASC
             "#
         )
         .bind(locale)

@@ -39,6 +39,9 @@ pub struct Claims {
     pub signal_permissions: Option<Vec<String>>,
 }
 
+// Note: Permission checking is handled by RequirePermission middleware
+// See: src/core/infrastructure/permission_middleware/mod.rs
+
 // Note: PlanFeatures moved to kyx-plan plugin
 // Claims.features is now Option<serde_json::Value> for flexibility
 // Plan data should be fetched from database via plugin, not hardcoded

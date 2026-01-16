@@ -1,0 +1,18 @@
+/* NavCategoryItem Component - Dark Theme */
+/* Uses CSS variables from variables.css */
+
+.nav-category-item {
+    --nav-category-bg: transparent;
+    --nav-category-border: transparent;
+    --nav-category-bg-hover: rgba(255, 255, 255, 0.05);
+    --nav-category-border-hover: rgba(255, 255, 255, 0.08);
+    --nav-category-bg-active: rgba(var(--color-primary-rgb), 0.08);
+    --nav-category-border-active: rgba(var(--color-primary-rgb), 0.15);
+    --nav-category-icon-bg: rgba(var(--color-primary-rgb), 0.1);
+    --nav-category-icon-color: var(--color-primary);
+    --nav-category-icon-bg-hover: rgba(var(--color-primary-rgb), 0.15);
+    --nav-category-icon-color-hover: var(--color-primary);
+    --nav-category-icon-bg-active: rgba(var(--color-primary-rgb), 0.2);
+    --nav-category-icon-color-active: var(--color-primary);
+    --nav-category-label-color: var(--color-primary);
+}

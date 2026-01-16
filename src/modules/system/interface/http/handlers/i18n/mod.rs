@@ -232,7 +232,7 @@ pub async fn delete_key(
     )
 )]
 pub async fn delete_locale(
-    service: web::types::State<Arc<AuditService>>,
+    _service: web::types::State<Arc<AuditService>>,
     audit: web::types::State<Arc<AuditService>>,
     i18n_service: web::types::State<Arc<I18nService>>,
     path: web::types::Path<String>,

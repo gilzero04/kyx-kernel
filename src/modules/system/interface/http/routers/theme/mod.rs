@@ -29,11 +29,17 @@ pub fn theme_routes(
                     .wrap(RequirePermission::new("theme:activate", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
                     .route(web::patch().to(theme::set_active_theme))
             )
-            // PATCH /themes/{id}/visibility - Update visibility
+            // PATCH /themes/{id}/sharing - Update sharing status
             .service(
-                web::resource("/{id}/visibility")
+                web::resource("/{id}/sharing")
                     .wrap(RequirePermission::new("theme:update", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
-                    .route(web::patch().to(theme::set_visibility))
+                    .route(web::patch().to(theme::set_sharing))
+            )
+            // POST /themes/{id}/update - Update theme by uploading new ZIP (SuperAdmin Owner only)
+            .service(
+                web::resource("/{id}/update")
+                    .wrap(RequirePermission::new("theme:update", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
+                    .route(web::post().to(theme::update_theme))
             )
             // DELETE /themes/{id} - Delete theme
             .service(

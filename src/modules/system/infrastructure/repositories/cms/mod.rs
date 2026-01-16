@@ -77,16 +77,19 @@ impl PostgresCmsRepository {
     }
 
     pub async fn list_pages(&self, tenant_id: Uuid) -> Result<Vec<PageEntry>> {
-        let rows = sqlx::query_as!(
-            PageEntry,
+        // Include own pages + shared pages (via is_shared broadcast or explicit shares)
+        let rows = sqlx::query_as::<_, PageEntry>(
             r#"
-            SELECT id, tenant_id, slug, title, content, is_published as "is_published!", created_at as "created_at!", updated_at as "updated_at!"
+            SELECT id, tenant_id, slug, title, content, is_published, created_at, updated_at
             FROM sys_pages
-            WHERE tenant_id = $1 AND deleted_at IS NULL
+            WHERE deleted_at IS NULL AND (
+                tenant_id = $1
+                OR can_access_shared_resource('page', id, $1)
+            )
             ORDER BY created_at DESC
-            "#,
-            tenant_id
+            "#
         )
+        .bind(tenant_id)
         .fetch_all(&self.db.pool)
         .await?;
 

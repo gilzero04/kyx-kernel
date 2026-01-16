@@ -142,24 +142,19 @@ pub async fn get_system_status(
             b.accent_color,
             b.splash_text,
             b.splash_subtext,
-            -- Legacy theme codes (backward compatibility)
-            COALESCE(tl.code, twl.code) AS theme_light_code,
-            COALESCE(td.code, twd.code) AS theme_dark_code,
-            -- Per-context theme codes
-            tcl.code AS theme_console_light_code,
-            tcd.code AS theme_console_dark_code,
-            COALESCE(twl.code, tl.code) AS theme_workspace_light_code,
-            COALESCE(twd.code, td.code) AS theme_workspace_dark_code,
-            COALESCE(tal.code, twl.code, tl.code) AS theme_app_light_code,
-            COALESCE(tad.code, twd.code, td.code) AS theme_app_dark_code
+            -- Theme slugs: theme_light_id/theme_dark_id are console defaults
+            tl.slug AS theme_light_slug,
+            td.slug AS theme_dark_slug,
+            -- Per-context theme overrides (fallback to console default)
+            COALESCE(twl.slug, tl.slug) AS theme_workspace_light_slug,
+            COALESCE(twd.slug, td.slug) AS theme_workspace_dark_slug,
+            COALESCE(tal.slug, twl.slug, tl.slug) AS theme_app_light_slug,
+            COALESCE(tad.slug, twd.slug, td.slug) AS theme_app_dark_slug
         FROM auth_tenants t
         LEFT JOIN sys_brandings b ON t.branding_id = b.id
-        -- Legacy theme joins
+        -- Theme joins (console uses theme_light_id/theme_dark_id directly)
         LEFT JOIN sys_themes tl ON b.theme_light_id = tl.id
         LEFT JOIN sys_themes td ON b.theme_dark_id = td.id
-        -- Per-context theme joins
-        LEFT JOIN sys_themes tcl ON b.theme_console_light_id = tcl.id
-        LEFT JOIN sys_themes tcd ON b.theme_console_dark_id = tcd.id
         LEFT JOIN sys_themes twl ON b.theme_workspace_light_id = twl.id
         LEFT JOIN sys_themes twd ON b.theme_workspace_dark_id = twd.id
         LEFT JOIN sys_themes tal ON b.theme_app_light_id = tal.id
@@ -172,15 +167,14 @@ pub async fn get_system_status(
         .ok()
         .flatten();
     
-    // Extract all theme codes including per-context themes
+    // Extract theme slugs (console uses theme_light_slug/theme_dark_slug)
     let (
         owner_id, owner_name, owner_slug, 
         c_domain, a_children, d_verified, v_token,
         app_name, logo, logo_dark, favicon, icon_app,
         p_color, s_color, a_color,
         splash_text, splash_subtext,
-        theme_light_code, theme_dark_code,
-        theme_console_light, theme_console_dark,
+        theme_light_slug, theme_dark_slug,
         theme_workspace_light, theme_workspace_dark,
         theme_app_light, theme_app_dark
     ): (
@@ -188,7 +182,6 @@ pub async fn get_system_status(
         Option<String>, Option<bool>, Option<chrono::DateTime<chrono::Utc>>, Option<String>,
         Option<String>, Option<String>, Option<String>, Option<String>, Option<String>,
         Option<String>, Option<String>, Option<String>,
-        Option<String>, Option<String>,
         Option<String>, Option<String>,
         Option<String>, Option<String>,
         Option<String>, Option<String>,
@@ -212,16 +205,14 @@ pub async fn get_system_status(
             row.get::<Option<String>, _>("accent_color"),
             row.get::<Option<String>, _>("splash_text"),
             row.get::<Option<String>, _>("splash_subtext"),
-            row.get::<Option<String>, _>("theme_light_code"),
-            row.get::<Option<String>, _>("theme_dark_code"),
-            row.get::<Option<String>, _>("theme_console_light_code"),
-            row.get::<Option<String>, _>("theme_console_dark_code"),
-            row.get::<Option<String>, _>("theme_workspace_light_code"),
-            row.get::<Option<String>, _>("theme_workspace_dark_code"),
-            row.get::<Option<String>, _>("theme_app_light_code"),
-            row.get::<Option<String>, _>("theme_app_dark_code"),
+            row.get::<Option<String>, _>("theme_light_slug"),
+            row.get::<Option<String>, _>("theme_dark_slug"),
+            row.get::<Option<String>, _>("theme_workspace_light_slug"),
+            row.get::<Option<String>, _>("theme_workspace_dark_slug"),
+            row.get::<Option<String>, _>("theme_app_light_slug"),
+            row.get::<Option<String>, _>("theme_app_dark_slug"),
         ),
-        None => (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+        None => (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
     };
     
     // Additional owner info from sys_configs (non-branding)
@@ -237,22 +228,22 @@ pub async fn get_system_status(
                 "text": splash_text,
                 "subtext": splash_subtext
             },
-            // Legacy fields (backward compatibility)
-            "theme_light_id": theme_light_code.clone().unwrap_or_default(),
-            "theme_dark_id": theme_dark_code.clone().unwrap_or_default(),
-            // Per-context themes
+            // Legacy fields (backward compatibility) - also used as console theme
+            "theme_light_id": theme_light_slug.clone().unwrap_or_default(),
+            "theme_dark_id": theme_dark_slug.clone().unwrap_or_default(),
+            // Per-context themes (console uses theme_light_slug directly)
             "themes": {
                 "console": {
-                    "light": theme_console_light.or(theme_light_code.clone()).unwrap_or_default(),
-                    "dark": theme_console_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                    "light": theme_light_slug.clone().unwrap_or_default(),
+                    "dark": theme_dark_slug.clone().unwrap_or_default()
                 },
                 "workspace": {
-                    "light": theme_workspace_light.or(theme_light_code.clone()).unwrap_or_default(),
-                    "dark": theme_workspace_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                    "light": theme_workspace_light.or(theme_light_slug.clone()).unwrap_or_default(),
+                    "dark": theme_workspace_dark.or(theme_dark_slug.clone()).unwrap_or_default()
                 },
                 "app": {
-                    "light": theme_app_light.or(theme_light_code).unwrap_or_default(),
-                    "dark": theme_app_dark.or(theme_dark_code).unwrap_or_default()
+                    "light": theme_app_light.or(theme_light_slug).unwrap_or_default(),
+                    "dark": theme_app_dark.or(theme_dark_slug).unwrap_or_default()
                 }
             },
             "logo": logo,

@@ -14,4 +14,4 @@ pub mod rbac;
 // pub use rbac::PostgresRbacRepository;
 pub mod user;
 pub mod plugin;
-
+pub mod share;

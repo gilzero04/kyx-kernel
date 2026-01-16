@@ -1,14 +1,8 @@
-:root {
-    --header-bg: rgba(4, 38, 59, 0.35);
-    --header-border: rgba(6, 182, 212, 0.08);
-    --header-text: #ffffff;
-    --header-input-bg: rgba(255, 255, 255, 0.05);
-    --header-input-bg-hover: rgba(255, 255, 255, 0.1);
-}
+/* Header Component - Uses variables from variables.css */
 
 .header-glass {
     backdrop-filter: var(--glass-blur, blur(40px));
     -webkit-backdrop-filter: var(--glass-blur, blur(40px));
-    background: var(--glass-bg, rgba(4, 38, 59, 0.35));
-    border-bottom: 1px solid var(--glass-border, rgba(6, 182, 212, 0.08));
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
 }

@@ -5,27 +5,30 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 pub async fn list(pool: &Arc<Database>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>, show_all: bool) -> Result<Vec<Role>> {
-    // If actor is NOT system owner, they are strictly restricted to their own tenant_id.
-    // If actor IS system owner (actor_tenant_id IS None):
-    // - if show_all is true, return everything.
-    // - if tenant_id is Some, return that tenant's roles.
-    // - otherwise (default), return only global roles (tenant_id IS NULL).
+    // Visibility rules:
+    // - System owner (actor_tenant_id IS NULL): can see all or filter by tenant_id
+    // - Regular tenant: sees own roles + shared roles (broadcast or explicit)
     
     let (final_tid, override_all) = match actor_tenant_id {
-        Some(aid) => (Some(aid), false), // Restricted
+        Some(aid) => (Some(aid), false), // Restricted to own + shared
         None => (tenant_id, show_all),    // System owner can query specific or all
     };
 
-     let roles = sqlx::query_as::<_, Role>(
+    let roles = sqlx::query_as::<_, Role>(
         "SELECT r.id, r.tenant_id, t.name as tenant_name, r.code, r.slug, r.name, r.description, r.is_active, r.sort_order, r.max_members, r.created_at, r.updated_at,
          (SELECT COUNT(*) FROM sys_role_permissions rp WHERE rp.role_id = r.id) as permission_count,
          (SELECT COUNT(*) FROM auth_memberships m WHERE m.role_id = r.id AND m.deleted_at IS NULL) as member_count
          FROM sys_roles r
          LEFT JOIN auth_tenants t ON r.tenant_id = t.id
          WHERE (
+            -- System owner sees all or global
             ($1::uuid IS NULL AND r.tenant_id IS NULL AND $2::boolean IS FALSE) OR 
-            (r.tenant_id = $1 AND $1::uuid IS NOT NULL) OR 
-            ($2::boolean IS TRUE)
+            -- System owner show_all mode
+            ($2::boolean IS TRUE) OR
+            -- Own tenant's roles
+            (r.tenant_id = $1 AND $1::uuid IS NOT NULL) OR
+            -- Shared roles (broadcast via is_shared or explicit via sys_resource_shares)
+            ($1::uuid IS NOT NULL AND can_access_shared_resource('role', r.id, $1))
          )
          AND r.deleted_at IS NULL 
          ORDER BY r.sort_order ASC, r.name ASC"
@@ -37,6 +40,7 @@ pub async fn list(pool: &Arc<Database>, tenant_id: Option<Uuid>, actor_tenant_id
     .map_err(|e| anyhow!("Failed to list roles: {}", e))?;
     Ok(roles)
 }
+
 
 pub async fn create(pool: &Arc<Database>, cmd: CreateRoleCmd, actor_tenant_id: Option<Uuid>) -> Result<Role> {
     // If actor is present, force their tenant_id

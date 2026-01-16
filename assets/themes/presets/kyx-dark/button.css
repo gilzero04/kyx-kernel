@@ -26,7 +26,7 @@
 .btn-default {
     background: var(--color-primary);
     color: var(--color-primary-foreground);
-    box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 4px 6px -1px rgba(var(--color-primary-rgb), 0.4);
 }
 
 .btn-default:hover {
@@ -62,14 +62,14 @@
 }
 
 .btn-soft-primary {
-    background: rgba(var(--color-primary-rgb, 6, 182, 212), 0.1);
+    background: rgba(var(--color-primary-rgb), 0.1);
     color: var(--color-primary);
-    border: 1px solid rgba(var(--color-primary-rgb, 6, 182, 212), 0.1);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.1);
 }
 
 .btn-soft-primary:hover {
-    background: rgba(var(--color-primary-rgb, 6, 182, 212), 0.2);
-    border-color: rgba(var(--color-primary-rgb, 6, 182, 212), 0.2);
+    background: rgba(var(--color-primary-rgb), 0.2);
+    border-color: rgba(var(--color-primary-rgb), 0.2);
 }
 
 .btn-soft-primary:active {
@@ -84,7 +84,7 @@
 
 .btn-outline:hover {
     border-color: var(--color-primary);
-    background: rgba(6, 182, 212, 0.1);
+    background: rgba(var(--color-primary-rgb), 0.1);
     color: var(--color-primary);
 }
 

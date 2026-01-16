@@ -264,12 +264,3 @@
         bottom: 1rem;
     }
 }
-
-/* Theme Variables for Dark */
-:root {
-    --toast-bg: rgba(15, 15, 25, 0.75);
-    --toast-blur: 24px;
-    --toast-border: rgba(255, 255, 255, 0.08);
-    --toast-highlight: rgba(255, 255, 255, 0.05);
-    --toast-text: rgba(255, 255, 255, 0.95);
-}

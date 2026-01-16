@@ -6,4 +6,4 @@ pub mod hooks;
 mod tests;
 
 pub use entity::{Manifest, Plugin, Capability};
-pub use hooks::{HookRegistry, PluginHook, HookContext};
+// Note: HookRegistry, PluginHook, HookContext are available via hooks module when needed

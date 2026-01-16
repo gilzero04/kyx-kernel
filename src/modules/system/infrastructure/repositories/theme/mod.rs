@@ -18,22 +18,27 @@ impl PostgresThemeRepository {
 #[async_trait]
 impl ThemeRepository for PostgresThemeRepository {
     async fn create(&self, dto: CreateThemeDto) -> AppResult<Theme> {
+        // Use provided ID from manifest or auto-generate
+        let theme_id = dto.id.unwrap_or_else(Uuid::new_v4);
+        
         let theme = sqlx::query_as::<_, Theme>(
             r#"
-            INSERT INTO sys_themes (code, name, description, config, visibility, tenant_id, author, preview_url, logo_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO sys_themes (id, slug, name, description, config, is_shared, tenant_id, author, preview_url, logo_url, version)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
             "#
         )
-        .bind(dto.code)
+        .bind(theme_id)
+        .bind(dto.slug)
         .bind(dto.name)
         .bind(dto.description)
         .bind(dto.config)
-        .bind(dto.visibility)
+        .bind(dto.is_shared)
         .bind(dto.tenant_id)
         .bind(dto.author)
         .bind(dto.preview_url)
         .bind(dto.logo_url)
+        .bind(dto.version)
         .fetch_one(&self.db.pool)
         .await?;
 
@@ -54,20 +59,16 @@ impl ThemeRepository for PostgresThemeRepository {
 
     async fn find_available(&self, tenant_id: Option<Uuid>) -> AppResult<Vec<Theme>> {
         let themes = if let Some(tid) = tenant_id {
-            // Find Public OR Private (Owned by Tenant)
-            // TODO: Add 'Restricted' logic via sys_theme_access join
+            // Consolidated sharing logic using is_shared only:
+            // 1. Own themes (tenant_id matches)
+            // 2. Shared themes via can_access_shared_resource (handles both is_shared broadcast and explicit shares)
             sqlx::query_as::<_, Theme>(
                 r#"
                 SELECT * FROM sys_themes 
-                WHERE 
-                    visibility = 'public' 
-                    OR tenant_id = $1
-                    OR (
-                        visibility = 'restricted' AND EXISTS (
-                            SELECT 1 FROM sys_theme_access 
-                            WHERE theme_id = sys_themes.id AND tenant_id = $1
-                        )
-                    )
+                WHERE deleted_at IS NULL AND (
+                    tenant_id = $1
+                    OR can_access_shared_resource('theme', id, $1)
+                )
                 ORDER BY created_at DESC
                 "#
             )
@@ -77,7 +78,7 @@ impl ThemeRepository for PostgresThemeRepository {
         } else {
             // System Admin sees ALL
             sqlx::query_as::<_, Theme>(
-                "SELECT * FROM sys_themes ORDER BY created_at DESC"
+                "SELECT * FROM sys_themes WHERE deleted_at IS NULL ORDER BY created_at DESC"
             )
             .fetch_all(&self.db.pool)
             .await?
@@ -85,6 +86,8 @@ impl ThemeRepository for PostgresThemeRepository {
 
         Ok(themes)
     }
+
+
 
     #[allow(dead_code)]
     async fn update(&self, id: Uuid, dto: UpdateThemeDto) -> AppResult<Theme> {
@@ -94,30 +97,32 @@ impl ThemeRepository for PostgresThemeRepository {
             r#"
             UPDATE sys_themes
             SET 
-                code = COALESCE($2, code),
+                slug = COALESCE($2, slug),
                 name = COALESCE($3, name),
                 description = COALESCE($4, description),
                 config = COALESCE($5, config),
-                visibility = COALESCE($6, visibility),
+                is_shared = COALESCE($6, is_shared),
                 is_active = COALESCE($7, is_active),
                 author = COALESCE($8, author),
                 preview_url = COALESCE($9, preview_url),
                 logo_url = COALESCE($10, logo_url),
+                version = COALESCE($11, version),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING *
             "#
         )
         .bind(id)
-        .bind(dto.code)
+        .bind(dto.slug)
         .bind(dto.name)
         .bind(dto.description)
         .bind(dto.config)
-        .bind(dto.visibility)
+        .bind(dto.is_shared)
         .bind(dto.is_active)
         .bind(dto.author)
         .bind(dto.preview_url)
         .bind(dto.logo_url)
+        .bind(dto.version)
         .fetch_one(&self.db.pool)
         .await?;
 

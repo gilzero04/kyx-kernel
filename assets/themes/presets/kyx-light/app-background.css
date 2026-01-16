@@ -1,107 +1,174 @@
 /* =========================================
-   Tropical Sea Simulation - App Mode (Light)
-   (High Fidelity - Robust Animation)
+   Sunrise Azure Sea - App Mode (Light)
+   (Splash-quality Background without Yin-Yang)
    ========================================= */
 
-/* Canvas Base - Tropical Sky */
+/* Canvas Base - Same as Splash */
 .app-background-context .bg-canvas {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #bae6fd 100%);
-    background-size: 200% 200%;
-    animation: gradientShift 15s ease-in-out infinite alternate;
+    background: radial-gradient(circle at 50% 30%, #e0f2fe 0%, #bae6fd 40%, #7dd3fc 100%);
+    background-size: 100% 100%;
 }
 
-/* Organic Sea Waves (Layer 1) */
+/* Layer 1: Subtle Light Particles (replaced stars) */
 .app-background-context .bg-layer.layer-1 {
-    height: 35%;
-    background-color: var(--color-primary);
-    opacity: 0.12;
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
-    mask-size: 1000px 100%;
-    -webkit-mask-size: 1000px 100%;
-    mask-repeat: repeat-x;
-    -webkit-mask-repeat: repeat-x;
-    animation: moveWaveLight 40s linear infinite;
+    height: 100%;
+    top: 0;
+    opacity: 0.5;
+    background-image:
+        radial-gradient(1.5px 1.5px at 10% 10%, rgba(8, 145, 178, 0.4) 100%, transparent),
+        radial-gradient(2px 2px at 20% 30%, rgba(6, 182, 212, 0.3) 100%, transparent),
+        radial-gradient(1.5px 1.5px at 30% 15%, rgba(14, 165, 233, 0.4) 100%, transparent),
+        radial-gradient(2px 2px at 55% 45%, rgba(8, 145, 178, 0.3) 100%, transparent),
+        radial-gradient(1.5px 1.5px at 75% 20%, rgba(6, 182, 212, 0.4) 100%, transparent),
+        radial-gradient(2px 2px at 90% 35%, rgba(14, 165, 233, 0.3) 100%, transparent);
+    background-size: 800px 800px;
+    background-repeat: repeat;
+    mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, white 0%, rgba(255, 255, 255, 0.4) 100%);
+    animation: lightParticlesPhase 4s ease-in-out infinite;
     z-index: 1;
 }
 
-/* Layer 2: Hidden for Light App (No moon) */
+/* Layer 2: Hidden (No Yin-Yang in App Mode) */
 .app-background-context .bg-layer.layer-2 {
     display: none !important;
 }
 
-/* Tropical Shimmer Overlay */
+/* Shared Wave Style (Ultra Smooth & Flat - Same as Splash) */
+.app-background-context .bg-layer.layer-3,
+.app-background-context .bg-layer.layer-4,
+.app-background-context .bg-layer.layer-5 {
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    /* Perfectly seamless flat sine wave for glitch-free looping */
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C200,70 300,70 500,50 C700,30 800,30 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C200,70 300,70 500,50 C700,30 800,30 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    mask-repeat: repeat-x;
+    -webkit-mask-repeat: repeat-x;
+    mask-position: 0 bottom;
+    -webkit-mask-position: 0 bottom;
+}
+
+/* Layer 3: Distant Horizon - Light Mode */
 .app-background-context .bg-layer.layer-3 {
-    height: 100%;
-    background-image:
-        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 60%),
-        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-    mix-blend-mode: overlay;
-    animation: shimmerShift 12s ease-in-out infinite alternate;
-    opacity: 0.6;
+    height: 55%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(186, 230, 253, 0.4) 100%);
+    opacity: 0.3;
+    mask-size: 2000px 100%;
+    -webkit-mask-size: 2000px 100%;
+    animation: 
+        moveWave-1600 90s linear infinite,
+        oceanSwell 15s ease-in-out infinite;
     z-index: 3;
 }
 
-/* Bubbles (Particles) */
+/* Layer 4: Deep Ocean Body (Main Swell) - Light Mode */
+.app-background-context .bg-layer.layer-4 {
+    height: 45%;
+    background: linear-gradient(to bottom, 
+        rgba(125, 211, 252, 0.4) 0%, 
+        rgba(56, 189, 248, 0.6) 100%);
+    opacity: 0.5;
+    mask-size: 1500px 100%;
+    -webkit-mask-size: 1500px 100%;
+    animation: 
+        moveWave-1400 60s linear infinite reverse,
+        oceanSwell 10s ease-in-out infinite 2s;
+    z-index: 4;
+}
+
+/* Layer 5: Surface Ripples (Subtle Reflection) - Light Mode */
+.app-background-context .bg-layer.layer-5 {
+    height: 35%;
+    background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(186, 230, 253, 0.4) 20%,
+        rgba(125, 211, 252, 0.5) 100%);
+    opacity: 0.7;
+    mask-size: 1200px 100%;
+    -webkit-mask-size: 1200px 100%;
+    animation:
+        moveWave-1100 40s linear infinite,
+        oceanSwell 8s ease-in-out infinite 1s;
+    z-index: 5;
+}
+
+/* Particles - Light Mode */
 .app-background-context .bg-particle {
-    width: 6px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 2px;
+    height: 2px;
+    background: rgba(8, 145, 178, 0.6);
     border-radius: 50%;
-    animation: bubbleRise var(--duration, 8s) ease-in-out infinite;
+    box-shadow: 0 0 4px rgba(6, 182, 212, 0.4);
+    animation: particlePhase var(--duration, 6s) ease-in-out infinite;
     animation-delay: var(--delay, 0s);
     opacity: 0;
 }
 
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 50%;
-    }
-
-    100% {
-        background-position: 100% 50%;
-    }
+/* Subtle Vertical Ocean Swell */
+@keyframes oceanSwell {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
 }
 
-@keyframes shimmerShift {
-    0% {
-        transform: scale(1) translate(-2%, -2%);
-    }
-
-    100% {
-        transform: scale(1.1) translate(2%, 2%);
-    }
-}
-
-@keyframes bubbleRise {
-    0% {
-        transform: translateY(100vh) scale(0.5);
-        opacity: 0;
-    }
-
-    20% {
-        opacity: 0.6;
-    }
-
-    80% {
+/* Light mode particle animation */
+@keyframes lightParticlesPhase {
+    0%, 100% {
         opacity: 0.3;
+        filter: brightness(0.9);
     }
-
-    100% {
-        transform: translateY(-10vh) scale(1.5);
-        opacity: 0;
+    50% {
+        opacity: 0.6;
+        filter: brightness(1.2);
     }
 }
 
-@keyframes moveWaveLight {
+@keyframes particlePhase {
+    0%, 100% {
+        transform: translateY(0);
+        opacity: 0;
+    }
+    20%, 80% {
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-30px);
+        opacity: 0.2;
+    }
+}
+
+/* Wave Movement Keyframes */
+@keyframes moveWave-1600 {
     from {
         -webkit-mask-position: 0 bottom;
         mask-position: 0 bottom;
     }
-
     to {
-        -webkit-mask-position: 1000px bottom;
-        mask-position: 1000px bottom;
+        -webkit-mask-position: 1600px bottom;
+        mask-position: 1600px bottom;
+    }
+}
+
+@keyframes moveWave-1400 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+    to {
+        -webkit-mask-position: 1400px bottom;
+        mask-position: 1400px bottom;
+    }
+}
+
+@keyframes moveWave-1100 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+    to {
+        -webkit-mask-position: 1100px bottom;
+        mask-position: 1100px bottom;
     }
 }

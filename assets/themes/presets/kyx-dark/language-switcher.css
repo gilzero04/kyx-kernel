@@ -355,3 +355,9 @@
         opacity: 1;
     }
 }
+
+/* Editor Canvas Support - Ensures popup stays within canvas frame */
+#portal-host .language-portal-wrapper,
+#portal-host .language-backdrop {
+    position: absolute;
+}

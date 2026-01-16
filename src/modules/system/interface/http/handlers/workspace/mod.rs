@@ -65,25 +65,20 @@ pub async fn get_workspace_status(
             b.accent_color,
             b.splash_text,
             b.splash_subtext,
-            -- Legacy theme codes (backward compatibility)
-            COALESCE(tl.code, twl.code) AS theme_light_code,
-            COALESCE(td.code, twd.code) AS theme_dark_code,
-            -- Per-context theme codes
-            tcl.code AS theme_console_light_code,
-            tcd.code AS theme_console_dark_code,
-            COALESCE(twl.code, tl.code) AS theme_workspace_light_code,
-            COALESCE(twd.code, td.code) AS theme_workspace_dark_code,
-            COALESCE(tal.code, twl.code, tl.code) AS theme_app_light_code,
-            COALESCE(tad.code, twd.code, td.code) AS theme_app_dark_code
+            -- Theme slugs: theme_light_id/theme_dark_id are console defaults
+            tl.slug AS theme_light_slug,
+            td.slug AS theme_dark_slug,
+            -- Per-context theme overrides (fallback to console default)
+            COALESCE(twl.slug, tl.slug) AS theme_workspace_light_slug,
+            COALESCE(twd.slug, td.slug) AS theme_workspace_dark_slug,
+            COALESCE(tal.slug, twl.slug, tl.slug) AS theme_app_light_slug,
+            COALESCE(tad.slug, twd.slug, td.slug) AS theme_app_dark_slug
         FROM auth_tenants t
         LEFT JOIN sys_tenant_types tt ON t.tenant_type_id = tt.id
         LEFT JOIN sys_brandings b ON t.branding_id = b.id
-        -- Legacy theme joins
+        -- Theme joins (console uses theme_light_id/theme_dark_id directly)
         LEFT JOIN sys_themes tl ON b.theme_light_id = tl.id
         LEFT JOIN sys_themes td ON b.theme_dark_id = td.id
-        -- Per-context theme joins
-        LEFT JOIN sys_themes tcl ON b.theme_console_light_id = tcl.id
-        LEFT JOIN sys_themes tcd ON b.theme_console_dark_id = tcd.id
         LEFT JOIN sys_themes twl ON b.theme_workspace_light_id = twl.id
         LEFT JOIN sys_themes twd ON b.theme_workspace_dark_id = twd.id
         LEFT JOIN sys_themes tal ON b.theme_app_light_id = tal.id
@@ -126,15 +121,13 @@ pub async fn get_workspace_status(
     let splash_text: Option<String> = tenant_row.get("splash_text");
     let splash_subtext: Option<String> = tenant_row.get("splash_subtext");
     
-    // Theme codes
-    let theme_light_code: Option<String> = tenant_row.get("theme_light_code");
-    let theme_dark_code: Option<String> = tenant_row.get("theme_dark_code");
-    let theme_console_light: Option<String> = tenant_row.get("theme_console_light_code");
-    let theme_console_dark: Option<String> = tenant_row.get("theme_console_dark_code");
-    let theme_workspace_light: Option<String> = tenant_row.get("theme_workspace_light_code");
-    let theme_workspace_dark: Option<String> = tenant_row.get("theme_workspace_dark_code");
-    let theme_app_light: Option<String> = tenant_row.get("theme_app_light_code");
-    let theme_app_dark: Option<String> = tenant_row.get("theme_app_dark_code");
+    // Theme slugs (console uses theme_light_slug/theme_dark_slug)
+    let theme_light_slug: Option<String> = tenant_row.get("theme_light_slug");
+    let theme_dark_slug: Option<String> = tenant_row.get("theme_dark_slug");
+    let theme_workspace_light: Option<String> = tenant_row.get("theme_workspace_light_slug");
+    let theme_workspace_dark: Option<String> = tenant_row.get("theme_workspace_dark_slug");
+    let theme_app_light: Option<String> = tenant_row.get("theme_app_light_slug");
+    let theme_app_dark: Option<String> = tenant_row.get("theme_app_dark_slug");
 
     Ok(web::HttpResponse::Ok().json(&serde_json::json!({
         "tenant": {
@@ -157,22 +150,22 @@ pub async fn get_workspace_status(
             "primary_color": primary_color,
             "secondary_color": secondary_color,
             "accent_color": accent_color,
-            // Legacy fields (backward compatibility)
-            "theme_light_id": theme_light_code.clone().unwrap_or_default(),
-            "theme_dark_id": theme_dark_code.clone().unwrap_or_default(),
-            // Per-context themes
+            // Legacy fields (backward compatibility) - also used as console theme
+            "theme_light_id": theme_light_slug.clone().unwrap_or_default(),
+            "theme_dark_id": theme_dark_slug.clone().unwrap_or_default(),
+            // Per-context themes (console uses theme_light_slug directly)
             "themes": {
                 "console": {
-                    "light": theme_console_light.or(theme_light_code.clone()).unwrap_or_default(),
-                    "dark": theme_console_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                    "light": theme_light_slug.clone().unwrap_or_default(),
+                    "dark": theme_dark_slug.clone().unwrap_or_default()
                 },
                 "workspace": {
-                    "light": theme_workspace_light.or(theme_light_code.clone()).unwrap_or_default(),
-                    "dark": theme_workspace_dark.or(theme_dark_code.clone()).unwrap_or_default()
+                    "light": theme_workspace_light.or(theme_light_slug.clone()).unwrap_or_default(),
+                    "dark": theme_workspace_dark.or(theme_dark_slug.clone()).unwrap_or_default()
                 },
                 "app": {
-                    "light": theme_app_light.or(theme_light_code).unwrap_or_default(),
-                    "dark": theme_app_dark.or(theme_dark_code).unwrap_or_default()
+                    "light": theme_app_light.or(theme_light_slug).unwrap_or_default(),
+                    "dark": theme_app_dark.or(theme_dark_slug).unwrap_or_default()
                 }
             }
         }

@@ -1,0 +1,126 @@
+/* =========================================
+   System Error Page (Dark Theme)
+   ========================================= */
+
+/* Hide Yin-Yang icon from SplashBackground in error state */
+.system-error-container .bg-layer.layer-2 {
+    display: none !important;
+}
+
+/* Main container */
+.system-error-container {
+    position: relative;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    /* Fallback for when theme not loaded */
+    background-color: var(--color-background, #020617);
+    color: var(--color-foreground, #ffffff);
+}
+
+/* Glass card */
+.system-error-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 28rem;
+    padding: 0 1.5rem;
+}
+
+.system-error-card-inner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--glass-bg, rgba(15, 23, 42, 0.35));
+    backdrop-filter: var(--glass-blur, blur(40px));
+    box-shadow: var(--glass-shadow, 0 12px 60px 0 rgba(0, 0, 0, 0.6));
+}
+
+.system-error-content {
+    position: relative;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+/* Icon container */
+.system-error-icon-container {
+    display: inline-flex;
+    margin-bottom: 2rem;
+}
+
+.system-error-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5rem;
+    height: 5rem;
+    margin: 0 auto 2rem auto;
+    border-radius: 50%;
+    background: var(--color-surface, #0f172a);
+    border: 1px solid var(--color-border, rgba(6, 182, 212, 0.25));
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+.system-error-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--color-destructive, #ef4444);
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+    }
+}
+
+/* Text content */
+.system-error-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-foreground, #ffffff);
+    margin-bottom: 0.75rem;
+}
+
+.system-error-message {
+    font-size: 0.875rem;
+    line-height: 1.625;
+    color: var(--color-muted, #94a3b8);
+}
+
+/* Action button container */
+.system-error-action {
+    margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .system-error-card {
+        padding: 0 1rem;
+    }
+    
+    .system-error-content {
+        padding: 2rem 1.5rem;
+    }
+    
+    .system-error-icon-wrapper {
+        width: 4rem;
+        height: 4rem;
+    }
+    
+    .system-error-icon {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .system-error-title {
+        font-size: 1.25rem;
+    }
+}

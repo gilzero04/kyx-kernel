@@ -1,4 +1,4 @@
-/* UserProfilePill Component - Light Theme */
+/* UserProfilePill Component - Dark Theme */
 
 .user-profile-pill {
     display: flex;
@@ -8,8 +8,8 @@
     padding: 4px 12px 4px 4px;
     border-radius: 9999px;
     /* Pill Shape */
-    background: var(--user-pill-bg, rgba(255, 255, 255, 0.15));
-    border: 1px solid var(--user-pill-border, rgba(56, 189, 248, 0.2));
+    background: var(--user-pill-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--user-pill-border, rgba(255, 255, 255, 0.1));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: all 0.2s ease;
@@ -23,8 +23,8 @@
 }
 
 .user-profile-pill:hover {
-    background: var(--user-pill-bg-hover, rgba(255, 255, 255, 0.25));
-    border-color: var(--user-pill-border-hover, rgba(56, 189, 248, 0.4));
+    background: var(--user-pill-bg-hover, rgba(255, 255, 255, 0.1));
+    border-color: var(--user-pill-border-hover, rgba(255, 255, 255, 0.2));
     transform: scale(1.02);
 }
 
@@ -35,12 +35,12 @@
     width: 32px;
     height: 32px;
     border-radius: 9999px;
-    background: linear-gradient(135deg, var(--user-pill-avatar-from, #0284c7) 0%, var(--user-pill-avatar-to, #0369a1) 100%);
+    background: linear-gradient(135deg, var(--user-pill-avatar-from, #475569) 0%, var(--user-pill-avatar-to, #1e293b) 100%);
     color: white;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .user-profile-pill-info {
@@ -55,14 +55,13 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--user-pill-role-color, #0369a1);
-    opacity: 0.8;
+    color: var(--user-pill-role-color, rgba(255, 255, 255, 0.5));
 }
 
 .user-profile-pill-name {
     font-size: 12px;
     font-weight: 600;
-    color: var(--user-pill-name-color, #0c4a6e);
+    color: var(--user-pill-name-color, rgba(255, 255, 255, 0.9));
     max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;

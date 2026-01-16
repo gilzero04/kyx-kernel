@@ -504,19 +504,38 @@ impl AuthService {
 
         let tenant_id = Uuid::new_v4();
         
-        // Create branding record first (single source of truth for branding)
-        // Use default theme colors if not provided
-        let branding_id = Uuid::new_v4();
+        // STEP 1: Create tenant FIRST (without branding_id, it will be updated later)
+        sqlx::query(
+            "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id) 
+             VALUES ($1, $1, $2, $3, $4)"
+        )
+        .bind(tenant_id)
+        .bind(&req.org_name)
+        .bind(&tenant_slug)
+        .bind(type_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create tenant: {}", e),
+        })?;
+
+        // STEP 2: Create branding records (tenant now exists, FK will pass)
+        // Create TWO branding records for parent: console + workspace context
+        let branding_id_console = Uuid::new_v4();
+        let branding_id_workspace = Uuid::new_v4();
         let default_primary = "#0ea5e9".to_string(); // Sky blue
         let default_secondary = "#6366f1".to_string(); // Indigo
         let default_accent = "#f43f5e".to_string(); // Rose
         
+        // Create Console branding (primary - will be linked to tenant)
         sqlx::query(
-            "INSERT INTO sys_brandings (id, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())"
+            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
+             VALUES ($1, $2, 'console', $3, $4, $5, $6, $7, NOW(), NOW())"
         )
-        .bind(branding_id)
-        .bind(format!("{} Branding", &req.org_name))
+        .bind(branding_id_console)
+        .bind(tenant_id)
+        .bind(&req.org_name)  // No " Branding" suffix!
         .bind(&req.app_name)
         .bind(req.primary_color.as_ref().unwrap_or(&default_primary))
         .bind(req.secondary_color.as_ref().unwrap_or(&default_secondary))
@@ -525,32 +544,68 @@ impl AuthService {
         .await
         .map_err(|e| AppError {
             code: 500,
-            message: format!("Failed to create branding: {}", e),
+            message: format!("Failed to create console branding: {}", e),
         })?;
-
-        // Create tenant with branding_id reference
+        
+        // Create Workspace branding (inherits from console by sharing same values)
         sqlx::query(
-            "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id, branding_id) 
-             VALUES ($1, $1, $2, $3, $4, $5)"
+            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
+             VALUES ($1, $2, 'workspace', $3, $4, $5, $6, $7, NOW(), NOW())"
         )
+        .bind(branding_id_workspace)
         .bind(tenant_id)
-        .bind(&req.org_name)
-        .bind(&tenant_slug)
-        .bind(type_id)
-        .bind(branding_id)
+        .bind(&req.org_name)  // Same name, no suffix
+        .bind(&req.app_name)
+        .bind(req.primary_color.as_ref().unwrap_or(&default_primary))
+        .bind(req.secondary_color.as_ref().unwrap_or(&default_secondary))
+        .bind(req.accent_color.as_ref().unwrap_or(&default_accent))
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError {
             code: 500,
-            message: format!("Failed to create tenant: {}", e),
+            message: format!("Failed to create workspace branding: {}", e),
         })?;
 
-        // Check Role Limit for SuperAdmin before creating user (though it's the first one)
-        // We do this check inside transaction or before committed, but check_role_limit uses &self.db which is separate connection
-        // Since we are in init, concurrency is low risk. But let's check it strictly.
-        // Actually, check_role_limit uses self.db.pool, not tx. 
-        // For init, we can skip or just call it. It will return 0 count.
-        // But for create_user it is important.
+        // STEP 3: Update tenant with branding_id reference
+        sqlx::query("UPDATE auth_tenants SET branding_id = $1 WHERE id = $2")
+            .bind(branding_id_console)
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to update tenant branding: {}", e),
+            })?;
+
+
+        // STEP 4: Create base RBAC roles for this tenant (BEFORE querying)
+        sqlx::query(
+            "INSERT INTO sys_roles (tenant_id, slug, name, description, sort_order) VALUES 
+                ($1, 'superadmin', 'Super Administrator', 'Full access within the organization', 100),
+                ($1, 'admin', 'Administrator', 'Administrative access', 80),
+                ($1, 'operator', 'Operator', 'Operation access', 60),
+                ($1, 'viewer', 'Viewer', 'Read-only access', 40)
+             ON CONFLICT (tenant_id, slug) DO NOTHING"
+        )
+        .bind(tenant_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to create roles: {}", e),
+        })?;
+
+        // Assign ALL permissions to superadmin role
+        sqlx::query(
+            "INSERT INTO sys_role_permissions (role_id, permission_id)
+             SELECT r.id, p.id FROM sys_roles r, sys_permissions p
+             WHERE r.slug = 'superadmin' AND r.tenant_id = $1
+             ON CONFLICT DO NOTHING"
+        )
+        .bind(tenant_id)
+        .execute(&mut *tx)
+        .await
+        .ok(); // Non-critical, ignore errors
 
         // 5. Create User
         use crate::core::utils::avatar::generate_default_avatar;
@@ -572,8 +627,9 @@ impl AuthService {
 
         let user_id = user_row.get::<Uuid, _>("id");
 
-        // 5. Get Role ID for SuperAdmin
-        let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin'")
+        // 6. Get Role ID for SuperAdmin (now exists!)
+        let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin' AND tenant_id = $1")
+            .bind(tenant_id)
             .fetch_one(&mut *tx)
             .await
             .map_err(|e| AppError {
@@ -582,6 +638,7 @@ impl AuthService {
             })?;
         
         let role_id = role_row.get::<Uuid, _>("id");
+
 
         // 6. Create Membership
         sqlx::query(
@@ -690,26 +747,46 @@ impl AuthService {
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to find default dark theme: {}", e) })?;
 
-        // Update branding with theme IDs
-        if let Some(row) = light_theme_row {
+        // Update theme columns correctly per context:
+        // Console: uses theme_light_id, theme_dark_id ONLY
+        // Workspace: uses theme_workspace_*, theme_app_* ONLY (inherits from console if NULL)
+        
+        if let Some(row) = &light_theme_row {
             let id: Uuid = row.get("id");
-            sqlx::query("UPDATE sys_brandings SET theme_light_id = $1, updated_at = NOW() WHERE id = $2")
+            // Console: set theme_light_id only
+            sqlx::query("UPDATE sys_brandings SET theme_light_id = $1, updated_at = NOW() WHERE tenant_id = $2 AND context = 'console'")
                 .bind(id)
-                .bind(branding_id)
+                .bind(tenant_id)
+                .execute(&self.db.pool)
+                .await
+                .ok();
+            // Workspace: set theme_workspace_light_id and theme_app_light_id only
+            sqlx::query("UPDATE sys_brandings SET theme_workspace_light_id = $1, theme_app_light_id = $1, updated_at = NOW() WHERE tenant_id = $2 AND context = 'workspace'")
+                .bind(id)
+                .bind(tenant_id)
                 .execute(&self.db.pool)
                 .await
                 .ok();
         }
 
-        if let Some(row) = dark_theme_row {
+        if let Some(row) = &dark_theme_row {
             let id: Uuid = row.get("id");
-            sqlx::query("UPDATE sys_brandings SET theme_dark_id = $1, updated_at = NOW() WHERE id = $2")
+            // Console: set theme_dark_id only
+            sqlx::query("UPDATE sys_brandings SET theme_dark_id = $1, updated_at = NOW() WHERE tenant_id = $2 AND context = 'console'")
                 .bind(id)
-                .bind(branding_id)
+                .bind(tenant_id)
+                .execute(&self.db.pool)
+                .await
+                .ok();
+            // Workspace: set theme_workspace_dark_id and theme_app_dark_id only
+            sqlx::query("UPDATE sys_brandings SET theme_workspace_dark_id = $1, theme_app_dark_id = $1, updated_at = NOW() WHERE tenant_id = $2 AND context = 'workspace'")
+                .bind(id)
+                .bind(tenant_id)
                 .execute(&self.db.pool)
                 .await
                 .ok();
         }
+
 
         // 10. Audit & Cache
         self.audit.log(&user_id_str, "SYSTEM_INITIALIZED", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
@@ -1038,5 +1115,132 @@ impl AuthService {
                 images: vec![],
             }
         })
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // PROFILE METHODS
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /// Get current user profile
+    pub async fn get_profile(&self, user_id: &Uuid) -> Result<crate::modules::auth::interface::http::dto::auth::ProfileResponse, AppError> {
+        use crate::modules::auth::interface::http::dto::auth::{ProfileResponse, UserImageInfo};
+
+        // Get user
+        let row = sqlx::query(
+            "SELECT id, email, full_name, avatar_url, cover_url, created_at FROM auth_users WHERE id = $1 AND deleted_at IS NULL"
+        )
+        .bind(user_id)
+        .fetch_optional(&self.db.pool)
+        .await
+        .map_err(|e| AppError { code: 500, message: format!("Database error: {}", e) })?
+        .ok_or(AppError { code: 404, message: "User not found".to_string() })?;
+
+        // Get images
+        let image_rows = sqlx::query(
+            "SELECT id, url, image_type, is_primary, created_at FROM auth_user_images WHERE user_id = $1 ORDER BY created_at DESC"
+        )
+        .bind(user_id)
+        .fetch_all(&self.db.pool)
+        .await
+        .map_err(|e| AppError { code: 500, message: format!("Database error: {}", e) })?;
+
+        let images: Vec<UserImageInfo> = image_rows.iter().map(|r| {
+            let created: chrono::DateTime<chrono::Utc> = r.get("created_at");
+            UserImageInfo {
+                id: r.get("id"),
+                url: r.get("url"),
+                image_type: r.get("image_type"),
+                is_primary: r.get("is_primary"),
+                created_at: created.to_rfc3339(),
+            }
+        }).collect();
+
+        let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
+
+        Ok(ProfileResponse {
+            id: row.get("id"),
+            email: row.get("email"),
+            full_name: row.get("full_name"),
+            avatar_url: row.get("avatar_url"),
+            cover_url: row.get("cover_url"),
+            images,
+            created_at: created_at.to_rfc3339(),
+        })
+    }
+
+    /// Update user profile (name, cover)
+    pub async fn update_profile(&self, user_id: &Uuid, full_name: Option<String>, cover_url: Option<String>) -> Result<(), AppError> {
+        let mut updates = Vec::new();
+        let mut bind_idx = 1;
+
+        if full_name.is_some() {
+            updates.push(format!("full_name = ${}", bind_idx));
+            bind_idx += 1;
+        }
+        if cover_url.is_some() {
+            updates.push(format!("cover_url = ${}", bind_idx));
+            bind_idx += 1;
+        }
+
+        if updates.is_empty() {
+            return Ok(()); // Nothing to update
+        }
+
+        let query = format!(
+            "UPDATE auth_users SET {}, updated_at = NOW() WHERE id = ${} AND deleted_at IS NULL",
+            updates.join(", "),
+            bind_idx
+        );
+
+        let mut q = sqlx::query(&query);
+
+        if let Some(ref name) = full_name {
+            q = q.bind(name);
+        }
+        if let Some(ref url) = cover_url {
+            q = q.bind(url);
+        }
+        q = q.bind(user_id);
+
+        q.execute(&self.db.pool)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to update profile: {}", e) })?;
+
+        self.audit.log(&user_id.to_string(), "PROFILE_UPDATED", None, "SUCCESS", None).await?;
+
+        Ok(())
+    }
+
+    /// Update user avatar
+    pub async fn update_avatar(&self, user_id: &Uuid, avatar_url: &str) -> Result<String, AppError> {
+        // Update avatar_url in auth_users
+        sqlx::query("UPDATE auth_users SET avatar_url = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL")
+            .bind(avatar_url)
+            .bind(user_id)
+            .execute(&self.db.pool)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to update avatar: {}", e) })?;
+
+        // Also add to auth_user_images for history
+        let image_id: Uuid = sqlx::query_scalar(
+            "INSERT INTO auth_user_images (user_id, url, image_type, is_primary) VALUES ($1, $2, 'avatar', TRUE) RETURNING id"
+        )
+        .bind(user_id)
+        .bind(avatar_url)
+        .fetch_one(&self.db.pool)
+        .await
+        .map_err(|e| AppError { code: 500, message: format!("Failed to save image record: {}", e) })?;
+
+        // Set all other avatars as non-primary
+        sqlx::query("UPDATE auth_user_images SET is_primary = FALSE WHERE user_id = $1 AND image_type = 'avatar' AND id != $2")
+            .bind(user_id)
+            .bind(image_id)
+            .execute(&self.db.pool)
+            .await
+            .ok();
+
+        self.audit.log(&user_id.to_string(), "AVATAR_UPDATED", None, "SUCCESS", None).await?;
+
+        Ok(avatar_url.to_string())
     }
 }

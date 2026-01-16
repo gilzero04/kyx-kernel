@@ -1,0 +1,337 @@
+/**
+ * KYX Dark Theme - CSS Variables Foundation
+ * =========================================
+ * Inspired by DaisyUI semantic color system
+ * Uses oklch() for perceptually uniform colors
+ * 
+ * To create a new theme: copy this file and modify the values
+ */
+
+:root {
+  /* ==========================================
+   * BASE COLORS (Background Layers)
+   * ========================================== */
+  
+  /* Base 100: Primary background (darkest) */
+  --color-base-100: oklch(13% 0.03 256);        /* #020617 */
+  --color-base-100-rgb: 2, 6, 23;
+  
+  /* Base 200: Surface/Card background */
+  --color-base-200: oklch(18% 0.04 256);        /* #0f172a */
+  --color-base-200-rgb: 15, 23, 42;
+  
+  /* Base 300: Elevated surfaces */
+  --color-base-300: oklch(27% 0.04 256);        /* #1e293b */
+  --color-base-300-rgb: 30, 41, 59;
+  
+  /* Base Content: Primary text on dark bg */
+  --color-base-content: oklch(97% 0.01 256);    /* #f8fafc */
+  --color-base-content-rgb: 248, 250, 252;
+  
+  /* ==========================================
+   * BRAND COLORS
+   * ========================================== */
+  
+  /* Primary: Cyan - Main brand color */
+  --color-primary: oklch(70% 0.15 195);          /* #06b6d4 */
+  --color-primary-rgb: 6, 182, 212;
+  --color-primary-content: oklch(100% 0 0);      /* white */
+  --color-primary-hover: oklch(62% 0.13 195);    /* #0891b2 */
+  
+  /* Secondary: Blue */
+  --color-secondary: oklch(58% 0.2 261);         /* #3b82f6 */
+  --color-secondary-rgb: 59, 130, 246;
+  --color-secondary-content: oklch(100% 0 0);
+  
+  /* Accent: Purple */
+  --color-accent: oklch(55% 0.28 293);           /* #8b5cf6 */
+  --color-accent-rgb: 139, 92, 246;
+  --color-accent-content: oklch(100% 0 0);
+  
+  /* Neutral: Slate (used for borders, muted elements) */
+  --color-neutral: oklch(45% 0.03 256);          /* #475569 */
+  --color-neutral-rgb: 71, 85, 105;
+  --color-neutral-content: oklch(97% 0.01 256);
+  
+  /* ==========================================
+   * SEMANTIC COLORS
+   * ========================================== */
+  
+  /* Info: Blue */
+  --color-info: oklch(58% 0.2 261);              /* #3b82f6 */
+  --color-info-rgb: 59, 130, 246;
+  --color-info-content: oklch(100% 0 0);
+  
+  /* Success: Green */
+  --color-success: oklch(64% 0.2 145);           /* #22c55e */
+  --color-success-rgb: 34, 197, 94;
+  --color-success-content: oklch(100% 0 0);
+  
+  /* Warning: Amber */
+  --color-warning: oklch(75% 0.18 75);           /* #f59e0b */
+  --color-warning-rgb: 245, 158, 11;
+  --color-warning-content: oklch(20% 0.05 75);
+  
+  /* Error/Destructive: Red */
+  --color-error: oklch(58% 0.23 27);             /* #ef4444 */
+  --color-error-rgb: 239, 68, 68;
+  --color-error-content: oklch(100% 0 0);
+  
+  /* ==========================================
+   * TEXT COLORS
+   * ========================================== */
+  --color-text-primary: var(--color-base-content);
+  --color-text-secondary: oklch(65% 0.02 256);   /* #94a3b8 */
+  --color-text-muted: oklch(50% 0.02 256);       /* #64748b */
+  --color-text-disabled: oklch(40% 0.01 256);    /* #475569 */
+  
+  /* ==========================================
+   * INTERACTIVE COLORS
+   * ========================================== */
+  --color-border: rgba(6, 182, 212, 0.25);
+  --color-border-subtle: oklch(27% 0.04 256 / 0.5);
+  --color-ring: var(--color-primary);
+  --color-input-bg: rgba(6, 74, 123, 0.4);
+  
+  /* ==========================================
+   * GLASS/SURFACE EFFECTS
+   * ========================================== */
+  --glass-bg: oklch(18% 0.04 256 / 0.15);        /* Very transparent */
+  --glass-border: oklch(100% 0 0 / 0.12);        /* Brighter border */
+  --glass-blur: blur(40px);
+  --glass-shadow: 0 12px 60px 0 rgba(0, 0, 0, 0.6);
+  
+  --color-popover: rgba(6, 74, 123, 0.8);
+  --color-popover-content: var(--color-base-content);
+  --color-card: rgba(6, 74, 123, 0.4);
+  --color-card-content: var(--color-base-content);
+  
+  /* ==========================================
+   * SPACING SCALE
+   * ========================================== */
+  --spacing-xs: 0.25rem;   /* 4px */
+  --spacing-sm: 0.5rem;    /* 8px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+  --spacing-3xl: 4rem;     /* 64px */
+  
+  /* ==========================================
+   * BORDER RADIUS
+   * ========================================== */
+  --radius-selector: 0.25rem;  /* Buttons, pills */
+  --radius-field: 0.5rem;      /* Input fields */
+  --radius-box: 0.75rem;       /* Cards, modals */
+  --radius-full: 9999px;       /* Circles, pills */
+  
+  /* ==========================================
+   * TYPOGRAPHY
+   * ========================================== */
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-heading: 'Playfair Display', serif;
+  --font-family-mono: 'Fira Code', 'JetBrains Mono', monospace;
+  
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.875rem;    /* 14px */
+  --font-size-base: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;    /* 18px */
+  --font-size-xl: 1.25rem;     /* 20px */
+  --font-size-2xl: 1.5rem;     /* 24px */
+  --font-size-3xl: 1.875rem;   /* 30px */
+  --font-size-4xl: 2.25rem;    /* 36px */
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Dark Mode Font Weight Adjustment
+   * Dark backgrounds need slightly heavier font weights for better readability */
+  --font-weight-base: 450;
+  --font-weight-body: 450;
+  
+  /* Muted Semantic Colors for Dark Mode
+   * Less neon, softer on eyes */
+  --color-error-muted: oklch(55% 0.18 27);         /* Softer red for dark mode */
+  --color-warning-muted: oklch(70% 0.14 75);       /* Softer amber for dark mode */
+  
+  /* ==========================================
+   * HEADING HIERARCHY (Semantic Typography)
+   * ==========================================
+   * Standardized sizes for consistent visual hierarchy
+   * Page > Section > Card > Label
+   */
+  --heading-page: 1.5rem;            /* 24px - PageHeader title (largest) */
+  --heading-page-mobile: 1.25rem;    /* 20px */
+  --heading-section: 1.125rem;       /* 18px - Section headers */
+  --heading-section-mobile: 1rem;    /* 16px */
+  --heading-card: 1rem;              /* 16px - Card titles */
+  --heading-card-mobile: 0.9375rem;  /* 15px */
+  --heading-label: 0.5625rem;        /* 9px - Breadcrumb, subtitle */
+  
+  /* Stat Card Typography */
+  --stat-value: 1.25rem;              /* 20px - Stat numbers (smaller than page title) */
+  --stat-value-mobile: 1.125rem;      /* 18px */
+  --stat-label: 0.625rem;             /* 10px - Stat labels */
+  
+  /* ==========================================
+   * SHADOWS
+   * ========================================== */
+  --shadow-xs: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --shadow-sm: 0 2px 4px oklch(0% 0 0 / 0.4);
+  --shadow-md: 0 4px 8px oklch(0% 0 0 / 0.5);
+  --shadow-lg: 0 8px 16px oklch(0% 0 0 / 0.5);
+  --shadow-xl: 0 16px 32px oklch(0% 0 0 / 0.6);
+  
+  /* ==========================================
+   * TRANSITIONS
+   * ========================================== */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* ==========================================
+   * Z-INDEX SCALE
+   * ========================================== */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  --z-splash: 9999;
+  
+  /* ==========================================
+   * THEME-SPECIFIC: Night Sea Aesthetic
+   * ========================================== */
+  --color-sea-night: #010409;
+  --color-sea-navy: var(--color-base-200);
+  --color-moon-silver: var(--color-base-content);
+  
+  --bg-gradient: linear-gradient(
+    135deg,
+    var(--color-base-100) 0%,
+    var(--color-base-200) 25%,
+    var(--color-base-300) 50%,
+    var(--color-base-200) 75%,
+    var(--color-base-100) 100%
+  );
+  
+  --particle-color: oklch(97% 0.01 256 / 0.4);
+  --particle-shadow: oklch(90% 0.01 256 / 0.2);
+  --wave-color: oklch(90% 0.01 256 / 0.15);
+  
+  /* Sidebar Aura */
+  --aura-colors: #f8fafc 15%, #cbd5e1 30%, transparent 45%, #94a3b8 60%, #1e293b 75%;
+  --aura-icon-glow: rgba(248, 250, 252, 0.6);
+  --aura-opacity: 0.45;
+  --aura-rotation-speed: 25s;
+  
+  /* Theme Toggle Icon */
+  --theme-toggle-icon: url("data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='12' cy='12' r='11' stroke='%23cbd5e1' stroke-width='1.5'/%3e%3cpath d='M12 1A11 11 0 0 0 12 23A5.5 5.5 0 0 0 12 12A5.5 5.5 0 0 1 12 1z' fill='%23f8fafc'/%3e%3ccircle cx='12' cy='6.5' r='1.5' fill='%231e293b'/%3e%3ccircle cx='12' cy='17.5' r='1.5' fill='white'/%3e%3c/svg%3e");
+  
+  /* Background opacity for elements */
+  --bg-opacity: 1.0;
+  
+  /* ==========================================
+   * SIDEBAR DIMENSION VARIABLES
+   * ========================================== */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
+  --sidebar-header-height: 48px;
+  --sidebar-mini-icon-size: 20px;
+  --sidebar-mini-item-size: 32px;
+  --sidebar-mini-context-size: 48px;
+  --sidebar-mini-user-btn-size: 32px;
+  --sidebar-mini-user-btn-radius: 10px;
+  --sidebar-toggle-size: 36px;
+  --sidebar-toggle-top: 12px;
+  --sidebar-toggle-top-collapsed: 12px;
+  --sidebar-context-inner-size: 36px;
+  --sidebar-context-icon-size: 20px;
+  
+  /* ==========================================
+   * HEADER COMPONENT VARIABLES
+   * ========================================== */
+  --header-bg: rgba(4, 38, 59, 0.35);
+  --header-border: rgba(6, 182, 212, 0.08);
+  --header-text: #ffffff;
+  --header-input-bg: rgba(255, 255, 255, 0.05);
+  --header-input-bg-hover: rgba(255, 255, 255, 0.1);
+  
+  /* ==========================================
+   * FOOTER COMPONENT VARIABLES
+   * ========================================== */
+  --footer-bg: rgba(4, 38, 59, 0.35);
+  --footer-border: rgba(6, 182, 212, 0.08);
+  --footer-text: rgba(255, 255, 255, 0.45);
+  --footer-message: #22d3ee;
+  
+  /* ==========================================
+   * SIDEBAR COMPONENT VARIABLES
+   * ========================================== */
+  --sidebar-bg: rgba(4, 38, 59, 0.75);
+  --sidebar-border: rgba(6, 182, 212, 0.1);
+  --sidebar-item-active-bg: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(6, 74, 123, 0.1) 100%);
+  --sidebar-item-active-color: #06b6d4;
+  --sidebar-item-active-border: rgba(6, 182, 212, 0.3);
+  --sidebar-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-item-hover-color: #ffffff;
+  --sidebar-text: rgba(255, 255, 255, 0.75);
+  --sidebar-header-text: #ffffff;
+  --sidebar-label-text: rgba(255, 255, 255, 0.35);
+  --sidebar-muted-text: rgba(255, 255, 255, 0.45);
+  --sidebar-user-text: #ffffff;
+  --sidebar-submenu-active-bg: rgba(56, 189, 248, 0.1);
+  --sidebar-submenu-active-color: #38bdf8;
+  --sidebar-profile-bg: linear-gradient(135deg, #334155 0%, #0f172a 100%);
+  --sidebar-profile-border: rgba(255, 255, 255, 0.1);
+  --sidebar-logout-bg: linear-gradient(135deg, #4a3b3b 0%, #1f1212 100%);
+  --sidebar-logout-border: rgba(255, 220, 220, 0.1);
+  --sidebar-logout-hover-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%);
+  --sidebar-logout-hover-border: rgba(239, 68, 68, 0.4);
+  --sidebar-logout-hover-color: #ffffff;
+  
+  /* ==========================================
+   * TOAST COMPONENT VARIABLES
+   * ========================================== */
+  --toast-bg: rgba(15, 15, 25, 0.75);
+  --toast-blur: 24px;
+  --toast-border: rgba(255, 255, 255, 0.08);
+  --toast-highlight: rgba(255, 255, 255, 0.05);
+  --toast-text: rgba(255, 255, 255, 0.95);
+  
+  /* ==========================================
+   * USER PROFILE PILL VARIABLES
+   * ========================================== */
+  --user-pill-bg: rgba(255, 255, 255, 0.05);
+  --user-pill-border: rgba(255, 255, 255, 0.1);
+  --user-pill-bg-hover: rgba(255, 255, 255, 0.1);
+  --user-pill-border-hover: rgba(255, 255, 255, 0.2);
+  --user-pill-avatar-from: #475569;
+  --user-pill-avatar-to: #1e293b;
+  --user-pill-name-color: rgba(255, 255, 255, 0.9);
+  --user-pill-role-color: rgba(255, 255, 255, 0.5);
+  
+  /* ==========================================
+   * LEGACY ALIASES (for backward compatibility)
+   * ========================================== */
+  --color-background: var(--color-base-100);
+  --color-background-rgb: var(--color-base-100-rgb);
+  --color-surface: var(--color-base-200);
+  --color-foreground: var(--color-base-content);
+  --color-muted: var(--color-text-secondary);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-error-content);
+  --font-heading: var(--font-family-heading);
+}
+

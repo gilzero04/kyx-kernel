@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::modules::system::domain::plugin::registry::PluginRegistry;
 use crate::modules::system::domain::plugin::{Manifest, Plugin};
-use crate::modules::system::domain::plugin::entity::{MenuExtension, UIExtensions};
+use crate::modules::system::domain::plugin::entity::MenuExtension;
 use crate::modules::system::application::services::tenant::TenantService;
 use crate::core::utils::jwt::Claims;
 

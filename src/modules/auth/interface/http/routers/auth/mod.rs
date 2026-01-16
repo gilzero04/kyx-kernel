@@ -54,6 +54,22 @@ pub fn auth_routes(
                 .wrap(user_auth.clone())
                 .route(web::delete().to(auth::revoke_session))
         )
+        // Profile routes (authenticated user)
+        .service(
+            web::resource("/me")
+                .wrap(user_auth.clone())
+                .route(web::get().to(auth::get_me))
+        )
+        .service(
+            web::resource("/me/profile")
+                .wrap(user_auth.clone())
+                .route(web::put().to(auth::update_profile))
+        )
+        .service(
+            web::resource("/me/avatar")
+                .wrap(user_auth.clone())
+                .route(web::put().to(auth::update_avatar))
+        )
         // Admin Global Session Management
         .service(
             web::scope("/admin")

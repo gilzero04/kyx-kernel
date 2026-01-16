@@ -6,7 +6,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 use crate::core::AppResult;
 use crate::modules::system::application::services::theme::ThemeService;
-use crate::modules::system::domain::theme::ThemeVisibility;
 use crate::modules::system::interface::http::dto::theme::CreateThemeDto;
 use crate::core::utils::jwt::Claims;
 
@@ -18,8 +17,8 @@ pub struct ActivateThemeRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateVisibilityRequest {
-    pub visibility: String, // "public", "private", "shared"
+pub struct UpdateSharingRequest {
+    pub is_shared: bool, // true = broadcast to descendants, false = private
 }
 
 // Helper to determine mime type from extension
@@ -270,7 +269,7 @@ pub async fn import_theme(
     }
 
     let name = manifest["name"].as_str().unwrap_or("Imported Theme").to_string();
-    let code = manifest["id"].as_str().map(|s| s.to_string());
+    let slug = manifest["slug"].as_str().map(|s| s.to_string());
     let description = manifest["description"].as_str().map(|s| s.to_string());
     let author = manifest["author"].as_str().map(|s| s.to_string());
     let preview_url = manifest["preview"].as_str().map(|s| s.to_string());
@@ -296,15 +295,17 @@ pub async fn import_theme(
     
     // Create the theme
     let dto = CreateThemeDto {
-        code,
+        id: None, // Imported themes get auto-generated ID
+        slug,
         name,
         description,
         config,
-        visibility: ThemeVisibility::Private,
+        is_shared: false,
         tenant_id,
         author,
         preview_url,
         logo_url,
+        version: manifest["version"].as_str().map(|s| s.to_string()),
     };
 
     let theme = service.create_theme(dto).await?;
@@ -318,6 +319,7 @@ pub async fn import_theme(
     request_body = ActivateThemeRequest,
     responses(
         (status = 200, description = "Theme activated"),
+        (status = 403, description = "Permission denied"),
         (status = 404, description = "Theme not found")
     ),
     tag = "themes",
@@ -333,7 +335,11 @@ pub async fn set_active_theme(
     body: web::types::Json<ActivateThemeRequest>,
     service: web::types::State<std::sync::Arc<ThemeService>>,
     db: web::types::State<std::sync::Arc<crate::core::infrastructure::database::Database>>,
+    claims: Claims, // Injected by middleware - used for tenant_id
 ) -> Result<web::HttpResponse, crate::core::AppError> {
+    // Note: Permission check (theme:activate) is handled by RequirePermission middleware
+    // See: src/modules/system/interface/http/routers/theme/mod.rs
+
     let theme_id = path.into_inner();
     let mode = body.mode.clone().unwrap_or_else(|| "light".to_string());
     
@@ -345,13 +351,14 @@ pub async fn set_active_theme(
     
     let theme = theme.unwrap();
     
-    // Update the owner's branding in sys_brandings
-    // First, get the owner's branding_id from auth_tenants
+    // Update the caller's tenant branding in sys_brandings
+    // Use claims.tenant_id to get the correct branding for this tenant
     let branding_id: Option<sqlx::types::Uuid> = sqlx::query_scalar(r#"
         SELECT branding_id FROM auth_tenants 
-        WHERE parent_id = id AND deleted_at IS NULL
+        WHERE id = $1 AND deleted_at IS NULL
         LIMIT 1
     "#)
+    .bind(claims.tenant_id)
     .fetch_optional(&db.pool)
     .await
     .map_err(|e| crate::core::AppError::internal_server_error(format!("DB error: {}", e)))?
@@ -359,14 +366,30 @@ pub async fn set_active_theme(
     
     let branding_id = match branding_id {
         Some(id) => id,
-        None => return Err(crate::core::AppError::not_found("Owner branding not found"))
+        None => return Err(crate::core::AppError::not_found("Tenant branding not found"))
     };
     
-    // Update the appropriate column based on mode
+    // Update console theme AND set workspace/app defaults if they are NULL
+    // This ensures that when SuperAdmin sets console theme, workspace/app have defaults too
+    // DB columns: theme_workspace_light_id, theme_app_light_id (NOT workspace_theme_*)
     let sql = if mode == "dark" {
-        "UPDATE sys_brandings SET theme_dark_id = $1, updated_at = NOW() WHERE id = $2"
+        r#"
+        UPDATE sys_brandings SET 
+            theme_dark_id = $1,
+            theme_workspace_dark_id = COALESCE(theme_workspace_dark_id, $1),
+            theme_app_dark_id = COALESCE(theme_app_dark_id, $1),
+            updated_at = NOW() 
+        WHERE id = $2
+        "#
     } else {
-        "UPDATE sys_brandings SET theme_light_id = $1, updated_at = NOW() WHERE id = $2"
+        r#"
+        UPDATE sys_brandings SET 
+            theme_light_id = $1,
+            theme_workspace_light_id = COALESCE(theme_workspace_light_id, $1),
+            theme_app_light_id = COALESCE(theme_app_light_id, $1),
+            updated_at = NOW() 
+        WHERE id = $2
+        "#
     };
     
     sqlx::query(sql)
@@ -376,7 +399,10 @@ pub async fn set_active_theme(
         .await
         .map_err(|e| crate::core::AppError::internal_server_error(format!("Failed to update branding: {}", e)))?;
     
-    log::info!("🎨 Theme '{}' activated for {} mode (branding_id: {})", theme.name, mode, branding_id);
+    log::info!(
+        "🎨 Theme '{}' activated for {} mode by tenant {} (branding_id: {}) - also set defaults for workspace/app if empty", 
+        theme.name, mode, claims.tenant_id, branding_id
+    );
     
     Ok(web::HttpResponse::Ok().json(&serde_json::json!({
         "status": "updated",
@@ -449,9 +475,9 @@ pub async fn delete_theme(
          return Err(crate::core::AppError::bad_request(format!("Cannot delete theme. Reason: {}", reason)));
     }
     
-    // Rule 5: Shared themes cannot be deleted. Must be Un-shared (made Private) first.
-    if matches!(theme.visibility, crate::modules::system::domain::theme::entity::ThemeVisibility::Public) {
-        return Err(crate::core::AppError::bad_request("Cannot delete a shared (Public) theme. Please Un-share it first."));
+    // Rule 5: Shared themes cannot be deleted. Must be Un-shared first.
+    if theme.is_shared {
+        return Err(crate::core::AppError::bad_request("Cannot delete a shared theme. Please Un-share it first."));
     }
     
     service.delete_theme(theme_id).await?;
@@ -461,14 +487,14 @@ pub async fn delete_theme(
     Ok(web::HttpResponse::NoContent().finish())
 }
 
-/// Update theme visibility
+/// Update theme sharing status
 #[utoipa::path(
     patch,
-    path = "/api/v1/admin/themes/{id}/visibility",
-    request_body = UpdateVisibilityRequest,
+    path = "/api/v1/admin/themes/{id}/sharing",
+    request_body = UpdateSharingRequest,
     responses(
-        (status = 200, description = "Visibility updated"),
-        (status = 400, description = "Cannot change visibility"),
+        (status = 200, description = "Sharing status updated"),
+        (status = 400, description = "Cannot change sharing"),
         (status = 404, description = "Theme not found")
     ),
     tag = "themes",
@@ -479,21 +505,17 @@ pub async fn delete_theme(
         ("bearer_auth" = [])
     )
 )]
-pub async fn set_visibility(
+pub async fn set_sharing(
     path: web::types::Path<Uuid>,
-    body: web::types::Json<UpdateVisibilityRequest>,
+    body: web::types::Json<UpdateSharingRequest>,
     service: web::types::State<std::sync::Arc<ThemeService>>,
 ) -> Result<web::HttpResponse, crate::core::AppError> {
     let theme_id = path.into_inner();
-    let visibility = match body.visibility.to_lowercase().as_str() {
-        "public" => ThemeVisibility::Public,
-        "private" => ThemeVisibility::Private,
-         _ => return Err(crate::core::AppError::bad_request("Invalid visibility mode. Must be 'public' or 'private'.")),
-    };
+    let is_shared = body.is_shared;
 
     let dto = crate::modules::system::interface::http::dto::theme::UpdateThemeDto {
-        code: None,
-        visibility: Some(visibility),
+        slug: None,
+        is_shared: Some(is_shared),
         name: None,
         description: None,
         config: None,
@@ -501,6 +523,7 @@ pub async fn set_visibility(
         author: None,
         preview_url: None,
         logo_url: None,
+        version: None,
     };
     
     // Verify theme exists first
@@ -511,16 +534,14 @@ pub async fn set_visibility(
     
     let theme = theme.unwrap();
 
-    // Constraints for Un-sharing (Public -> Private)
-    if matches!(visibility, ThemeVisibility::Private) {
+    // Constraints for Un-sharing (is_shared: true -> false)
+    if !is_shared {
         // 1. Cannot un-share System Default Themes (True System Themes have no tenant_id)
         if theme.tenant_id.is_none() {
              return Err(crate::core::AppError::forbidden("Cannot un-share system default themes."));
         }
         
         // 2. Cannot un-share if currently in use (EXCEPT by the owner themselves)
-        // We pass `theme.tenant_id` as the excluded tenant. If `active_theme_id` matches this tenant, it's ignored.
-        // If ANY ONE ELSE is using it, `is_theme_in_use` returns Some(reason).
         if let Some(reason) = service.is_theme_in_use(theme_id, theme.tenant_id).await? {
              return Err(crate::core::AppError::bad_request(format!("Cannot un-share theme. Reason: {}", reason)));
         }
@@ -531,6 +552,136 @@ pub async fn set_visibility(
     Ok(web::HttpResponse::Ok().json(&serde_json::json!({
         "status": "updated",
         "theme_id": theme_id,
-        "visibility": body.visibility
+        "is_shared": is_shared
+    })))
+}
+
+/// Update a system theme by uploading a new ZIP file
+/// Only SuperAdmin + Owner can update system themes
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/themes/{id}/update",
+    responses(
+        (status = 200, description = "Theme updated successfully"),
+        (status = 400, description = "Invalid theme package"),
+        (status = 403, description = "Permission denied - SuperAdmin Owner only"),
+        (status = 404, description = "Theme not found")
+    ),
+    tag = "themes",
+    params(
+        ("id" = Uuid, Path, description = "Theme ID to update")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_theme(
+    path: web::types::Path<Uuid>,
+    mut payload: Multipart,
+    service: web::types::State<std::sync::Arc<ThemeService>>,
+    db: web::types::State<std::sync::Arc<crate::core::infrastructure::database::Database>>,
+    claims: Claims,
+) -> Result<web::HttpResponse, crate::core::AppError> {
+    let theme_id = path.into_inner();
+    
+    // 1. Verify caller is SuperAdmin + Owner
+    let role = claims.role.to_lowercase();
+    if role != "superadmin" {
+        return Err(crate::core::AppError::forbidden("Only SuperAdmin can update system themes"));
+    }
+    
+    // Check if caller's tenant is the system owner (root tenant has parent_id = id)
+    let is_owner: Option<bool> = sqlx::query_scalar(r#"
+        SELECT (parent_id = id) AS is_owner FROM auth_tenants 
+        WHERE id = $1 AND deleted_at IS NULL
+        LIMIT 1
+    "#)
+    .bind(claims.tenant_id)
+    .fetch_optional(&db.pool)
+    .await
+    .map_err(|e| crate::core::AppError::internal_server_error(format!("DB error: {}", e)))?
+    .flatten();
+    
+    if !is_owner.unwrap_or(false) {
+        return Err(crate::core::AppError::forbidden("Only the system owner can update system themes"));
+    }
+    
+    // 2. Verify theme exists
+    let existing_theme = service.get_theme(theme_id).await?;
+    if existing_theme.is_none() {
+        return Err(crate::core::AppError::not_found("Theme not found"));
+    }
+    let existing_theme = existing_theme.unwrap();
+    
+    // 3. Extract and validate the uploaded ZIP
+    let mut manifest = serde_json::json!({});
+    
+    while let Some(item) = payload.next().await {
+        let mut field = item.map_err(|_| crate::core::AppError::bad_request("Payload error"))?;
+        
+        let cd = field.headers().get(&ntex::http::header::CONTENT_DISPOSITION)
+             .and_then(|h| h.to_str().ok())
+             .unwrap_or("");
+             
+        if cd.contains("filename=") {
+            let mut bytes = Vec::new();
+            while let Some(chunk) = field.next().await {
+                let data = chunk.map_err(|_| crate::core::AppError::bad_request("Failed to read chunk"))?;
+                bytes.extend_from_slice(&data);
+            }
+
+            manifest = extract_theme_config(&bytes)?;
+        }
+    }
+    
+    // 4. Prepare update DTO with new config (bundled CSS)
+    let name = manifest["name"].as_str().map(|s| s.to_string());
+    let description = manifest["description"].as_str().map(|s| s.to_string());
+    let author = manifest["author"].as_str().map(|s| s.to_string());
+    let preview_url = manifest["preview"].as_str().map(|s| s.to_string());
+    let logo_url = manifest["logo"].as_str().map(|s| s.to_string());
+    
+    // Extract the internal "config" block which now includes bundled theme_css
+    let config = if manifest["config"].is_object() {
+        Some(manifest["config"].clone())
+    } else {
+        // Fallback for flat manifests
+        let mut flat_config = manifest.clone();
+        if let Some(obj) = flat_config.as_object_mut() {
+            obj.remove("name");
+            obj.remove("description");
+            obj.remove("author");
+            obj.remove("preview");
+            obj.remove("logo");
+        }
+        Some(flat_config)
+    };
+    
+    let dto = crate::modules::system::interface::http::dto::theme::UpdateThemeDto {
+        slug: None, // Keep existing slug
+        is_shared: None, // Keep existing sharing status
+        name,
+        description,
+        config,
+        is_active: None,
+        author,
+        preview_url,
+        logo_url,
+        version: manifest["version"].as_str().map(|s| s.to_string()),
+    };
+    
+    // 5. Update the theme
+    service.update_theme(theme_id, dto).await?;
+    
+    log::info!(
+        "🔄 Theme '{}' (ID: {}) updated by SuperAdmin Owner (tenant: {})", 
+        existing_theme.name, theme_id, claims.tenant_id
+    );
+    
+    Ok(web::HttpResponse::Ok().json(&serde_json::json!({
+        "status": "updated",
+        "theme_id": theme_id,
+        "theme_name": existing_theme.name,
+        "message": "Theme updated successfully. Refresh to see changes."
     })))
 }

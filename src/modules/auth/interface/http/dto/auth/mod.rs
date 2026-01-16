@@ -91,3 +91,30 @@ pub struct AdminSessionInfo {
     pub expires_at: i64,
     pub is_current: bool,
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROFILE DTOs
+// ════════════════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateProfileRequest {
+    pub full_name: Option<String>,
+    pub cover_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateAvatarRequest {
+    /// Base64 encoded image or URL
+    pub avatar_url: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ProfileResponse {
+    pub id: Uuid,
+    pub email: String,
+    pub full_name: Option<String>,
+    pub avatar_url: Option<String>,
+    pub cover_url: Option<String>,
+    pub images: Vec<UserImageInfo>,
+    pub created_at: String,
+}

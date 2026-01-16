@@ -1,5 +1,5 @@
 /* =========================================
-   Splash Screen (Light/Platform Refined)
+   Splash Screen (Dark/Platform Refined)
    ========================================= */
 
 /* Overlay */
@@ -9,7 +9,7 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    z-index: 9999 !important;
+    z-index: 1000 !important;
     overflow: hidden;
     background-color: var(--color-background);
 }
@@ -23,21 +23,15 @@
         visibility 0.5s ease;
 }
 
-/* Align logo stage with moon position */
+/* Align logo stage with moon position - FIXED for consistency */
 :global(.splash-overlay .bg-stage) {
-    top: 38% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    height: auto !important;
+    min-height: 400px;
 }
 
-/* Main content container */
-.splash-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    z-index: 10;
-}
+/* Main content container - MOVED ABOVE HERO STACK DEFINITION IN PREVIOUS CHUNK */
 
 /* Animated waves around logo */
 .splash-waves {
@@ -119,7 +113,7 @@
     }
 
     50% {
-        transform: translateY(-12px) scale(1);
+        transform: translateY(-4px) scale(1.02);
     }
 }
 
@@ -142,12 +136,12 @@
     0%,
     100% {
         opacity: 0.2;
-        transform: scale(1);
+        transform: scale(0.95);
     }
 
     50% {
-        opacity: 0.5;
-        transform: scale(1.1);
+        opacity: 0.4;
+        transform: scale(1.05);
     }
 }
 
@@ -176,13 +170,39 @@
 }
 
 .splash-hero-stack {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1.5rem;
+    /* This centers the center-point of the stack at the 50% mark */
     width: 100%;
     height: 100%;
+}
+
+/* Ensure the logo itself is the anchor for centering */
+.splash-hero-stack :global(.logo-section) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0 !important;
+}
+
+/* Standard content container - placed below the centered logo */
+.splash-content {
+    position: absolute;
+    top: calc(50% + 110px);
+    /* 192px moon/2 + some gap */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    z-index: 10;
+    width: 100%;
 }
 
 /* App title */
@@ -197,9 +217,7 @@
     letter-spacing: 0.02em;
     width: 98%;
     max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 0.5rem;
+    margin: 0 auto;
     position: relative;
     color: var(--color-foreground);
     text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 20px var(--color-primary);

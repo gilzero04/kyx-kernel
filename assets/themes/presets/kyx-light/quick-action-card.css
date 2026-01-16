@@ -1,0 +1,14 @@
+/* QuickActionCard Component - Light Theme */
+/* Uses CSS variables from variables.css */
+
+.quick-action-card {
+    --quick-action-bg: var(--glass-bg);
+    --quick-action-border: var(--glass-border);
+    --quick-action-shadow: none;
+    --quick-action-bg-hover: var(--glass-bg);
+    --quick-action-border-hover: var(--color-primary);
+    --quick-action-shadow-hover: none;
+    --quick-action-icon-bg: rgba(var(--color-primary-rgb), 0.12);
+    --quick-action-icon-color: var(--color-primary);
+    --quick-action-icon-bg-hover: rgba(var(--color-primary-rgb), 0.18);
+}

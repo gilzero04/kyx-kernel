@@ -11,3 +11,4 @@ pub mod user;
 pub mod cms;
 pub mod plugin;
 pub mod workspace;
+pub mod share;

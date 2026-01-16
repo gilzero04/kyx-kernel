@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use uuid::Uuid;
 use crate::core::AppResult;
-use crate::modules::system::domain::theme::{Theme, ThemeRepository, ThemeVisibility};
+use crate::modules::system::domain::theme::{Theme, ThemeRepository};
 use crate::modules::system::interface::http::dto::theme::{CreateThemeDto, UpdateThemeDto};
 
 pub struct ThemeService {
@@ -20,17 +20,19 @@ impl ThemeService {
     
     // For System Admin
     #[allow(dead_code)]
-    pub async fn create_system_theme(&self, name: String, config: serde_json::Value, visibility: ThemeVisibility) -> AppResult<Theme> {
+    pub async fn create_system_theme(&self, name: String, config: serde_json::Value, is_shared: bool) -> AppResult<Theme> {
         let dto = CreateThemeDto {
-            code: None,
+            id: None, // Auto-generate
+            slug: None,
             name,
             description: None,
             config,
-            visibility,
+            is_shared,
             tenant_id: None, // System owned
             author: None,
             preview_url: None,
             logo_url: None,
+            version: None,
         };
         self.repo.create(dto).await
     }
@@ -39,15 +41,17 @@ impl ThemeService {
     #[allow(dead_code)]
     pub async fn create_tenant_theme(&self, tenant_id: Uuid, name: String, description: Option<String>, config: serde_json::Value) -> AppResult<Theme> {
         let dto = CreateThemeDto {
-            code: None,
+            id: None, // Auto-generate
+            slug: None,
             name,
             description,
             config,
-            visibility: ThemeVisibility::Private, // Always private initially
+            is_shared: false, // Always private (not shared) initially
             tenant_id: Some(tenant_id),
             author: None,
             preview_url: None,
             logo_url: None,
+            version: None,
         };
         self.repo.create(dto).await
     }
@@ -92,15 +96,17 @@ impl ThemeService {
              // Verify access to source? Assumed yes if they can see it to click Fork.
              // Create new theme
              let dto = CreateThemeDto {
-                 code: None,
+                 id: None, // Forked themes get auto-generated ID
+                 slug: None,
                  name: new_name,
                  description: Some(format!("Forked from {}", src.name)),
                  config: src.config,
-                 visibility: ThemeVisibility::Private,
+                 is_shared: false,
                  tenant_id: Some(target_tenant_id),
                  author: src.author.clone(),
                  preview_url: None,
                  logo_url: None,
+                 version: None,
              };
              self.repo.create(dto).await
         } else {
@@ -129,7 +135,11 @@ impl ThemeService {
             };
 
             let name = manifest["name"].as_str().unwrap_or(folder);
-            let code = manifest["id"].as_str().map(|s| s.to_string());
+            // manifest.id = UUID string (plain UUID, not kyx-theme- prefix)
+            // manifest.slug = "kyx-dark" → human-readable identifier
+            let manifest_id = manifest["id"].as_str();
+            let theme_uuid = manifest_id.and_then(|id| Uuid::parse_str(id).ok());
+            let slug = manifest["slug"].as_str().map(|s| s.to_string());
             let author = manifest["author"].as_str().map(|s| s.to_string());
             
             // Check for preview image
@@ -153,6 +163,9 @@ impl ThemeService {
             let owner_id = self.repo.get_owner_id().await.unwrap_or(None);
             
             let existing_theme = available.iter().find(|t| t.name == name && (t.tenant_id == owner_id || t.tenant_id.is_none()));
+            
+            // Extract version from manifest (for comparison)
+            let manifest_version = manifest["version"].as_str().map(|s| s.to_string());
 
             // 2. Extract and Bundle CSS
             let mut visited = std::collections::HashSet::new();
@@ -169,31 +182,60 @@ impl ThemeService {
             }
 
             if let Some(theme) = existing_theme {
-                log::info!("🔄 Updating Default {} Theme from unified manifest...", name);
-                let update_dto = UpdateThemeDto {
-                    code: code.clone(),
-                    name: Some(name.to_string()),
-                    description: manifest["description"].as_str().map(|s| s.to_string()),
-                    config: Some(config_val),
-                    visibility: Some(ThemeVisibility::Public),
-                    is_active: None,
-                    author: author.clone(),
-                    preview_url: preview_url.clone(),
-                    logo_url: logo_url.clone(),
+                // VERSION CHECK: Only update if manifest version > DB version
+                // If DB has a higher or equal version, it means user uploaded via API
+                let should_update = match (&manifest_version, &theme.version) {
+                    (Some(manifest_v), Some(db_v)) => {
+                        // Compare semantic versions
+                        self.compare_versions(manifest_v, db_v) > 0
+                    },
+                    (Some(_), None) => true, // DB has no version, update
+                    (None, _) => false, // Manifest has no version, skip update
                 };
-                self.repo.update(theme.id, update_dto).await?;
+                
+                if should_update {
+                    log::info!("🔄 Updating Default {} Theme (v{} -> v{})...", 
+                        name, 
+                        theme.version.as_deref().unwrap_or("?"),
+                        manifest_version.as_deref().unwrap_or("?")
+                    );
+                    let update_dto = UpdateThemeDto {
+                        slug: slug.clone(),
+                        name: Some(name.to_string()),
+                        description: manifest["description"].as_str().map(|s| s.to_string()),
+                        config: Some(config_val),
+                        is_shared: Some(true),
+                        is_active: None,
+                        author: author.clone(),
+                        preview_url: preview_url.clone(),
+                        logo_url: logo_url.clone(),
+                        version: manifest_version.clone(),
+                    };
+                    self.repo.update(theme.id, update_dto).await?;
+                } else {
+                    log::info!("⏭️ Skipping {} Theme - DB version ({}) >= manifest version ({})", 
+                        name,
+                        theme.version.as_deref().unwrap_or("custom"),
+                        manifest_version.as_deref().unwrap_or("none")
+                    );
+                }
             } else {
-                log::info!("🌱 Seeding Default {} Theme from unified manifest...", name);
+                log::info!("🌱 Seeding Default {} Theme v{} from unified manifest...", 
+                    name, 
+                    manifest_version.as_deref().unwrap_or("?")
+                );
                 let dto = CreateThemeDto {
-                    code: code.clone(),
+                    id: theme_uuid, // Use ID from manifest.json (plain UUID)
+                    slug: slug.clone(),
                     name: name.to_string(),
                     description: manifest["description"].as_str().map(|s| s.to_string()),
                     config: config_val,
-                    visibility: ThemeVisibility::Public,
+                    is_shared: true,
                     tenant_id: owner_id,
                     author: author,
                     preview_url,
                     logo_url,
+                    version: manifest_version,
                 };
                 self.repo.create(dto).await?;
             }
@@ -240,5 +282,33 @@ impl ThemeService {
         }
 
         Ok(inlined_content)
+    }
+    
+    /// Compare semantic versions (e.g., "1.0.0" vs "1.1.0")
+    /// Returns: 1 if a > b, -1 if a < b, 0 if equal
+    fn compare_versions(&self, a: &str, b: &str) -> i32 {
+        let parse_parts = |v: &str| -> Vec<u32> {
+            v.split('.')
+                .filter_map(|s| s.parse::<u32>().ok())
+                .collect()
+        };
+        
+        let parts_a = parse_parts(a);
+        let parts_b = parse_parts(b);
+        
+        let max_len = parts_a.len().max(parts_b.len());
+        
+        for i in 0..max_len {
+            let pa = parts_a.get(i).copied().unwrap_or(0);
+            let pb = parts_b.get(i).copied().unwrap_or(0);
+            
+            if pa > pb {
+                return 1;
+            } else if pa < pb {
+                return -1;
+            }
+        }
+        
+        0 // Equal
     }
 }

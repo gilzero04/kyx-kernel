@@ -7,13 +7,13 @@ use crate::modules::signal::interface::http::handlers as signal;
 // Schemas
 use crate::modules::system::interface::http::dto::config::ConfigUpdate;
 use crate::modules::system::interface::http::dto::rbac::{CreateRoleRequest, UpdateRoleRequest, CreatePermissionRequest, UpdatePermissionRequest};
-use crate::modules::system::interface::http::dto::tenant::{TenantsQuery, UpdateOwnerRequest, CreateTenantRequest, UpdateTenantRequest};
-use crate::modules::system::interface::http::dto::user::{UsersQuery, UpdateUserRequest, AdminResetPasswordRequest};
+use crate::modules::system::interface::http::dto::tenant::{TenantsQuery, UpdateOwnerRequest};
+use crate::modules::system::interface::http::dto::user::{UsersQuery, UpdateUserRequest};
 use crate::modules::system::interface::http::dto::audit::LogsQuery;
 use crate::modules::system::interface::http::dto::api_key::CreateApiKeyRequest;
 use crate::modules::system::interface::http::dto::cors::AddCorsRequest;
 use crate::modules::system::interface::http::dto::i18n::{TranslationsResponse, CreateI18nKeyRequest, UpdateTranslationRequest, CreateLocaleRequest};
-use crate::modules::media::interface::http::dto::media::{CreateFolderRequest, AssetQuery};
+// Note: CreateFolderRequest and AssetQuery available via media::dto when needed
 
 use crate::modules::auth::interface::http::dto::auth::{AuthResponse, UserInfo, UserImageInfo, SetupRequest, CreateUserRequest, RefreshRequest, SignupRequest, SessionInfo, AdminSessionInfo};
 use crate::modules::auth::domain::login::UserCredentials;
@@ -126,7 +126,7 @@ use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capabilit
         theme::import_theme,
         theme::set_active_theme,
         theme::delete_theme,
-        theme::set_visibility,
+        theme::set_sharing,
 
         // Plugins
         plugin::list_plugins,

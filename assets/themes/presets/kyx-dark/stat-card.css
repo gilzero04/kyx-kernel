@@ -1,0 +1,79 @@
+/* StatCard Component - Dark Theme */
+/* Uses CSS variables from variables.css */
+
+.stat-card {
+    --stat-card-bg: var(--glass-bg, rgba(13, 17, 23, 0.4));
+    --stat-card-border: var(--glass-border, rgba(255, 255, 255, 0.08));
+    --stat-card-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.3);
+    --stat-card-shadow-hover: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
+}
+
+.stat-card:hover {
+    background: var(--glass-bg, rgba(13, 17, 23, 0.5));
+    border-color: var(--glass-border, rgba(255, 255, 255, 0.12));
+}
+
+/* Icon rounded corners */
+.stat-icon {
+    border-radius: 0.875rem;
+}
+
+/* ==========================================
+ * COLOR VARIANTS - Using theme color variables
+ * ========================================== */
+
+/* Primary - Uses --color-primary */
+.stat-primary {
+    --stat-icon-bg: rgba(var(--color-primary-rgb), 0.12);
+    --stat-icon-color: var(--color-primary);
+    --stat-accent: rgba(var(--color-primary-rgb), 0.3);
+}
+
+/* Secondary - Uses --color-secondary */
+.stat-blue {
+    --stat-icon-bg: rgba(var(--color-secondary-rgb), 0.12);
+    --stat-icon-color: var(--color-secondary);
+    --stat-accent: rgba(var(--color-secondary-rgb), 0.3);
+}
+
+/* Accent - Uses --color-accent */
+.stat-purple {
+    --stat-icon-bg: rgba(var(--color-accent-rgb), 0.12);
+    --stat-icon-color: var(--color-accent);
+    --stat-accent: rgba(var(--color-accent-rgb), 0.3);
+}
+
+/* Info - Uses --color-info */
+.stat-cyan {
+    --stat-icon-bg: rgba(var(--color-info-rgb), 0.12);
+    --stat-icon-color: var(--color-info);
+    --stat-accent: rgba(var(--color-info-rgb), 0.3);
+}
+
+/* Success - Uses --color-success */
+.stat-success {
+    --stat-icon-bg: rgba(var(--color-success-rgb), 0.12);
+    --stat-icon-color: var(--color-success);
+    --stat-accent: rgba(var(--color-success-rgb), 0.3);
+}
+
+/* Orange - Custom (not in variables.css) */
+.stat-orange {
+    --stat-icon-bg: rgba(249, 115, 22, 0.12);
+    --stat-icon-color: #f97316;
+    --stat-accent: rgba(249, 115, 22, 0.3);
+}
+
+/* Warning - Uses --color-warning */
+.stat-warning {
+    --stat-icon-bg: rgba(var(--color-warning-rgb), 0.12);
+    --stat-icon-color: var(--color-warning);
+    --stat-accent: rgba(var(--color-warning-rgb), 0.3);
+}
+
+/* Error - Uses --color-error */
+.stat-error {
+    --stat-icon-bg: rgba(var(--color-error-rgb), 0.12);
+    --stat-icon-color: var(--color-error);
+    --stat-accent: rgba(var(--color-error-rgb), 0.3);
+}

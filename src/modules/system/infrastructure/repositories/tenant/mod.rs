@@ -318,7 +318,7 @@ impl TenantRepository for PostgresTenantRepository {
              verification_token = COALESCE($18, verification_token),
              updated_at = NOW() 
              WHERE id = $12 AND deleted_at IS NULL
-             AND ($13::uuid IS NULL OR id = $13 OR parent_id = $13)
+             AND ($13::uuid IS NULL OR can_view_tenant($13, id))
              RETURNING id, parent_id, name, slug, branding_id, contact_email, contact_phone, website_url, social_links, address, business_type, config, custom_domain, allow_child_subdomains, use_parent_subdomain, domain_verified_at, verification_token, is_active, created_at, 
              (SELECT COUNT(*) FROM auth_memberships WHERE tenant_id = auth_tenants.id AND deleted_at IS NULL) as member_count"
         )
@@ -350,11 +350,11 @@ impl TenantRepository for PostgresTenantRepository {
     async fn delete(&self, id: sqlx::types::Uuid, actor_tenant_id: Option<sqlx::types::Uuid>) -> Result<()> {
         let mut tx = self.pool.pool.begin().await?;
 
-        // 1. Deactivate Tenant (Isolation: must be parent or system owner)
+        // 1. Deactivate Tenant (Isolation: must be ancestor of target or platform owner)
         let row = sqlx::query(
             "UPDATE auth_tenants SET is_active = FALSE, deleted_at = NOW() 
              WHERE id = $1 AND parent_id != id
-             AND ($2::uuid IS NULL OR parent_id = $2)"
+             AND ($2::uuid IS NULL OR can_view_tenant($2, id))"
         )
             .bind(id)
             .bind(actor_tenant_id)
@@ -393,7 +393,7 @@ impl TenantRepository for PostgresTenantRepository {
             "SELECT id, parent_id, name, slug, branding_id, contact_email, contact_phone, website_url, social_links, address, business_type, config, custom_domain, allow_child_subdomains, use_parent_subdomain, domain_verified_at, verification_token, is_active, created_at, 
              (SELECT COUNT(*) FROM auth_memberships WHERE tenant_id = auth_tenants.id AND deleted_at IS NULL) as member_count
              FROM auth_tenants WHERE id = $1 AND deleted_at IS NULL
-             AND ($2::uuid IS NULL OR id = $2 OR parent_id = $2)"
+             AND ($2::uuid IS NULL OR can_view_tenant($2, id))"
         )
         .bind(id)
         .bind(actor_tenant_id)

@@ -44,8 +44,7 @@
     background-repeat: no-repeat;
     opacity: 1;
     z-index: 5;
-    animation: moonPulse 8s ease-in-out infinite;
-    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
+    animation: yinyangSpinGlow 12s linear infinite;
 }
 
 /* Atmospheric Halo Radiant Glow */
@@ -87,7 +86,7 @@
     mix-blend-mode: color-dodge;
 }
 
-/* Shared Wave Style (Higher Contrast/Splash Only) */
+/* Shared Wave Style (Ultra Smooth & Flat) */
 .splash-overlay .bg-layer.layer-3,
 .splash-overlay .bg-layer.layer-4,
 .splash-overlay .bg-layer.layer-5 {
@@ -95,67 +94,88 @@
     top: auto !important;
     left: 0 !important;
     right: 0 !important;
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C150,100 350,0 500,50 C650,100 850,0 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    /* Perfectly seamless flat sine wave for glitch-free looping */
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C200,70 300,70 500,50 C700,30 800,30 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0,50 C200,70 300,70 500,50 C700,30 800,30 1000,50 L1000,100 L0,100 Z' fill='white'/%3E%3C/svg%3E");
     mask-repeat: repeat-x;
     -webkit-mask-repeat: repeat-x;
     mask-position: 0 bottom;
     -webkit-mask-position: 0 bottom;
 }
 
-/* Layer 3: Distant Sea Horizon */
+/* Layer 3: Distant Horizon (Deep & Still) */
 .splash-overlay .bg-layer.layer-3 {
-    height: 48%;
-    background-color: #020617;
-    opacity: 0.6;
-    mask-size: 1400px 100%;
-    -webkit-mask-size: 1400px 100%;
-    animation: moveSplashWave-1400 80s linear infinite;
+    height: 55%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(2, 6, 23, 0.4) 100%);
+    opacity: 0.3;
+    mask-size: 2000px 100%;
+    -webkit-mask-size: 2000px 100%;
+    animation: 
+        moveSplashWave-1600 90s linear infinite,
+        oceanSwell 15s ease-in-out infinite;
     z-index: 3;
 }
 
-/* Layer 4: Deep Rolling Ocean */
+/* Layer 4: Deep Ocean Body (Main Swell) */
 .splash-overlay .bg-layer.layer-4 {
-    height: 38%;
-    background: linear-gradient(to bottom, #0f172a, #020617);
-    opacity: 0.8;
-    mask-size: 1000px 100%;
-    -webkit-mask-size: 1000px 100%;
-    animation: moveSplashWave-1000 50s linear infinite reverse;
+    height: 45%;
+    background: linear-gradient(to bottom, 
+        rgba(15, 23, 42, 0.5) 0%, 
+        rgba(2, 6, 23, 0.9) 100%);
+    opacity: 0.6;
+    mask-size: 1500px 100%;
+    -webkit-mask-size: 1500px 100%;
+    animation: 
+        moveSplashWave-1400 60s linear infinite reverse,
+        oceanSwell 10s ease-in-out infinite 2s;
     z-index: 4;
 }
 
-/* Layer 5: Foreground Waves (High Reflection) */
+/* Layer 5: Surface Ripples (Subtle Reflection) */
 .splash-overlay .bg-layer.layer-5 {
-    height: 30%;
+    height: 35%;
     background: linear-gradient(to bottom,
-            rgba(255, 255, 255, 0.4) 0%,
-            #1e293b 30%,
-            #020617 100%);
-    opacity: 0.9;
-    mask-size: 800px 100%;
-    -webkit-mask-size: 800px 100%;
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(56, 189, 248, 0.05) 20%,
+        rgba(15, 23, 42, 0.6) 100%);
+    opacity: 0.8;
+    mask-size: 1200px 100%;
+    -webkit-mask-size: 1200px 100%;
     animation:
-        moveSplashWave-800 30s linear infinite,
-        moonHighlight 8s ease-in-out infinite;
+        moveSplashWave-1100 40s linear infinite,
+        oceanSwell 8s ease-in-out infinite 1s;
     z-index: 5;
 }
 
+/* Subtle Vertical Ocean Swell */
+@keyframes oceanSwell {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
 /* Specific Splash Animations */
-@keyframes moonPulse {
-
-    0%,
-    100% {
-        transform: translate(-50%, -50%) rotate(0deg) scale(0.95);
-        opacity: 0.9;
-        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
-    }
-
-    50% {
-        transform: translate(-50%, -50%) rotate(10deg) scale(1.05);
-        opacity: 1;
-        filter: drop-shadow(0 0 45px rgba(255, 255, 255, 0.7));
-    }
+/* Combined spin + glow animation for Yin-Yang */
+@keyframes yinyangSpinGlow {
+	0% {
+		transform: translate(-50%, -50%) rotate(0deg);
+		filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5));
+	}
+	25% {
+		transform: translate(-50%, -50%) rotate(90deg);
+		filter: drop-shadow(0 0 50px rgba(6, 182, 212, 0.7));
+	}
+	50% {
+		transform: translate(-50%, -50%) rotate(180deg);
+		filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5));
+	}
+	75% {
+		transform: translate(-50%, -50%) rotate(270deg);
+		filter: drop-shadow(0 0 50px rgba(6, 182, 212, 0.7));
+	}
+	100% {
+		transform: translate(-50%, -50%) rotate(360deg);
+		filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5));
+	}
 }
 
 @keyframes auraPulse {
@@ -208,6 +228,18 @@
     to {
         -webkit-mask-position: 1400px bottom;
         mask-position: 1400px bottom;
+    }
+}
+
+@keyframes moveSplashWave-1100 {
+    from {
+        -webkit-mask-position: 0 bottom;
+        mask-position: 0 bottom;
+    }
+
+    to {
+        -webkit-mask-position: 1100px bottom;
+        mask-position: 1100px bottom;
     }
 }
 

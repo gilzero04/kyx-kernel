@@ -1,0 +1,250 @@
+/* =========================================
+   Setup Page (Dark Theme)
+   ========================================= */
+
+/* Main container */
+.setup-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* Content wrapper */
+.setup-content-wrapper {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 1.5rem 2rem;
+    width: 100%;
+}
+
+/* Header section */
+.setup-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.setup-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: var(--color-foreground);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-heading, serif);
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.setup-subtitle {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+}
+
+.setup-divider {
+    margin-top: 1rem;
+    height: 4px;
+    width: 5rem;
+    border-radius: 9999px;
+    background: linear-gradient(to right, transparent, var(--color-primary), transparent);
+    opacity: 0.8;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Step indicator */
+.setup-step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.setup-step-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    transition: all 0.5s ease;
+}
+
+.setup-step-dot--completed {
+    background: rgba(var(--color-primary-rgb), 0.8);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.5);
+}
+
+.setup-step-dot--active {
+    background: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary), 0 0 15px rgba(var(--color-primary-rgb), 0.6);
+    transform: scale(1.25);
+}
+
+.setup-step-dot--pending {
+    background: var(--color-muted);
+    box-shadow: 0 0 0 2px var(--color-muted);
+}
+
+.setup-step-connector {
+    width: 1.5rem;
+    height: 2px;
+    transition: background-color 0.5s ease;
+}
+
+.setup-step-connector--completed {
+    background: rgba(var(--color-primary-rgb), 0.5);
+}
+
+.setup-step-connector--pending {
+    background: rgba(var(--color-foreground-rgb, 255, 255, 255), 0.05);
+}
+
+/* Card container */
+.setup-card-wrapper {
+    width: 100%;
+    max-width: 28rem;
+    animation: slideInFromBottom 0.7s ease;
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(1rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Step section styling */
+.setup-step-section {
+    animation: fadeInSlide 0.3s ease;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateX(1rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.setup-step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.setup-step-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-foreground);
+}
+
+.setup-step-badge {
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(var(--color-foreground-rgb, 255, 255, 255), 0.4);
+}
+
+/* Platform mode cards */
+.setup-platform-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.setup-platform-card:hover {
+    border-color: rgba(var(--color-primary-rgb), 0.5);
+}
+
+.setup-platform-card--selected {
+    border-color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.setup-platform-icon {
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-muted);
+    color: var(--color-muted-foreground);
+    transition: all 0.3s ease;
+}
+
+.setup-platform-card--selected .setup-platform-icon {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border-color: rgba(var(--color-primary-rgb), 0.2);
+}
+
+.setup-platform-label {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.setup-platform-description {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    padding-left: 2.75rem;
+}
+
+/* Navigation buttons */
+.setup-nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .setup-title {
+        font-size: 1.875rem;
+    }
+    
+    .setup-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .setup-content-wrapper {
+        padding: 1rem;
+    }
+    
+    .setup-card-wrapper {
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 1024px) {
+    .setup-step-connector {
+        width: 2.5rem;
+    }
+}

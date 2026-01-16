@@ -170,13 +170,14 @@
     max-width: 1fr;
 
     padding: 10px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--color-foreground);
     cursor: pointer;
     transition: all 0.2s;
     text-align: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* Mobile specific styling for list items if needed */
@@ -188,8 +189,9 @@
 }
 
 .language-option:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
@@ -230,7 +232,7 @@
     font-family: var(--font-heading, 'Cinzel', serif);
     font-size: 0.9rem;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--color-foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -238,7 +240,7 @@
 
 .language-native {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--color-muted-foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -293,7 +295,7 @@
 .language-gradient-bg {
     position: absolute;
     inset: 0;
-    background: var(--bg-gradient, linear-gradient(135deg, #04263b 0%, #064a7b 25%, #06b6d4 50%, #064a7b 75%, #04263b 100%));
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 25%, #bae6fd 50%, #e0f2fe 75%, #f0f9ff 100%);
     background-size: 400% 400%;
     animation: gradientShift 8s ease infinite;
     opacity: 1;
@@ -325,9 +327,9 @@
     position: absolute;
     width: 4px;
     height: 4px;
-    background: var(--particle-color, rgba(6, 182, 212, 0.6));
+    background: rgba(8, 145, 178, 0.5);
     border-radius: 50%;
-    box-shadow: 0 0 10px var(--particle-shadow, rgba(6, 182, 212, 0.8));
+    box-shadow: 0 0 10px rgba(8, 145, 178, 0.6);
     animation: floatParticle var(--duration, 4s) ease-in-out infinite;
     animation-delay: var(--delay, 0s);
     left: calc(10% + var(--delay, 0s) * 15);
@@ -354,4 +356,10 @@
     90% {
         opacity: 1;
     }
+}
+
+/* Editor Canvas Support - Ensures popup stays within canvas frame */
+#portal-host .language-portal-wrapper,
+#portal-host .language-backdrop {
+    position: absolute;
 }

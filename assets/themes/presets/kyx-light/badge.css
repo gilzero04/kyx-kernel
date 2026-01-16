@@ -61,16 +61,17 @@
 
 /* Custom Status Badges */
 .badge-active {
-    background: rgba(34, 197, 94, 0.15);
-    /* Bright Success Green tint */
-    color: #15803d;
-    /* Bold Green */
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    background: rgba(6, 182, 212, 0.2);
+    /* Primary 500/20 */
+    color: #67e8f9;
+    /* Primary 300 */
+    border: 1px solid rgba(6, 182, 212, 0.3);
 }
 
 .badge-inactive {
     background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-    /* Deep Red */
+    /* Red 500/10 */
+    color: #f87171;
+    /* Red 400 */
     border: 1px solid rgba(239, 68, 68, 0.2);
 }

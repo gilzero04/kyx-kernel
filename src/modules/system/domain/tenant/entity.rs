@@ -60,12 +60,10 @@ pub struct BrandingEntry {
     pub splash_text: Option<String>,
     pub splash_subtext: Option<String>,
     pub tagline: Option<String>,
-    // Legacy theme references (kept for backward compatibility)
+    // Theme references (theme_light_id/theme_dark_id are console defaults)
     pub theme_light_id: Option<sqlx::types::Uuid>,
     pub theme_dark_id: Option<sqlx::types::Uuid>,
-    // Per-context theme references
-    pub theme_console_light_id: Option<sqlx::types::Uuid>,
-    pub theme_console_dark_id: Option<sqlx::types::Uuid>,
+    // Context-specific theme overrides (fallback to console default)
     pub theme_workspace_light_id: Option<sqlx::types::Uuid>,
     pub theme_workspace_dark_id: Option<sqlx::types::Uuid>,
     pub theme_app_light_id: Option<sqlx::types::Uuid>,

@@ -10,7 +10,7 @@ use log::info;
 use std::sync::Arc;
 use std::fs;
 
-pub use host_functions::{HostFunctions, PluginContext, PluginKvStore, PluginEventBus};
+pub use host_functions::HostFunctions;
 
 /// WASM Engine for loading and running plugin modules
 pub struct WasmEngine {
