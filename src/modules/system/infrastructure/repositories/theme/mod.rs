@@ -62,11 +62,12 @@ impl ThemeRepository for PostgresThemeRepository {
         let columns = "id, slug, name, description, config, tenant_id, is_shared, version, author, preview_url, logo_url, is_system, is_active, created_at, updated_at";
         
         let themes = if let Some(tid) = tenant_id {
-            // Consolidated sharing logic using is_shared only:
+            // Simplified sharing logic:
             // 1. Own themes (tenant_id matches)
-            // 2. Shared themes via can_access_shared_resource (handles both is_shared broadcast and explicit shares)
+            // 2. Shared themes (is_shared = TRUE) - broadcast to all
+            // 3. System themes (is_system = TRUE)
             let query = format!(
-                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL AND (tenant_id = $1 OR can_access_shared_resource('theme', id, $1)) ORDER BY created_at DESC",
+                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL AND (tenant_id = $1 OR is_shared = TRUE OR is_system = TRUE) ORDER BY created_at DESC",
                 columns
             );
             sqlx::query_as::<_, Theme>(&query)
