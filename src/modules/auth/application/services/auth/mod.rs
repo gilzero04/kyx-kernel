@@ -694,13 +694,20 @@ impl AuthService {
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to handover themes: {}", e) })?;
 
-        // Update Roles - EXCLUDE global system roles which should remain tenant_id = NULL
-        // Global roles: superadmin, admin, operator, viewer (seeded in 0002_rbac.sql with tenant_id = NULL)
+        // Update Roles - Assign ALL global roles (tenant_id = NULL) to the owner
+        // First, delete any duplicate roles that might exist for the owner with same slugs
         sqlx::query(r#"
-            UPDATE sys_roles SET tenant_id = $1 
-            WHERE tenant_id IS NULL 
-            AND slug NOT IN ('superadmin', 'admin', 'operator', 'viewer')
+            DELETE FROM sys_roles 
+            WHERE tenant_id = $1 
+            AND slug IN (SELECT slug FROM sys_roles WHERE tenant_id IS NULL)
         "#)
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to cleanup duplicate roles: {}", e) })?;
+        
+        // Now assign all NULL tenant_id roles to the owner
+        sqlx::query("UPDATE sys_roles SET tenant_id = $1 WHERE tenant_id IS NULL")
             .bind(tenant_id)
             .execute(&mut *tx)
             .await
