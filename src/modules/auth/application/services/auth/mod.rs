@@ -742,12 +742,12 @@ impl AuthService {
 
         // 9. Set Default Themes (Kyx Light / Kyx Dark)
         // We look for themes named "light" and "dark" (seeded by system) or contain "Kyx"
-        let light_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Light' OR (name ILIKE '%light%' AND visibility = 'public') ORDER BY (name = 'Kyx Light') DESC, created_at ASC LIMIT 1")
+        let light_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Light' OR (name ILIKE '%light%' AND is_shared = TRUE) ORDER BY (name = 'Kyx Light') DESC, created_at ASC LIMIT 1")
             .fetch_optional(&self.db.pool)
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to find default light theme: {}", e) })?;
 
-        let dark_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Dark' OR (name ILIKE '%dark%' AND visibility = 'public') ORDER BY (name = 'Kyx Dark') DESC, created_at ASC LIMIT 1")
+        let dark_theme_row = sqlx::query("SELECT id FROM sys_themes WHERE name = 'Kyx Dark' OR (name ILIKE '%dark%' AND is_shared = TRUE) ORDER BY (name = 'Kyx Dark') DESC, created_at ASC LIMIT 1")
             .fetch_optional(&self.db.pool)
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to find default dark theme: {}", e) })?;
