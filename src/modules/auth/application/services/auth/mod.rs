@@ -695,7 +695,21 @@ impl AuthService {
             .map_err(|e| AppError { code: 500, message: format!("Failed to handover themes: {}", e) })?;
 
         // Update Roles - Assign ALL global roles (tenant_id = NULL) to the owner
-        // First, delete any duplicate roles that might exist for the owner with same slugs
+        // Step 1: Delete memberships referencing duplicate owner roles first (to avoid FK violation)
+        sqlx::query(r#"
+            DELETE FROM auth_memberships 
+            WHERE role_id IN (
+                SELECT id FROM sys_roles 
+                WHERE tenant_id = $1 
+                AND slug IN (SELECT slug FROM sys_roles WHERE tenant_id IS NULL)
+            )
+        "#)
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError { code: 500, message: format!("Failed to cleanup duplicate memberships: {}", e) })?;
+        
+        // Step 2: Delete duplicate roles that exist for the owner with same slugs as global roles
         sqlx::query(r#"
             DELETE FROM sys_roles 
             WHERE tenant_id = $1 
@@ -706,7 +720,7 @@ impl AuthService {
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to cleanup duplicate roles: {}", e) })?;
         
-        // Now assign all NULL tenant_id roles to the owner
+        // Step 3: Assign all NULL tenant_id roles to the owner
         sqlx::query("UPDATE sys_roles SET tenant_id = $1 WHERE tenant_id IS NULL")
             .bind(tenant_id)
             .execute(&mut *tx)
