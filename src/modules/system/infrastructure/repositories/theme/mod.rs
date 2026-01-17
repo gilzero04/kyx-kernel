@@ -58,30 +58,30 @@ impl ThemeRepository for PostgresThemeRepository {
     }
 
     async fn find_available(&self, tenant_id: Option<Uuid>) -> AppResult<Vec<Theme>> {
+        // Explicit column list to match Theme struct (avoids issues with dropped columns or extra columns)
+        let columns = "id, slug, name, description, config, tenant_id, is_shared, version, author, preview_url, logo_url, is_system, is_active, created_at, updated_at";
+        
         let themes = if let Some(tid) = tenant_id {
             // Consolidated sharing logic using is_shared only:
             // 1. Own themes (tenant_id matches)
             // 2. Shared themes via can_access_shared_resource (handles both is_shared broadcast and explicit shares)
-            sqlx::query_as::<_, Theme>(
-                r#"
-                SELECT * FROM sys_themes 
-                WHERE deleted_at IS NULL AND (
-                    tenant_id = $1
-                    OR can_access_shared_resource('theme', id, $1)
-                )
-                ORDER BY created_at DESC
-                "#
-            )
-            .bind(tid)
-            .fetch_all(&self.db.pool)
-            .await?
+            let query = format!(
+                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL AND (tenant_id = $1 OR can_access_shared_resource('theme', id, $1)) ORDER BY created_at DESC",
+                columns
+            );
+            sqlx::query_as::<_, Theme>(&query)
+                .bind(tid)
+                .fetch_all(&self.db.pool)
+                .await?
         } else {
             // System Admin sees ALL
-            sqlx::query_as::<_, Theme>(
-                "SELECT * FROM sys_themes WHERE deleted_at IS NULL ORDER BY created_at DESC"
-            )
-            .fetch_all(&self.db.pool)
-            .await?
+            let query = format!(
+                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                columns
+            );
+            sqlx::query_as::<_, Theme>(&query)
+                .fetch_all(&self.db.pool)
+                .await?
         };
 
         Ok(themes)
