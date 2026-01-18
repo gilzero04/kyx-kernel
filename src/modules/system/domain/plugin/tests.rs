@@ -70,7 +70,8 @@ mod plugin_api_tests {
 
     #[test]
     fn test_ui_extensions_parsing() {
-        use crate::modules::system::domain::plugin::{Manifest, MenuExtension};
+        use crate::modules::system::domain::plugin::entity::MenuExtension;
+        use crate::modules::system::domain::plugin::Manifest;
 
         let ui_manifest = json!({
             "id": "ui-plugin",
