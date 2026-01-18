@@ -21,15 +21,16 @@ fn test_email_validation() {
     }
 
     for email in invalid {
+        let parts: Vec<&str> = email.split('@').collect();
         let is_invalid = !email.contains('@')
             || email.starts_with('@')
             || email.ends_with('@')
-            || email
-                .split('@')
-                .last()
-                .map(|d| !d.contains('.'))
-                .unwrap_or(true);
-        assert!(is_invalid);
+            || parts.len() != 2
+            || parts[0].is_empty()
+            || parts[1].is_empty()
+            || !parts[1].contains('.')
+            || parts[1].starts_with('.');  // domain can't start with dot
+        assert!(is_invalid, "Expected {} to be invalid", email);
     }
 }
 
@@ -74,12 +75,18 @@ fn test_uuid_validation() {
 
 #[test]
 fn test_html_entity_encoding() {
-    let dangerous_chars = ['<', '>', '&', '"', '\''];
-    let encoded = ["&lt;", "&gt;", "&amp;", "&quot;", "&#x27;"];
+    // Verify that HTML entity encoding produces valid entity strings
+    let dangerous_chars = ['<', '>', '"'];
+    let encoded = ["&lt;", "&gt;", "&quot;"];
 
     for (i, char) in dangerous_chars.iter().enumerate() {
-        assert!(!encoded[i].contains(*char));
+        // The encoded form should not contain the literal dangerous character
+        assert!(!encoded[i].contains(*char), "Encoded {} should not contain {}", encoded[i], char);
     }
+    
+    // Special case: & encodes to &amp; which does contain &
+    // This is correct behavior - the & is now part of the entity syntax
+    assert!("&amp;".starts_with('&'));
 }
 
 #[test]

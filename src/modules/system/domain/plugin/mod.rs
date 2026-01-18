@@ -5,5 +5,5 @@ pub mod registry;
 #[cfg(test)]
 mod tests;
 
-pub use entity::{Capability, Manifest, Plugin};
+pub use entity::{Capability, Manifest, MenuExtension, Plugin};
 // Note: HookRegistry, PluginHook, HookContext are available via hooks module when needed

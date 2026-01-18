@@ -184,7 +184,6 @@ mod plugin_api_tests {
     #[test]
     fn test_security_summary_risk_levels() {
         use crate::modules::system::domain::plugin::Manifest;
-        use crate::modules::system::domain::plugin::registry::RiskLevel;
 
         // Low risk - no special permissions
         let low_risk: Manifest = serde_json::from_value(json!({
