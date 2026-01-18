@@ -3,10 +3,10 @@
 // Compatible with: kyx-engine, pixco-customer-app, external-projects
 // ════════════════════════════════════════════════════════════════════════════
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 // ════════════════════════════════════════════════════════════════════════════
 // Plugin Manifest (Full Compatibility with pixco manifest.json)
@@ -23,63 +23,63 @@ pub struct Manifest {
     pub version: String,
     #[serde(default)]
     pub description: Option<String>,
-    
+
     // ─── Entry Point ─────────────────────────────────────────────────────────
     #[serde(default)]
-    pub entry: Option<String>,  // "./index.js" for frontend, path to WASM for backend
-    
+    pub entry: Option<String>, // "./index.js" for frontend, path to WASM for backend
+
     // ─── Author Information ──────────────────────────────────────────────────
     #[serde(default)]
     pub author: Option<Author>,
-    
+
     // ─── Display & Branding ──────────────────────────────────────────────────
     #[serde(default)]
-    pub icon: Option<String>,      // Emoji or URL
+    pub icon: Option<String>, // Emoji or URL
     #[serde(default)]
-    pub banner: Option<String>,    // Banner image URL
+    pub banner: Option<String>, // Banner image URL
     #[serde(default)]
-    pub category: Option<String>,  // "Entertainment", "Developer Tools", etc.
+    pub category: Option<String>, // "Entertainment", "Developer Tools", etc.
     #[serde(default)]
     pub tags: Vec<String>,
-    
+
     // ─── Security & Permissions ──────────────────────────────────────────────
     #[serde(default)]
-    pub permissions: Vec<String>,     // ["camera", "microphone"]
+    pub permissions: Vec<String>, // ["camera", "microphone"]
     #[serde(default)]
-    pub capabilities: HashSet<Capability>,  // Kernel capabilities (granular)
+    pub capabilities: HashSet<Capability>, // Kernel capabilities (granular)
     #[serde(default)]
-    pub data_access: Vec<String>,     // ["user_profile", "orders"]
+    pub data_access: Vec<String>, // ["user_profile", "orders"]
     #[serde(default)]
-    pub network_access: Vec<String>,  // ["api.example.com"]
-    
+    pub network_access: Vec<String>, // ["api.example.com"]
+
     // ─── Runtime Configuration ───────────────────────────────────────────────
     #[serde(default = "default_runtime")]
     pub runtime: RuntimeType,
-    
+
     // ─── Compatibility ───────────────────────────────────────────────────────
     #[serde(default)]
-    pub min_app_version: Option<String>,  // "2.0.0"
+    pub min_app_version: Option<String>, // "2.0.0"
     #[serde(default)]
-    pub max_app_version: Option<String>,  // Optional upper bound
-    
+    pub max_app_version: Option<String>, // Optional upper bound
+
     // ─── Metadata ────────────────────────────────────────────────────────────
     #[serde(default)]
-    pub release_date: Option<String>,     // "2024-12-15"
+    pub release_date: Option<String>, // "2024-12-15"
     #[serde(default)]
     pub changelog: Option<String>,
     #[serde(default)]
-    pub status: Option<String>,           // "stable", "beta", "deprecated"
-    
+    pub status: Option<String>, // "stable", "beta", "deprecated"
+
     // ─── Trust Indicators ────────────────────────────────────────────────────
     #[serde(default)]
-    pub verified: bool,     // Platform verified
+    pub verified: bool, // Platform verified
     #[serde(default)]
-    pub official: bool,     // Official KYX plugin
+    pub official: bool, // Official KYX plugin
     #[serde(default)]
-    pub featured: bool,     // Featured in marketplace
+    pub featured: bool, // Featured in marketplace
     #[serde(default)]
-    pub is_core_plugin: bool,  // Core platform functionality
-    
+    pub is_core_plugin: bool, // Core platform functionality
+
     // ─── Links & Documentation ───────────────────────────────────────────────
     #[serde(default)]
     pub homepage: Option<String>,
@@ -93,7 +93,7 @@ pub struct Manifest {
     pub license: Option<String>,
     #[serde(default)]
     pub privacy_policy: Option<String>,
-    
+
     // ─── Sharing & Inheritance ───────────────────────────────────────────────
     #[serde(default)]
     pub visibility: PluginVisibility, // private, shared, global
@@ -136,32 +136,32 @@ pub struct UIExtensions {
 pub struct MenuExtension {
     /// Unique ID for the menu item (e.g. "blog-dashboard")
     pub id: String,
-    
+
     /// i18n Translation Key
     /// MUST follow pattern: `plugin.{plugin_id}.{suffix}`
     /// e.g. "plugin.blog.menu.dashboard"
     pub label: String,
-    
+
     /// Target path or URL
     pub path: String,
-    
+
     /// Icon definition
     /// - Standard: Lucide/Material string (e.g. "users")
     /// - Custom: SVG string (starts with "<svg>")
     /// - Remote: URL (starts with "http")
     pub icon: Option<String>,
-    
+
     /// Target Zone ID (e.g. "sidebar.main", "mobile.bottom_nav")
     pub parent_id: Option<String>,
-    
+
     /// Sort order
     #[serde(default)]
     pub order: i32,
-    
+
     /// Required RBAC permissions to view this item
     #[serde(default)]
     pub permissions: Vec<String>,
-    
+
     /// Open in new tab?
     #[serde(default)]
     pub external: bool,
@@ -191,37 +191,37 @@ pub enum Capability {
     // ─── Storage ─────────────────────────────────────────────────────────────
     StorageRead,
     StorageWrite,
-    
+
     // ─── Events ──────────────────────────────────────────────────────────────
     EventEmit,
     EventSubscribe,
-    
+
     // ─── HTTP (outbound only) ────────────────────────────────────────────────
     HttpRequest,
-    
+
     // ─── UI Extensions ───────────────────────────────────────────────────────
     UiRegisterPage,
     UiRegisterWidget,
     UiRegisterSidebar,
     UiRegisterAdminPage,
-    
+
     // ─── Logging ─────────────────────────────────────────────────────────────
     LogInfo,
     LogWarn,
     LogError,
-    
+
     // ─── Device Access ───────────────────────────────────────────────────────
     Camera,
     Microphone,
     Geolocation,
     Notifications,
-    
+
     // ─── Data Access ─────────────────────────────────────────────────────────
     UserProfileRead,
     UserProfileWrite,
     TenantDataRead,
     TenantDataWrite,
-    
+
     // ─── Legacy (deprecated, use granular) ───────────────────────────────────
     #[serde(rename = "api")]
     Api,
@@ -231,12 +231,12 @@ pub enum Capability {
     Storage,
     #[serde(rename = "event")]
     Event,
-    
+
     // ─── Financial (REQUIRES EXPLICIT APPROVAL - Rule 4) ─────────────────────
     #[serde(rename = "financial_read")]
     FinancialRead,
     #[serde(rename = "financial_write")]
-    FinancialWrite,  // NEVER auto-granted
+    FinancialWrite, // NEVER auto-granted
 }
 
 impl Capability {
@@ -244,18 +244,21 @@ impl Capability {
     pub fn requires_approval(&self) -> bool {
         matches!(
             self,
-            Capability::FinancialRead 
-            | Capability::FinancialWrite
-            | Capability::TenantDataWrite
-            | Capability::UserProfileWrite
+            Capability::FinancialRead
+                | Capability::FinancialWrite
+                | Capability::TenantDataWrite
+                | Capability::UserProfileWrite
         )
     }
-    
+
     /// Check if this capability is dangerous (modifies critical state)
     pub fn is_dangerous(&self) -> bool {
-        matches!(self, Capability::FinancialWrite | Capability::TenantDataWrite)
+        matches!(
+            self,
+            Capability::FinancialWrite | Capability::TenantDataWrite
+        )
     }
-    
+
     /// Get capability severity level (0-3)
     pub fn severity(&self) -> u8 {
         match self {
@@ -279,10 +282,10 @@ impl Capability {
 #[serde(rename_all = "lowercase")]
 pub enum RuntimeType {
     #[default]
-    Frontend,  // Svelte/JS frontend plugin
-    Wasm,      // WASM backend plugin
-    Service,   // External service (HTTP)
-    Hybrid,    // Both frontend + backend
+    Frontend, // Svelte/JS frontend plugin
+    Wasm,    // WASM backend plugin
+    Service, // External service (HTTP)
+    Hybrid,  // Both frontend + backend
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -298,7 +301,7 @@ pub enum PluginStatus {
     Disabled,
     Error,
     Updating,
-    PendingApproval,  // For plugins with dangerous capabilities
+    PendingApproval, // For plugins with dangerous capabilities
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -314,24 +317,24 @@ pub struct Plugin {
     pub name: String,
     pub version: String,
     pub description: Option<String>,
-    
+
     // ─── Author ──────────────────────────────────────────────────────────────
     pub author: Option<String>,
     pub author_email: Option<String>,
     pub author_website: Option<String>,
-    
+
     // ─── Display ─────────────────────────────────────────────────────────────
     pub icon: Option<String>,
     pub banner: Option<String>,
     pub category: Option<String>,
     pub tags: Vec<String>,
-    
+
     // ─── Links ───────────────────────────────────────────────────────────────
     pub homepage_url: Option<String>,
     pub documentation_url: Option<String>,
     pub repository_url: Option<String>,
     pub support_url: Option<String>,
-    
+
     // ─── Runtime ─────────────────────────────────────────────────────────────
     pub runtime: String,
     pub entry_point: Option<String>,
@@ -340,27 +343,27 @@ pub struct Plugin {
     pub data_access: Vec<String>,
     pub network_access: Vec<String>,
     pub config: serde_json::Value,
-    
+
     // ─── WASM Specifics ──────────────────────────────────────────────────────
     pub wasm_path: Option<String>,
     pub wasm_hash: Option<String>,
     pub wasm_size_bytes: Option<i64>,
-    
+
     // ─── Trust & Verification ────────────────────────────────────────────────
     pub verified: bool,
     pub official: bool,
     pub featured: bool,
     pub is_core_plugin: bool,
-    
+
     // ─── Compatibility ───────────────────────────────────────────────────────
     pub min_app_version: Option<String>,
     pub max_app_version: Option<String>,
-    
+
     // ─── Status ──────────────────────────────────────────────────────────────
     pub status: String,
     pub is_active: bool,
     pub error_message: Option<String>,
-    
+
     // ─── UI Extensions ───────────────────────────────────────────────────────
     pub ui: Option<serde_json::Value>,
 
@@ -379,7 +382,7 @@ impl Plugin {
             Some(a) => (Some(a.name.clone()), a.email.clone(), a.website.clone()),
             None => (None, None, None),
         };
-        
+
         Self {
             id: Uuid::new_v4(),
             tenant_id,
@@ -387,24 +390,24 @@ impl Plugin {
             name: manifest.name.clone(),
             version: manifest.version.clone(),
             description: manifest.description.clone(),
-            
+
             // Author
             author: author_name,
             author_email,
             author_website,
-            
+
             // Display
             icon: manifest.icon.clone(),
             banner: manifest.banner.clone(),
             category: manifest.category.clone(),
             tags: manifest.tags.clone(),
-            
+
             // Links
             homepage_url: manifest.homepage.clone(),
             documentation_url: manifest.documentation.clone(),
             repository_url: manifest.repository.clone(),
             support_url: manifest.support.clone(),
-            
+
             // Runtime
             runtime: match manifest.runtime {
                 RuntimeType::Frontend => "frontend".to_string(),
@@ -413,37 +416,47 @@ impl Plugin {
                 RuntimeType::Hybrid => "hybrid".to_string(),
             },
             entry_point: manifest.entry.clone(),
-            capabilities: manifest.capabilities.iter()
-                .map(|c| serde_json::to_string(c).unwrap_or_default().trim_matches('"').to_string())
+            capabilities: manifest
+                .capabilities
+                .iter()
+                .map(|c| {
+                    serde_json::to_string(c)
+                        .unwrap_or_default()
+                        .trim_matches('"')
+                        .to_string()
+                })
                 .collect(),
             permissions: manifest.permissions.clone(),
             data_access: manifest.data_access.clone(),
             network_access: manifest.network_access.clone(),
             config: serde_json::Value::Object(serde_json::Map::new()),
-            
+
             // UI
-            ui: manifest.ui.as_ref().map(|ui| serde_json::to_value(ui).unwrap_or_default()),
+            ui: manifest
+                .ui
+                .as_ref()
+                .map(|ui| serde_json::to_value(ui).unwrap_or_default()),
 
             // WASM
             wasm_path: None,
             wasm_hash: None,
             wasm_size_bytes: None,
-            
+
             // Trust
             verified: manifest.verified,
             official: manifest.official,
             featured: manifest.featured,
             is_core_plugin: manifest.is_core_plugin,
-            
+
             // Compatibility
             min_app_version: manifest.min_app_version.clone(),
             max_app_version: manifest.max_app_version.clone(),
-            
+
             // Status
             status: "installed".to_string(),
             is_active: false,
             error_message: None,
-            
+
             // Timestamps
             installed_at: Utc::now(),
             enabled_at: None,
@@ -452,7 +465,7 @@ impl Plugin {
             updated_at: Utc::now(),
         }
     }
-    
+
     /// Get status as enum
     pub fn status_enum(&self) -> PluginStatus {
         match self.status.as_str() {
@@ -465,7 +478,7 @@ impl Plugin {
             _ => PluginStatus::Installed,
         }
     }
-    
+
     /// Check if plugin has a specific capability
     pub fn has_capability(&self, cap: &Capability) -> bool {
         let cap_str = serde_json::to_string(cap)
@@ -474,12 +487,12 @@ impl Plugin {
             .to_string();
         self.capabilities.contains(&cap_str)
     }
-    
+
     /// Check if plugin has dangerous capabilities requiring approval
     pub fn requires_approval(&self) -> bool {
-        self.capabilities.iter().any(|c| {
-            matches!(c.as_str(), "financial_write" | "tenant_data_write")
-        })
+        self.capabilities
+            .iter()
+            .any(|c| matches!(c.as_str(), "financial_write" | "tenant_data_write"))
     }
 }
 

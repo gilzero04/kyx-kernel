@@ -1,8 +1,8 @@
-use super::entity::{UserEntry, TenantMemberCount};
+use super::entity::{TenantMemberCount, UserEntry};
 use anyhow::Result;
 use async_trait::async_trait;
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct UserFilter {
@@ -31,10 +31,23 @@ pub struct PaginatedUsers {
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn list(&self, filter: UserFilter) -> Result<PaginatedUsers>;
-    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>) -> Result<bool>; // Returns found/updated
+    async fn update(
+        &self,
+        id: Uuid,
+        full_name: Option<String>,
+        is_active: Option<bool>,
+        role_slug: Option<String>,
+        tenant_id: Option<Uuid>,
+        actor_tenant_id: Option<Uuid>,
+    ) -> Result<bool>; // Returns found/updated
     async fn soft_delete(&self, id: Uuid, actor_tenant_id: Option<Uuid>) -> Result<bool>;
-    async fn update_password(&self, id: Uuid, hashed_password: String, actor_tenant_id: Option<Uuid>) -> Result<bool>;
-    
+    async fn update_password(
+        &self,
+        id: Uuid,
+        hashed_password: String,
+        actor_tenant_id: Option<Uuid>,
+    ) -> Result<bool>;
+
     // Checks
     async fn is_superadmin(&self, id: Uuid) -> Result<bool>;
     async fn count_superadmins(&self) -> Result<i64>;

@@ -1,14 +1,20 @@
-use ntex::web;
 use crate::modules::system::interface::http::handlers::system;
+use ntex::web;
 use ntex::web::DefaultError;
 
 pub fn public_routes() -> web::Scope<DefaultError> {
     web::scope("/status")
         .route("", web::get().to(system::get_system_status))
+        .route("/branding", web::get().to(system::get_system_branding))
+        .route("/version-check", web::get().to(system::version_check))
 }
 
 #[allow(dead_code)]
-pub fn tenant_routes(_config: &mut web::ServiceConfig, _jwt: std::sync::Arc<crate::core::utils::jwt::JwtService>, _audit: std::sync::Arc<crate::core::infrastructure::audit::AuditService>) {
+pub fn tenant_routes(
+    _config: &mut web::ServiceConfig,
+    _jwt: std::sync::Arc<crate::core::utils::jwt::JwtService>,
+    _audit: std::sync::Arc<crate::core::infrastructure::audit::AuditService>,
+) {
 
     // The following lines are commented out because the parameters _config, _jwt, _audit
     // are intentionally unused in the function signature to suppress warnings,
@@ -40,8 +46,8 @@ pub fn tenant_routes(_config: &mut web::ServiceConfig, _jwt: std::sync::Arc<crat
 
 #[allow(dead_code)]
 pub fn admin_routes(
-    config: &mut web::ServiceConfig, 
-    jwt: std::sync::Arc<crate::core::utils::jwt::JwtService>, 
+    config: &mut web::ServiceConfig,
+    jwt: std::sync::Arc<crate::core::utils::jwt::JwtService>,
     audit: std::sync::Arc<crate::core::infrastructure::audit::AuditService>,
     redis: Option<std::sync::Arc<crate::core::infrastructure::redis::Redis>>,
 ) {
@@ -49,19 +55,25 @@ pub fn admin_routes(
 
     config.service(
         web::resource("/settings")
-            .wrap(RequirePermission::new("system:read", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
-            .route(web::get().to(system::get_system_settings))
+            .wrap(
+                RequirePermission::new("system:read", jwt.clone(), audit.clone())
+                    .with_redis_opt(redis.clone()),
+            )
+            .route(web::get().to(system::get_system_settings)),
     );
 
     config.service(
         web::resource("/context")
-            .wrap(RequirePermission::new("system:read", jwt.clone(), audit.clone()).with_redis_opt(redis.clone()))
-            .route(web::get().to(system::get_system_context))
+            .wrap(
+                RequirePermission::new("system:read", jwt.clone(), audit.clone())
+                    .with_redis_opt(redis.clone()),
+            )
+            .route(web::get().to(system::get_system_context)),
     );
 
     config.service(
         web::resource("/test")
             .wrap(RequirePermission::new("system:read", jwt, audit).with_redis_opt(redis))
-            .route(web::get().to(system::admin_test))
+            .route(web::get().to(system::admin_test)),
     );
 }

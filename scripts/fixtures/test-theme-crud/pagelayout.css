@@ -1,0 +1,144 @@
+/* PageLayout Component - Dark Theme */
+
+.pagelayout-container {
+    min-height: 100vh;
+    padding-bottom: 5rem;
+}
+
+/* Sticky Header Wrapper */
+.pagelayout-sticky-header {
+    position: fixed;
+    top: 66px;
+    /* Mobile: adjusted to 66px */
+    left: 0;
+    right: 0;
+    z-index: 40;
+    pointer-events: none;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-sticky-header {
+        top: 64px;
+        /* Desktop: larger header */
+        left: 260px;
+        /* Sidebar width */
+        width: auto;
+    }
+}
+
+/* When sidebar collapsed */
+.sidebar-collapsed .pagelayout-sticky-header {
+    left: 80px;
+}
+
+/* Sticky Pill Case */
+.pagelayout-sticky-pill {
+    margin: 0.5rem;
+    pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-sticky-pill {
+        margin: 0.5rem 1rem;
+        max-width: calc(100% - 2rem);
+    }
+}
+
+/* Pill Content */
+.pagelayout-pill-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    background-color: var(--glass-bg, rgba(30, 30, 40, 0.7));
+    padding: 0.5rem 1rem;
+    backdrop-filter: var(--glass-blur, blur(40px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(40px));
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Page Header */
+.pagelayout-header {
+    padding: 1.5rem 1rem;
+    transition: opacity 0.3s ease;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-header {
+        padding: 1.5rem 0;
+    }
+}
+
+/* Page Main */
+.pagelayout-main {
+    padding: 0 1rem 4rem 1rem;
+}
+
+@media (min-width: 768px) {
+    .pagelayout-main {
+        padding: 0 0 4rem 0;
+    }
+}
+
+/* Footer */
+.pagelayout-footer-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.05));
+    background-color: var(--glass-bg, rgba(20, 20, 30, 0.9));
+    backdrop-filter: var(--glass-blur, blur(40px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(40px));
+}
+
+/* Full Height Mode */
+.pagelayout-container.full-height {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+}
+
+.full-height .pagelayout-main {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 1rem 0 1rem;
+}
+
+@media (min-width: 768px) {
+    .full-height .pagelayout-main {
+        padding: 0 0 2rem 0;
+    }
+}
+
+.full-height .pagelayout-main .datatable-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Section subtitle */
+.section-subtitle {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+    .section-subtitle {
+        font-size: 0.75rem;
+    }
+}

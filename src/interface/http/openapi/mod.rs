@@ -1,40 +1,52 @@
-use utoipa::{OpenApi, Modify, openapi::security::{SecurityScheme, HttpBuilder, HttpAuthScheme}};
-use crate::modules::system::interface::http::handlers::{config, system, rbac, tenant, user, audit, api_key, cors, i18n, plugin, theme};
 use crate::modules::auth::interface::http::handlers::{auth, user_preferences};
 use crate::modules::media::interface::http::handlers::media;
 use crate::modules::signal::interface::http::handlers as signal;
+use crate::modules::system::interface::http::handlers::{
+    api_key, audit, config, cors, i18n, plugin, rbac, system, tenant, theme, user,
+};
+use utoipa::{
+    Modify, OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+};
 
 // Schemas
-use crate::modules::system::interface::http::dto::config::ConfigUpdate;
-use crate::modules::system::interface::http::dto::rbac::{CreateRoleRequest, UpdateRoleRequest, CreatePermissionRequest, UpdatePermissionRequest};
-use crate::modules::system::interface::http::dto::tenant::{TenantsQuery, UpdateOwnerRequest};
-use crate::modules::system::interface::http::dto::user::{UsersQuery, UpdateUserRequest};
-use crate::modules::system::interface::http::dto::audit::LogsQuery;
 use crate::modules::system::interface::http::dto::api_key::CreateApiKeyRequest;
+use crate::modules::system::interface::http::dto::audit::LogsQuery;
+use crate::modules::system::interface::http::dto::config::ConfigUpdate;
 use crate::modules::system::interface::http::dto::cors::AddCorsRequest;
-use crate::modules::system::interface::http::dto::i18n::{TranslationsResponse, CreateI18nKeyRequest, UpdateTranslationRequest, CreateLocaleRequest};
+use crate::modules::system::interface::http::dto::i18n::{
+    CreateI18nKeyRequest, CreateLocaleRequest, TranslationsResponse, UpdateTranslationRequest,
+};
+use crate::modules::system::interface::http::dto::rbac::{
+    CreatePermissionRequest, CreateRoleRequest, UpdatePermissionRequest, UpdateRoleRequest,
+};
+use crate::modules::system::interface::http::dto::tenant::{TenantsQuery, UpdateOwnerRequest};
+use crate::modules::system::interface::http::dto::user::{UpdateUserRequest, UsersQuery};
 // Note: CreateFolderRequest and AssetQuery available via media::dto when needed
 
-use crate::modules::auth::interface::http::dto::auth::{AuthResponse, UserInfo, UserImageInfo, SetupRequest, CreateUserRequest, RefreshRequest, SignupRequest, SessionInfo, AdminSessionInfo};
 use crate::modules::auth::domain::login::UserCredentials;
+use crate::modules::auth::interface::http::dto::auth::{
+    AdminSessionInfo, AuthResponse, CreateUserRequest, RefreshRequest, SessionInfo, SetupRequest,
+    SignupRequest, UserImageInfo, UserInfo,
+};
 use crate::modules::system::domain::user::repository::PaginationMetadata;
 
 // Entities
-use crate::modules::system::domain::rbac::{Role, Permission};
-use crate::modules::system::domain::tenant::{TenantEntry, PaginatedTenants};
-use crate::modules::system::domain::user::{UserEntry, PaginatedUsers};
 use crate::modules::system::domain::api_key::ApiKey;
-use crate::modules::system::domain::cors::CorsOrigin;
 use crate::modules::system::domain::audit::AuditLogEntry;
+use crate::modules::system::domain::cors::CorsOrigin;
+use crate::modules::system::domain::rbac::{Permission, Role};
+use crate::modules::system::domain::tenant::{PaginatedTenants, TenantEntry};
+use crate::modules::system::domain::user::{PaginatedUsers, UserEntry};
 
 // Plugin Schemas
+use crate::modules::system::domain::plugin::entity::{Author, Capability, Manifest, RuntimeType};
+use crate::modules::system::domain::plugin::registry::{RiskLevel, SecuritySummary};
 use crate::modules::system::interface::http::handlers::plugin::{
-    PluginResponse, PluginListResponse, SuccessResponse, ErrorResponse,
-    InstallPluginRequest, UpdatePluginConfigRequest, TenantQuery,
-    AnalyzePluginRequest, InstallWithApprovalRequest, SecurityWarningsResponse
+    AnalyzePluginRequest, ErrorResponse, InstallPluginRequest, InstallWithApprovalRequest,
+    PluginListResponse, PluginResponse, SecurityWarningsResponse, SuccessResponse, TenantQuery,
+    UpdatePluginConfigRequest,
 };
-use crate::modules::system::domain::plugin::registry::{SecuritySummary, RiskLevel};
-use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capability, RuntimeType};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -45,7 +57,7 @@ use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capabilit
         system::get_system_info,
         system::get_system_settings,
         system::get_system_status,
-        
+
         // RBAC
         rbac::list_roles,
         rbac::create_role,
@@ -103,7 +115,7 @@ use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capabilit
         auth::initialize_system,
         auth::signup,
         auth::create_user,
-        
+
         // Sessions
         auth::list_sessions,
         auth::revoke_session,
@@ -146,12 +158,12 @@ use crate::modules::system::domain::plugin::entity::{Manifest, Author, Capabilit
     ),
     components(
         schemas(
-            ConfigUpdate, 
-            AuthResponse, 
-            UserInfo, 
-            SetupRequest, 
-            CreateUserRequest, 
-            RefreshRequest, 
+            ConfigUpdate,
+            AuthResponse,
+            UserInfo,
+            SetupRequest,
+            CreateUserRequest,
+            RefreshRequest,
             UserCredentials,
             CreateRoleRequest,
             UpdateRoleRequest,
@@ -243,4 +255,3 @@ impl Modify for SecurityAddon {
         )
     }
 }
-

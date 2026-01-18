@@ -1,8 +1,8 @@
 pub mod i18n;
 // pub use i18n::PostgresI18nRepositoryImpl;
 pub mod audit;
-pub mod theme;
 pub mod cms;
+pub mod theme;
 // pub use audit::PostgresAuditRepository;
 pub mod api_key;
 // pub use api_key::PostgresApiKeyRepository;
@@ -12,6 +12,6 @@ pub mod tenant;
 // pub use tenant::PostgresTenantRepository;
 pub mod rbac;
 // pub use rbac::PostgresRbacRepository;
-pub mod user;
 pub mod plugin;
 pub mod share;
+pub mod user;

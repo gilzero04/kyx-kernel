@@ -1,7 +1,9 @@
-use crate::modules::system::domain::user::{TenantMemberCount, UserRepository, PaginatedUsers, UserFilter};
 use crate::core::infrastructure::database::Database;
-use async_trait::async_trait;
+use crate::modules::system::domain::user::{
+    PaginatedUsers, TenantMemberCount, UserFilter, UserRepository,
+};
 use anyhow::{Result, anyhow};
+use async_trait::async_trait;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -24,7 +26,15 @@ impl UserRepository for PostgresUserRepository {
         list_query::list(&self.pool, filter).await
     }
 
-    async fn update(&self, id: Uuid, full_name: Option<String>, is_active: Option<bool>, role_slug: Option<String>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>) -> Result<bool> {
+    async fn update(
+        &self,
+        id: Uuid,
+        full_name: Option<String>,
+        is_active: Option<bool>,
+        role_slug: Option<String>,
+        tenant_id: Option<Uuid>,
+        actor_tenant_id: Option<Uuid>,
+    ) -> Result<bool> {
         let mut tx = self.pool.pool.begin().await?;
 
         // 1. Update User
@@ -37,7 +47,7 @@ impl UserRepository for PostgresUserRepository {
              AND ($4::uuid IS NULL OR EXISTS (
                  SELECT 1 FROM auth_memberships 
                  WHERE user_id = auth_users.id AND tenant_id = $4 AND deleted_at IS NULL
-             ))"
+             ))",
         )
         .bind(full_name)
         .bind(is_active)
@@ -84,14 +94,14 @@ impl UserRepository for PostgresUserRepository {
              AND ($2::uuid IS NULL OR EXISTS (
                  SELECT 1 FROM auth_memberships 
                  WHERE user_id = auth_users.id AND tenant_id = $2 AND deleted_at IS NULL
-             ))"
+             ))",
         )
-            .bind(id)
-            .bind(actor_tenant_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| anyhow!("Failed to delete user: {}", e))?;
-        
+        .bind(id)
+        .bind(actor_tenant_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| anyhow!("Failed to delete user: {}", e))?;
+
         if result.rows_affected() > 0 {
             // 2. Deactivate Memberships
             sqlx::query("UPDATE auth_memberships SET is_active = FALSE, deleted_at = NOW() WHERE user_id = $1 AND deleted_at IS NULL")
@@ -99,7 +109,7 @@ impl UserRepository for PostgresUserRepository {
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| anyhow!("Failed to deactivate user memberships: {}", e))?;
-            
+
             tx.commit().await?;
             Ok(true)
         } else {
@@ -108,14 +118,19 @@ impl UserRepository for PostgresUserRepository {
         }
     }
 
-    async fn update_password(&self, id: Uuid, hashed_password: String, actor_tenant_id: Option<Uuid>) -> Result<bool> {
+    async fn update_password(
+        &self,
+        id: Uuid,
+        hashed_password: String,
+        actor_tenant_id: Option<Uuid>,
+    ) -> Result<bool> {
         let result = sqlx::query(
             "UPDATE auth_users SET password_hash = $1, updated_at = NOW() 
              WHERE id = $2 AND deleted_at IS NULL
              AND ($3::uuid IS NULL OR EXISTS (
                  SELECT 1 FROM auth_memberships 
                  WHERE user_id = auth_users.id AND tenant_id = $3 AND deleted_at IS NULL
-             ))"
+             ))",
         )
         .bind(hashed_password)
         .bind(id)
@@ -123,7 +138,7 @@ impl UserRepository for PostgresUserRepository {
         .execute(&self.pool.pool)
         .await
         .map_err(|e| anyhow!("Failed to update user password: {}", e))?;
-        
+
         Ok(result.rows_affected() > 0)
     }
 
@@ -146,7 +161,7 @@ impl UserRepository for PostgresUserRepository {
         let count: Option<i64> = sqlx::query_scalar(
             "SELECT COUNT(*) FROM auth_memberships m 
              JOIN sys_roles r ON m.role_id = r.id 
-             WHERE r.slug = 'superadmin' AND m.is_active = TRUE AND m.deleted_at IS NULL"
+             WHERE r.slug = 'superadmin' AND m.is_active = TRUE AND m.deleted_at IS NULL",
         )
         .fetch_one(&self.pool.pool)
         .await
@@ -162,7 +177,7 @@ impl UserRepository for PostgresUserRepository {
             ) as member_count
             FROM auth_memberships m
             JOIN auth_tenants t ON m.tenant_id = t.id
-            WHERE m.user_id = $1 AND m.is_active = TRUE AND m.deleted_at IS NULL"
+            WHERE m.user_id = $1 AND m.is_active = TRUE AND m.deleted_at IS NULL",
         )
         .bind(id)
         .fetch_all(&self.pool.pool)

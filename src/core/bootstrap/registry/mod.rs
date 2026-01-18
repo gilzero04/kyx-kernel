@@ -1,16 +1,16 @@
-use std::sync::Arc;
-use std::io;
-use crate::core::infrastructure::redis::Redis;
-use crate::core::infrastructure::database::Database;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::cors::CorsManager;
+use crate::core::infrastructure::database::Database;
+use crate::core::infrastructure::redis::Redis;
 use crate::core::utils::jwt::JwtService;
 use crate::modules::auth::AuthModule;
-use crate::modules::system::SystemModule;
 use crate::modules::media::MediaModule;
+use crate::modules::system::SystemModule;
 use crate::modules::system::application::services::api_key::ApiKeyService;
 use crate::modules::system::infrastructure::repositories::api_key::PostgresApiKeyRepository;
+use std::io;
+use std::sync::Arc;
 
 pub struct Registry {
     pub audit_service: Arc<AuditService>,
@@ -37,7 +37,10 @@ impl Registry {
         let jwt_service = Arc::new(JwtService::new(jwt_secret));
 
         // Initial CORS refresh
-        cors_manager.refresh().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e.message))?;
+        cors_manager
+            .refresh()
+            .await
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.message))?;
 
         // 2. Repositories & Domain Services
         let api_key_repo = Arc::new(PostgresApiKeyRepository::new(database.clone()));
@@ -72,7 +75,9 @@ impl Registry {
         Self::spawn_background_tasks(cors_manager.clone(), system_module.clone());
 
         // Audit Log Startup
-        audit_service.log("SYSTEM", "KERNEL_STARTUP", None, "SUCCESS", None).await
+        audit_service
+            .log("SYSTEM", "KERNEL_STARTUP", None, "SUCCESS", None)
+            .await
             .map_err(|e| io::Error::new(io::ErrorKind::Other, e.message))?;
 
         Ok(Self {

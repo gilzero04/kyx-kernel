@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use crate::core::infrastructure::database::Database;
 use crate::modules::system::domain::cms::entity::PageEntry;
 use anyhow::Result;
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub struct PostgresCmsRepository {
@@ -17,7 +17,7 @@ impl PostgresCmsRepository {
         // Normalize slug - try both with and without leading slash
         let normalized_slug = slug.trim_start_matches('/').trim_end_matches('/');
         let with_slash = format!("/{}", normalized_slug);
-        
+
         let row = sqlx::query_as!(
             PageEntry,
             r#"
@@ -41,7 +41,7 @@ impl PostgresCmsRepository {
         // Normalize slug - try both with and without leading slash
         let normalized_slug = slug.trim_start_matches('/').trim_end_matches('/');
         let with_slash = format!("/{}", normalized_slug);
-        
+
         let row = sqlx::query_as!(
             PageEntry,
             r#"
@@ -87,7 +87,7 @@ impl PostgresCmsRepository {
                 OR can_access_shared_resource('page', id, $1)
             )
             ORDER BY created_at DESC
-            "#
+            "#,
         )
         .bind(tenant_id)
         .fetch_all(&self.db.pool)

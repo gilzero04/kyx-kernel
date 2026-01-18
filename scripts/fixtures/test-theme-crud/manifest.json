@@ -1,0 +1,13 @@
+{
+    "id": "d8e0a232-4678-437b-a38e-5fc1f1cea0b2",
+    "slug": "test-theme-1768750365",
+    "name": "Test Theme test-theme-1768750365",
+    "type": "light",
+    "description": "Test theme for CRUD operations",
+    "version": "1.0.1",
+    "author": "Test Script",
+    "is_system": false,
+    "preview": "images/preview.png",
+    "logo": "images/logo.png",
+    "config": {}
+}

@@ -41,7 +41,10 @@ impl PasswordPolicy {
 
         // Check minimum length
         if password.len() < self.min_length {
-            errors.push(format!("Password must be at least {} characters", self.min_length));
+            errors.push(format!(
+                "Password must be at least {} characters",
+                self.min_length
+            ));
         }
 
         // Check uppercase
@@ -60,7 +63,11 @@ impl PasswordPolicy {
         }
 
         // Check special character
-        if self.require_special && !password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:',.<>?".contains(c)) {
+        if self.require_special
+            && !password
+                .chars()
+                .any(|c| "!@#$%^&*()_+-=[]{}|;:',.<>?".contains(c))
+        {
             errors.push("Password must contain at least one special character".to_string());
         }
 
@@ -83,13 +90,33 @@ impl PasswordPolicy {
 /// Check if password is in a list of common passwords
 fn is_common_password(password: &str) -> bool {
     const COMMON_PASSWORDS: &[&str] = &[
-        "password", "123456", "12345678", "qwerty", "abc123",
-        "password123", "admin", "letmein", "welcome", "monkey",
-        "dragon", "master", "login", "passw0rd", "hello",
-        "shadow", "sunshine", "princess", "football", "baseball",
-        "1234567890", "password1", "admin123", "root", "toor",
+        "password",
+        "123456",
+        "12345678",
+        "qwerty",
+        "abc123",
+        "password123",
+        "admin",
+        "letmein",
+        "welcome",
+        "monkey",
+        "dragon",
+        "master",
+        "login",
+        "passw0rd",
+        "hello",
+        "shadow",
+        "sunshine",
+        "princess",
+        "football",
+        "baseball",
+        "1234567890",
+        "password1",
+        "admin123",
+        "root",
+        "toor",
     ];
-    
+
     let lower = password.to_lowercase();
     COMMON_PASSWORDS.iter().any(|&common| lower == common)
 }

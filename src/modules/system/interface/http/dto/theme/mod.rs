@@ -11,7 +11,7 @@ pub struct CreateThemeDto {
     pub name: String,
     pub description: Option<String>,
     pub config: serde_json::Value,
-    pub is_shared: bool,  // Replaces visibility - TRUE = broadcast to descendants
+    pub is_shared: bool, // Replaces visibility - TRUE = broadcast to descendants
     pub tenant_id: Option<Uuid>,
     pub author: Option<String>,
     pub preview_url: Option<String>,
@@ -27,7 +27,7 @@ pub struct UpdateThemeDto {
     pub name: Option<String>,
     pub description: Option<String>,
     pub config: Option<serde_json::Value>,
-    pub is_shared: Option<bool>,  // Replaces visibility
+    pub is_shared: Option<bool>, // Replaces visibility
     pub is_active: Option<bool>,
     pub author: Option<String>,
     pub preview_url: Option<String>,

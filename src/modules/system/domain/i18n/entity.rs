@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Locale {
@@ -20,7 +20,7 @@ pub struct Translation {
     pub is_auto_generated: bool,
     // Context separation fields
     pub tenant_id: Option<sqlx::types::Uuid>,
-    pub context: Option<String>,  // 'console' or 'workspace' (App uses workspace)
+    pub context: Option<String>, // 'console' or 'workspace' (App uses workspace)
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -44,7 +44,7 @@ impl I18nContext {
             I18nContext::Workspace => Some("workspace"),
         }
     }
-    
+
     pub fn from_str(s: Option<&str>) -> Self {
         match s {
             Some("console") => I18nContext::Console,
@@ -53,4 +53,3 @@ impl I18nContext {
         }
     }
 }
-

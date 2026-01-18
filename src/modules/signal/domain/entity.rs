@@ -14,7 +14,7 @@ pub struct SignalRateLimits {
 impl Default for SignalRateLimits {
     fn default() -> Self {
         Self {
-            messages_per_minute: 100,  // Generous default
+            messages_per_minute: 100, // Generous default
             connections: 10,
             rooms: 20,
         }
@@ -24,23 +24,27 @@ impl Default for SignalRateLimits {
 impl SignalRateLimits {
     /// Create rate limits with specific values
     pub fn new(messages_per_minute: u32, connections: u32, rooms: u32) -> Self {
-        Self { messages_per_minute, connections, rooms }
+        Self {
+            messages_per_minute,
+            connections,
+            rooms,
+        }
     }
-    
+
     /// Parse rate limits from features JSON (from kyx-plan plugin)
     /// Falls back to defaults if fields missing
     pub fn from_features(features: Option<&serde_json::Value>) -> Self {
         if let Some(f) = features {
             Self {
-                messages_per_minute: f.get("messages_per_minute")
+                messages_per_minute: f
+                    .get("messages_per_minute")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(100) as u32,
-                connections: f.get("max_connections")
+                connections: f
+                    .get("max_connections")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(10) as u32,
-                rooms: f.get("max_rooms")
-                    .and_then(|v| v.as_u64())
-                    .unwrap_or(20) as u32,
+                rooms: f.get("max_rooms").and_then(|v| v.as_u64()).unwrap_or(20) as u32,
             }
         } else {
             Self::default()
@@ -142,7 +146,7 @@ mod tests {
             "user:read".to_string(), // Not signal-related
         ];
         let signal_perms = PermissionMapper::map(&kernel_perms);
-        
+
         assert_eq!(signal_perms.len(), 2);
         assert!(signal_perms.contains(&"subscribe".to_string()));
         assert!(signal_perms.contains(&"publish".to_string()));
@@ -157,7 +161,7 @@ mod tests {
             "max_rooms": 50
         });
         let limits = SignalRateLimits::from_features(Some(&features));
-        
+
         assert_eq!(limits.messages_per_minute, 200);
         assert_eq!(limits.connections, 10);
         assert_eq!(limits.rooms, 50);
@@ -167,10 +171,9 @@ mod tests {
     fn test_rate_limits_defaults() {
         // Test without features (no kyx-plan plugin)
         let limits = SignalRateLimits::from_features(None);
-        
+
         assert_eq!(limits.messages_per_minute, 100);
         assert_eq!(limits.connections, 10);
         assert_eq!(limits.rooms, 20);
     }
 }
-

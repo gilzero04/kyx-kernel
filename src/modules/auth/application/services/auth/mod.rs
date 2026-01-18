@@ -1,18 +1,21 @@
-use std::sync::Arc;
-use crate::core::infrastructure::redis::Redis;
-use crate::modules::auth::domain::login::UserCredentials;
-use crate::core::utils::jwt::{JwtService, TokenType};
 use crate::core::AppError;
+use crate::core::infrastructure::redis::Redis;
+use crate::core::utils::jwt::{JwtService, TokenType};
+use crate::modules::auth::domain::login::UserCredentials;
 use anyhow::Result;
+use std::sync::Arc;
 
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::database::Database;
 use crate::core::utils::password::verify_password;
-use uuid::Uuid;
 use sqlx::Row;
+use uuid::Uuid;
 
-use crate::modules::auth::interface::http::dto::auth::{UserInfo, AuthResponse, SetupRequest, CreateUserRequest, SignupRequest, SessionInfo, AdminSessionInfo};
+use crate::modules::auth::interface::http::dto::auth::{
+    AdminSessionInfo, AuthResponse, CreateUserRequest, SessionInfo, SetupRequest, SignupRequest,
+    UserInfo,
+};
 // ApiKeyService removed as it is no longer used in AuthService
 
 pub struct AuthService {
@@ -26,15 +29,26 @@ pub struct AuthService {
 impl AuthService {
     pub fn new(
         db: Arc<Database>,
-        redis: Arc<Redis>, 
-        jwt: Arc<JwtService>, 
-        audit: Arc<AuditService>, 
+        redis: Arc<Redis>,
+        jwt: Arc<JwtService>,
+        audit: Arc<AuditService>,
         config: Arc<ConfigService>,
     ) -> Self {
-        Self { db, _redis: redis, jwt, audit, config }
+        Self {
+            db,
+            _redis: redis,
+            jwt,
+            audit,
+            config,
+        }
     }
 
-    pub async fn login(&self, creds: UserCredentials, ip: String, ua: String) -> Result<AuthResponse, AppError> {
+    pub async fn login(
+        &self,
+        creds: UserCredentials,
+        ip: String,
+        ua: String,
+    ) -> Result<AuthResponse, AppError> {
         // 1. Find User by Email
         let user_row = sqlx::query(
             "SELECT id, email, full_name, avatar_url, cover_url, hashed_password FROM auth_users WHERE email = $1"
@@ -54,18 +68,30 @@ impl AuthService {
                 row.get::<Option<String>, _>("full_name"),
                 row.get::<Option<String>, _>("avatar_url"),
                 row.get::<Option<String>, _>("cover_url"),
-                row.get::<String, _>("hashed_password")
+                row.get::<String, _>("hashed_password"),
             ),
             None => {
-                let _ = self.audit.log(&creds.username, "LOGIN_FAILURE", None, "FAILURE", None).await;
-                return Err(AppError { code: 401, message: "Invalid credentials".to_string() });
+                let _ = self
+                    .audit
+                    .log(&creds.username, "LOGIN_FAILURE", None, "FAILURE", None)
+                    .await;
+                return Err(AppError {
+                    code: 401,
+                    message: "Invalid credentials".to_string(),
+                });
             }
         };
 
         // 2. Verify Password
         if !verify_password(&creds.password, &hashed_password)? {
-            let _ = self.audit.log(&creds.username, "LOGIN_FAILURE", None, "FAILURE", None).await;
-            return Err(AppError { code: 401, message: "Invalid credentials".to_string() });
+            let _ = self
+                .audit
+                .log(&creds.username, "LOGIN_FAILURE", None, "FAILURE", None)
+                .await;
+            return Err(AppError {
+                code: 401,
+                message: "Invalid credentials".to_string(),
+            });
         }
 
         // 3. Find Membership and Role Slug
@@ -85,15 +111,18 @@ impl AuthService {
             code: 500,
             message: format!("Database error while fetching membership: {}", e),
         })?;
- 
+
         let (tenant_id_uuid, role, role_id) = match membership_row {
             Some(row) => (
                 row.get::<Uuid, _>("tenant_id"),
                 row.get::<String, _>("role_slug"),
-                row.get::<Uuid, _>("role_id")
+                row.get::<Uuid, _>("role_id"),
             ),
             None => {
-                return Err(AppError { code: 403, message: "No active tenant membership found".to_string() });
+                return Err(AppError {
+                    code: 403,
+                    message: "No active tenant membership found".to_string(),
+                });
             }
         };
 
@@ -104,18 +133,24 @@ impl AuthService {
             FROM auth_tenants t
             LEFT JOIN sys_tenant_types tt ON t.tenant_type_id = tt.id
             WHERE t.id = $1
-            "#
+            "#,
         )
         .bind(tenant_id_uuid)
         .fetch_one(&self.db.pool)
         .await
-        .map_err(|e| AppError { code: 500, message: format!("Failed to fetch tenant details: {}", e) })?;
-        
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to fetch tenant details: {}", e),
+        })?;
+
         let owner_row = sqlx::query("SELECT id FROM auth_tenants ORDER BY created_at ASC LIMIT 1")
             .fetch_one(&self.db.pool)
             .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to fetch owner: {}", e) })?;
-        
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to fetch owner: {}", e),
+            })?;
+
         let owner_id = owner_row.get::<Uuid, _>("id");
         let tenant_type = tenant_row.get::<Option<String>, _>("type_slug");
         let is_system_owner = tenant_id_uuid == owner_id;
@@ -128,7 +163,7 @@ impl AuthService {
             FROM sys_permissions p
             JOIN sys_role_permissions rp ON p.id = rp.permission_id
             WHERE rp.role_id = $1 AND p.is_active = TRUE AND p.deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(role_id)
         .fetch_all(&self.db.pool)
@@ -141,25 +176,51 @@ impl AuthService {
         let permissions: Vec<String> = permission_rows.iter().map(|r| r.get("slug")).collect();
 
         let user_id_str = user_id.to_string();
-        let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
+        let refresh_expiry = self
+            .config
+            .get_int("refresh_token_expire_minutes", 1440)
+            .await;
 
         // 5. Generate Session ID and Tokens
         let sid = Uuid::new_v4().to_string();
-        let access_token = self.jwt.generate_access_token(&user_id_str, &role, tenant_id, permissions.clone(), is_system_owner, Some(sid.clone()))?;
-        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, &role, tenant_id, permissions.clone(), is_system_owner, Some(sid.clone()))?;
-        
+        let access_token = self.jwt.generate_access_token(
+            &user_id_str,
+            &role,
+            tenant_id,
+            permissions.clone(),
+            is_system_owner,
+            Some(sid.clone()),
+        )?;
+        let refresh_token = self.jwt.generate_refresh_token(
+            &user_id_str,
+            &role,
+            tenant_id,
+            permissions.clone(),
+            is_system_owner,
+            Some(sid.clone()),
+        )?;
+
         // 5. Log and Cache Session
-        self.audit.log(&user_id_str, "LOGIN_SUCCESS", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
-        
+        self.audit
+            .log(
+                &user_id_str,
+                "LOGIN_SUCCESS",
+                Some(&tenant_id.to_string()),
+                "SUCCESS",
+                None,
+            )
+            .await?;
+
         let session_key = format!("auth:session:{}:{}", user_id_str, sid);
         let mut conn = self._redis.get_connection();
-        
+
         let session_info = SessionInfo {
             sid: sid.clone(),
             ip,
             user_agent: ua,
             created_at: chrono::Utc::now().timestamp(),
-            expires_at: (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry)).timestamp(),
+            expires_at: (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry))
+                .timestamp(),
         };
 
         let _: () = redis::cmd("SET")
@@ -174,8 +235,31 @@ impl AuthService {
                 message: format!("Failed to store session: {}", e),
             })?;
 
-        Ok(AuthResponse { 
-            access_token, 
+        // 6. Fetch user images from auth_user_images
+        let image_rows = sqlx::query(
+            "SELECT id, url, image_type, is_primary, created_at FROM auth_user_images WHERE user_id = $1 ORDER BY is_primary DESC, created_at ASC"
+        )
+        .bind(user_id)
+        .fetch_all(&self.db.pool)
+        .await
+        .unwrap_or_default();
+
+        use crate::modules::auth::interface::http::dto::auth::UserImageInfo;
+        let images: Vec<UserImageInfo> = image_rows
+            .iter()
+            .map(|r| UserImageInfo {
+                id: r.get("id"),
+                url: r.get("url"),
+                image_type: r.get("image_type"),
+                is_primary: r.get("is_primary"),
+                created_at: r
+                    .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                    .to_rfc3339(),
+            })
+            .collect();
+
+        Ok(AuthResponse {
+            access_token,
             refresh_token,
             user: UserInfo {
                 id: user_id,
@@ -186,27 +270,27 @@ impl AuthService {
                 tenant_type,
                 avatar_url,
                 cover_url,
-                images: vec![],
-            }
+                images,
+            },
         })
     }
 
     pub async fn refresh_session(&self, refresh_token: &str) -> Result<AuthResponse, AppError> {
         let claims = self.jwt.verify_token(refresh_token)?;
-        
+
         if claims.token_type != TokenType::Refresh {
             return Err(AppError {
                 code: 401,
                 message: "Invalid token type".to_string(),
             });
         }
-        
+
         let user_id = &claims.sub;
         let sid = claims.sid.clone().unwrap_or_default();
         let session_key = format!("auth:session:{}:{}", user_id, sid);
-        
+
         let mut conn = self._redis.get_connection();
-        
+
         let session_json: Option<String> = redis::cmd("GET")
             .arg(&session_key)
             .query_async(&mut conn)
@@ -215,11 +299,14 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to get session: {}", e),
             })?;
-            
+
         if let Some(json) = session_json {
             // Get dynamic expiry
             let access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
-            let refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
+            let refresh_expiry = self
+                .config
+                .get_int("refresh_token_expire_minutes", 1440)
+                .await;
 
             // Fetch User Details and Tenant Type for Response
             let user_uuid = Uuid::parse_str(user_id).unwrap_or_default();
@@ -232,7 +319,7 @@ impl AuthService {
                 LEFT JOIN sys_tenant_types tt ON t.tenant_type_id = tt.id
                 WHERE u.id = $1
                 LIMIT 1
-                "#
+                "#,
             )
             .bind(user_uuid)
             .fetch_optional(&self.db.pool)
@@ -248,14 +335,15 @@ impl AuthService {
                     row.get::<Option<String>, _>("full_name"),
                     row.get::<Option<String>, _>("avatar_url"),
                     row.get::<Option<String>, _>("cover_url"),
-                    row.get::<Option<String>, _>("tenant_type")
+                    row.get::<Option<String>, _>("tenant_type"),
                 ),
-                None => ("unknown".to_string(), None, None, None, None)
+                None => ("unknown".to_string(), None, None, None, None),
             };
 
             // Update Session in Redis
             if let Ok(mut session) = serde_json::from_str::<SessionInfo>(&json) {
-                session.expires_at = (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry)).timestamp();
+                session.expires_at =
+                    (chrono::Utc::now() + chrono::Duration::minutes(refresh_expiry)).timestamp();
                 let _: () = redis::cmd("SET")
                     .arg(&session_key)
                     .arg(serde_json::to_string(&session).unwrap_or_default())
@@ -270,14 +358,38 @@ impl AuthService {
             }
 
             let is_system_owner = claims.is_system_owner.unwrap_or(false);
-            let access_token = self.jwt.generate_access_token_dynamic(user_id, &claims.role, claims.tenant_id, claims.permissions.clone(), is_system_owner, access_expiry, claims.sid.clone())?;
-            let new_refresh_token = self.jwt.generate_refresh_token_dynamic(user_id, &claims.role, claims.tenant_id, claims.permissions.clone(), is_system_owner, refresh_expiry, claims.sid.clone())?;
-            
-            // Log refresh
-            self.audit.log(user_id, "SESSION_REFRESH", Some(&claims.tenant_id.to_string()), "SUCCESS", None).await?;
+            let access_token = self.jwt.generate_access_token_dynamic(
+                user_id,
+                &claims.role,
+                claims.tenant_id,
+                claims.permissions.clone(),
+                is_system_owner,
+                access_expiry,
+                claims.sid.clone(),
+            )?;
+            let new_refresh_token = self.jwt.generate_refresh_token_dynamic(
+                user_id,
+                &claims.role,
+                claims.tenant_id,
+                claims.permissions.clone(),
+                is_system_owner,
+                refresh_expiry,
+                claims.sid.clone(),
+            )?;
 
-            return Ok(AuthResponse { 
-                access_token, 
+            // Log refresh
+            self.audit
+                .log(
+                    user_id,
+                    "SESSION_REFRESH",
+                    Some(&claims.tenant_id.to_string()),
+                    "SUCCESS",
+                    None,
+                )
+                .await?;
+
+            return Ok(AuthResponse {
+                access_token,
                 refresh_token: new_refresh_token,
                 user: UserInfo {
                     id: user_uuid,
@@ -289,10 +401,10 @@ impl AuthService {
                     avatar_url,
                     cover_url,
                     images: vec![],
-                }
+                },
             });
         }
-        
+
         Err(AppError {
             code: 401,
             message: "Session revoked or expired".to_string(),
@@ -303,9 +415,9 @@ impl AuthService {
         let claims = self.jwt.verify_token(access_token)?;
         let sid = claims.sid.unwrap_or_default();
         let key = format!("auth:session:{}:{}", claims.sub, sid);
-        
+
         let mut conn = self._redis.get_connection();
-        
+
         let _: () = redis::cmd("DEL")
             .arg(&key)
             .query_async(&mut conn)
@@ -314,17 +426,25 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to delete session: {}", e),
             })?;
-            
+
         // Log logout
-        self.audit.log(&claims.sub, "LOGOUT", Some(&claims.tenant_id.to_string()), "SUCCESS", None).await?;
-            
+        self.audit
+            .log(
+                &claims.sub,
+                "LOGOUT",
+                Some(&claims.tenant_id.to_string()),
+                "SUCCESS",
+                None,
+            )
+            .await?;
+
         Ok(())
     }
 
     pub async fn list_sessions(&self, user_id: &Uuid) -> Result<Vec<SessionInfo>, AppError> {
         let pattern = format!("auth:session:{}:*", user_id);
         let mut conn = self._redis.get_connection();
-        
+
         let keys: Vec<String> = redis::cmd("KEYS")
             .arg(&pattern)
             .query_async(&mut conn)
@@ -333,7 +453,7 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to list sessions: {}", e),
             })?;
-            
+
         let mut sessions = Vec::new();
         for key in keys {
             let json: Option<String> = redis::cmd("GET")
@@ -341,21 +461,21 @@ impl AuthService {
                 .query_async(&mut conn)
                 .await
                 .unwrap_or(None);
-                
+
             if let Some(j) = json {
                 if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
                     sessions.push(s);
                 }
             }
         }
-        
+
         Ok(sessions)
     }
 
     pub async fn revoke_session(&self, user_id: &Uuid, sid: &str) -> Result<(), AppError> {
         let key = format!("auth:session:{}:{}", user_id, sid);
         let mut conn = self._redis.get_connection();
-        
+
         let _: () = redis::cmd("DEL")
             .arg(&key)
             .query_async(&mut conn)
@@ -364,14 +484,17 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to revoke session: {}", e),
             })?;
-            
+
         Ok(())
     }
 
-    pub async fn list_all_sessions(&self, current_sid: Option<String>) -> Result<Vec<AdminSessionInfo>, AppError> {
+    pub async fn list_all_sessions(
+        &self,
+        current_sid: Option<String>,
+    ) -> Result<Vec<AdminSessionInfo>, AppError> {
         let pattern = "auth:session:*";
         let mut conn = self._redis.get_connection();
-        
+
         // 1. Get all session keys
         let keys: Vec<String> = redis::cmd("KEYS")
             .arg(pattern)
@@ -381,39 +504,45 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to list all sessions from Redis: {}", e),
             })?;
-            
+
         let mut admin_sessions = Vec::new();
 
         // 2. Extract User IDs and SIDs from keys
         // Pattern: auth:session:{user_id}:{sid}
         for key in keys {
             let parts: Vec<&str> = key.split(':').collect();
-            if parts.len() < 4 { continue; }
-            
+            if parts.len() < 4 {
+                continue;
+            }
+
             let user_id_str = parts[2];
             let user_id = Uuid::parse_str(user_id_str).unwrap_or_default();
-            
+
             // 3. Get session info from Redis
             let json: Option<String> = redis::cmd("GET")
                 .arg(&key)
                 .query_async(&mut conn)
                 .await
                 .unwrap_or(None);
-                
+
             if let Some(j) = json {
                 if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
                     // 4. Enrich with user data from Postgres
-                    let user_row = sqlx::query("SELECT email, full_name FROM auth_users WHERE id = $1")
-                        .bind(user_id)
-                        .fetch_optional(&self.db.pool)
-                        .await
-                        .unwrap_or(None);
-                        
+                    let user_row =
+                        sqlx::query("SELECT email, full_name FROM auth_users WHERE id = $1")
+                            .bind(user_id)
+                            .fetch_optional(&self.db.pool)
+                            .await
+                            .unwrap_or(None);
+
                     let (email, full_name) = match user_row {
-                        Some(row) => (row.get::<String, _>("email"), row.get::<Option<String>, _>("full_name")),
+                        Some(row) => (
+                            row.get::<String, _>("email"),
+                            row.get::<Option<String>, _>("full_name"),
+                        ),
                         None => ("unknown".to_string(), None),
                     };
-                    
+
                     let is_current = current_sid.as_ref().map(|id| id == &s.sid).unwrap_or(false);
 
                     admin_sessions.push(AdminSessionInfo {
@@ -430,7 +559,7 @@ impl AuthService {
                 }
             }
         }
-        
+
         Ok(admin_sessions)
     }
 
@@ -446,22 +575,21 @@ impl AuthService {
                 code: 500,
                 message: format!("Database error while checking setup status: {}", e),
             })?;
-            
+
         Ok(count.unwrap_or(0) > 0)
     }
 
     /// Check if a slug is available for a new tenant
     pub async fn check_slug_availability(&self, slug: &str) -> Result<bool, AppError> {
-        let exists: Option<bool> = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM auth_tenants WHERE slug = $1)"
-        )
-        .bind(slug)
-        .fetch_one(&self.db.pool)
-        .await
-        .map_err(|e| AppError {
-            code: 500,
-            message: format!("Database error checking slug: {}", e),
-        })?;
+        let exists: Option<bool> =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auth_tenants WHERE slug = $1)")
+                .bind(slug)
+                .fetch_one(&self.db.pool)
+                .await
+                .map_err(|e| AppError {
+                    code: 500,
+                    message: format!("Database error checking slug: {}", e),
+                })?;
 
         // Returns true if slug is available (doesn't exist)
         Ok(!exists.unwrap_or(false))
@@ -489,25 +617,27 @@ impl AuthService {
         })?;
 
         // 4. Create Tenant - use provided slug or generate from org_name
-        let tenant_slug = req.org_slug
+        let tenant_slug = req
+            .org_slug
             .clone()
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| format!("org-{}", &req.org_name.to_lowercase().replace(' ', "-")));
 
-        let type_id: Uuid = sqlx::query_scalar("SELECT id FROM sys_tenant_types WHERE slug = 'owner'")
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| AppError { 
-                code: 500, 
-                message: format!("Default tenant type 'owner' not found: {}", e) 
-            })?;
+        let type_id: Uuid =
+            sqlx::query_scalar("SELECT id FROM sys_tenant_types WHERE slug = 'owner'")
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError {
+                    code: 500,
+                    message: format!("Default tenant type 'owner' not found: {}", e),
+                })?;
 
         let tenant_id = Uuid::new_v4();
-        
+
         // STEP 1: Create tenant FIRST (without branding_id, it will be updated later)
         sqlx::query(
             "INSERT INTO auth_tenants (id, parent_id, name, slug, tenant_type_id) 
-             VALUES ($1, $1, $2, $3, $4)"
+             VALUES ($1, $1, $2, $3, $4)",
         )
         .bind(tenant_id)
         .bind(&req.org_name)
@@ -524,41 +654,32 @@ impl AuthService {
         // Create TWO branding records for parent: console + workspace context
         let branding_id_console = Uuid::new_v4();
         let branding_id_workspace = Uuid::new_v4();
-        let default_primary = "#0ea5e9".to_string(); // Sky blue
-        let default_secondary = "#6366f1".to_string(); // Indigo
-        let default_accent = "#f43f5e".to_string(); // Rose
-        
+
         // Create Console branding (primary - will be linked to tenant)
         sqlx::query(
-            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
-             VALUES ($1, $2, 'console', $3, $4, $5, $6, $7, NOW(), NOW())"
+            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, created_at, updated_at)
+             VALUES ($1, $2, 'console', $3, $4, NOW(), NOW())"
         )
         .bind(branding_id_console)
         .bind(tenant_id)
         .bind(&req.org_name)  // No " Branding" suffix!
         .bind(&req.app_name)
-        .bind(req.primary_color.as_ref().unwrap_or(&default_primary))
-        .bind(req.secondary_color.as_ref().unwrap_or(&default_secondary))
-        .bind(req.accent_color.as_ref().unwrap_or(&default_accent))
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError {
             code: 500,
             message: format!("Failed to create console branding: {}", e),
         })?;
-        
+
         // Create Workspace branding (inherits from console by sharing same values)
         sqlx::query(
-            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, primary_color, secondary_color, accent_color, created_at, updated_at)
-             VALUES ($1, $2, 'workspace', $3, $4, $5, $6, $7, NOW(), NOW())"
+            "INSERT INTO sys_brandings (id, tenant_id, context, name, app_name, created_at, updated_at)
+             VALUES ($1, $2, 'workspace', $3, $4, NOW(), NOW())"
         )
         .bind(branding_id_workspace)
         .bind(tenant_id)
         .bind(&req.org_name)  // Same name, no suffix
         .bind(&req.app_name)
-        .bind(req.primary_color.as_ref().unwrap_or(&default_primary))
-        .bind(req.secondary_color.as_ref().unwrap_or(&default_secondary))
-        .bind(req.accent_color.as_ref().unwrap_or(&default_accent))
         .execute(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -576,7 +697,6 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to update tenant branding: {}", e),
             })?;
-
 
         // STEP 4: Create base RBAC roles for this tenant (BEFORE querying)
         sqlx::query(
@@ -600,24 +720,25 @@ impl AuthService {
             "INSERT INTO sys_role_permissions (role_id, permission_id)
              SELECT r.id, p.id FROM sys_roles r, sys_permissions p
              WHERE r.slug = 'superadmin' AND r.tenant_id = $1
-             ON CONFLICT DO NOTHING"
+             ON CONFLICT DO NOTHING",
         )
         .bind(tenant_id)
         .execute(&mut *tx)
         .await
         .ok(); // Non-critical, ignore errors
 
-        // 5. Create User
-        use crate::core::utils::avatar::generate_default_avatar;
-        let default_avatar = generate_default_avatar(&req.full_name);
+        // 5. Create User with auto-generated avatar, cover, and images
+        use crate::core::utils::avatar::generate_user_images;
+        let user_images = generate_user_images(&req.full_name);
         let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
         let user_row = sqlx::query(
-            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url, cover_url) VALUES ($1, $2, $3, $4, $5) RETURNING id"
         )
         .bind(&req.email)
         .bind(hashed_pw)
         .bind(&req.full_name)
-        .bind(default_avatar)
+        .bind(&user_images.avatar_url)
+        .bind(&user_images.cover_url)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -627,18 +748,32 @@ impl AuthService {
 
         let user_id = user_row.get::<Uuid, _>("id");
 
-        // 6. Get Role ID for SuperAdmin (now exists!)
-        let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin' AND tenant_id = $1")
-            .bind(tenant_id)
-            .fetch_one(&mut *tx)
+        // Insert auto-generated images into auth_user_images
+        for (idx, img_url) in user_images.images.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO auth_user_images (user_id, url, image_type, is_primary) VALUES ($1, $2, $3, $4)"
+            )
+            .bind(user_id)
+            .bind(img_url)
+            .bind("gallery")
+            .bind(idx == 0)  // first image is primary
+            .execute(&mut *tx)
             .await
-            .map_err(|e| AppError {
-                code: 500,
-                message: format!("Failed to find superadmin role: {}", e),
-            })?;
-        
-        let role_id = role_row.get::<Uuid, _>("id");
+            .ok(); // Non-critical, ignore errors
+        }
 
+        // 6. Get Role ID for SuperAdmin (now exists!)
+        let role_row =
+            sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin' AND tenant_id = $1")
+                .bind(tenant_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| AppError {
+                    code: 500,
+                    message: format!("Failed to find superadmin role: {}", e),
+                })?;
+
+        let role_id = role_row.get::<Uuid, _>("id");
 
         // 6. Create Membership
         sqlx::query(
@@ -661,7 +796,7 @@ impl AuthService {
         // Seed Default Homepage
         use crate::core::utils::seeding::get_default_home_page_content;
         let home_page_content = get_default_home_page_content(&req.org_name);
-        
+
         sqlx::query(
             "INSERT INTO sys_pages (tenant_id, slug, title, content, is_published) VALUES ($1, $2, $3, $4, $5)"
         )
@@ -679,39 +814,53 @@ impl AuthService {
 
         // 7. Handover orphaned records (Themes, Pages, Configs seeded during first boot)
         // These are records created with NULL tenant_id before setup was completed.
-        
+
         // Update Pages
         sqlx::query("UPDATE sys_pages SET tenant_id = $1 WHERE tenant_id IS NULL")
             .bind(tenant_id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to handover pages: {}", e) })?;
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to handover pages: {}", e),
+            })?;
 
         // Update Themes
         sqlx::query("UPDATE sys_themes SET tenant_id = $1 WHERE tenant_id IS NULL")
             .bind(tenant_id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to handover themes: {}", e) })?;
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to handover themes: {}", e),
+            })?;
 
         // Update Roles - Assign global roles (tenant_id = NULL) to the owner
         // ONLY assign roles that the owner doesn't already have (skip duplicates)
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             UPDATE sys_roles SET tenant_id = $1 
             WHERE tenant_id IS NULL 
             AND slug NOT IN (SELECT slug FROM sys_roles WHERE tenant_id = $1)
-        "#)
-            .bind(tenant_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to handover roles: {}", e) })?;
+        "#,
+        )
+        .bind(tenant_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to handover roles: {}", e),
+        })?;
 
         // Update API Keys
         sqlx::query("UPDATE sys_api_keys SET tenant_id = $1 WHERE tenant_id IS NULL")
             .bind(tenant_id)
             .execute(&mut *tx)
             .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to handover api keys: {}", e) })?;
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to handover api keys: {}", e),
+            })?;
 
         // Update Configs (Assign to platform scope by default during handover)
         sqlx::query("UPDATE sys_configs SET tenant_id = $1, scope = COALESCE(scope, 'platform') WHERE tenant_id IS NULL")
@@ -719,6 +868,26 @@ impl AuthService {
             .execute(&mut *tx)
             .await
             .map_err(|e| AppError { code: 500, message: format!("Failed to handover configs: {}", e) })?;
+
+        // Update Plugins (Assign orphaned plugins to platform owner)
+        sqlx::query("UPDATE sys_plugins SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to handover plugins: {}", e),
+            })?;
+
+        // Update i18n Translations (Assign orphaned translations to platform owner)
+        sqlx::query("UPDATE sys_i18n_translations SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError {
+                code: 500,
+                message: format!("Failed to handover translations: {}", e),
+            })?;
 
         tx.commit().await.map_err(|e| AppError {
             code: 500,
@@ -729,16 +898,39 @@ impl AuthService {
         let user_id_str = user_id.to_string();
         let tenant_id = tenant_id; // Uuid
         let _access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
-        let _refresh_expiry = self.config.get_int("refresh_token_expire_minutes", 1440).await;
-        
-        let access_token = self.jwt.generate_access_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
-        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, "superadmin", tenant_id, vec!["system:manage".to_string()], true, None)?;
+        let _refresh_expiry = self
+            .config
+            .get_int("refresh_token_expire_minutes", 1440)
+            .await;
+
+        let access_token = self.jwt.generate_access_token(
+            &user_id_str,
+            "superadmin",
+            tenant_id,
+            vec!["system:manage".to_string()],
+            true,
+            None,
+        )?;
+        let refresh_token = self.jwt.generate_refresh_token(
+            &user_id_str,
+            "superadmin",
+            tenant_id,
+            vec!["system:manage".to_string()],
+            true,
+            None,
+        )?;
 
         // 7. Branding is now stored in sys_brandings (created above)
         // No need to persist in sys_configs anymore
 
         // 8. Persist Platform Mode
-        let _ = self.config.set("platform_type", serde_json::Value::String(req.platform_type)).await;
+        let _ = self
+            .config
+            .set(
+                "platform_type",
+                serde_json::Value::String(req.platform_type),
+            )
+            .await;
 
         // 9. Set Default Themes (Kyx Light / Kyx Dark)
         // We look for themes named "light" and "dark" (seeded by system) or contain "Kyx"
@@ -755,7 +947,7 @@ impl AuthService {
         // Update theme columns correctly per context:
         // Console: uses theme_light_id, theme_dark_id ONLY
         // Workspace: uses theme_workspace_*, theme_app_* ONLY (inherits from console if NULL)
-        
+
         if let Some(row) = &light_theme_row {
             let id: Uuid = row.get("id");
             // Console: set theme_light_id only
@@ -792,12 +984,19 @@ impl AuthService {
                 .ok();
         }
 
-
         // 10. Audit & Cache
-        self.audit.log(&user_id_str, "SYSTEM_INITIALIZED", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
+        self.audit
+            .log(
+                &user_id_str,
+                "SYSTEM_INITIALIZED",
+                Some(&tenant_id.to_string()),
+                "SUCCESS",
+                None,
+            )
+            .await?;
 
-        Ok(AuthResponse { 
-            access_token, 
+        Ok(AuthResponse {
+            access_token,
             refresh_token,
             user: UserInfo {
                 id: user_id,
@@ -809,10 +1008,9 @@ impl AuthService {
                 avatar_url: None,
                 cover_url: None,
                 images: vec![],
-            }
+            },
         })
     }
-
 
     pub async fn create_user(&self, req: CreateUserRequest) -> Result<Uuid, AppError> {
         // 1. Check Role Limit
@@ -828,18 +1026,19 @@ impl AuthService {
             message: format!("Transaction error: {}", e),
         })?;
 
-        use crate::core::utils::avatar::generate_default_avatar;
-        let default_avatar = generate_default_avatar(&req.full_name);
+        use crate::core::utils::avatar::generate_user_images;
+        let user_images = generate_user_images(&req.full_name);
         let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
-        
-        // 2. Create User
+
+        // 2. Create User with auto-generated avatar, cover, and images
         let user_row = sqlx::query(
-            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url, cover_url) VALUES ($1, $2, $3, $4, $5) RETURNING id"
         )
         .bind(&req.email)
         .bind(hashed_pw)
         .bind(&req.full_name)
-        .bind(default_avatar)
+        .bind(&user_images.avatar_url)
+        .bind(&user_images.cover_url)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -848,6 +1047,20 @@ impl AuthService {
         })?;
 
         let user_id = user_row.get::<Uuid, _>("id");
+
+        // Insert auto-generated images into auth_user_images
+        for (idx, img_url) in user_images.images.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO auth_user_images (user_id, url, image_type, is_primary) VALUES ($1, $2, $3, $4)"
+            )
+            .bind(user_id)
+            .bind(img_url)
+            .bind("gallery")
+            .bind(idx == 0)
+            .execute(&mut *tx)
+            .await
+            .ok();
+        }
 
         // 3. Get Role ID
         let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = $1")
@@ -862,7 +1075,7 @@ impl AuthService {
                 code: 404,
                 message: format!("Role '{}' not found", req.role_slug),
             })?;
-        
+
         let role_id = role_row.get::<Uuid, _>("id");
 
         // 4. Create Membership
@@ -885,7 +1098,15 @@ impl AuthService {
             message: format!("Commit failed: {}", e),
         })?;
 
-        self.audit.log(&user_id.to_string(), "USER_CREATED", Some(&req.tenant_id.to_string()), "SUCCESS", None).await?;
+        self.audit
+            .log(
+                &user_id.to_string(),
+                "USER_CREATED",
+                Some(&req.tenant_id.to_string()),
+                "SUCCESS",
+                None,
+            )
+            .await?;
 
         Ok(user_id)
     }
@@ -905,14 +1126,16 @@ impl AuthService {
                 row.get::<Uuid, _>("id"),
                 row.get::<Option<i32>, _>("max_members"),
             ),
-            None => return Err(AppError {
-                code: 404,
-                message: format!("Role '{}' not found", role_slug),
-            }),
+            None => {
+                return Err(AppError {
+                    code: 404,
+                    message: format!("Role '{}' not found", role_slug),
+                });
+            }
         };
 
         let override_row = sqlx::query(
-            "SELECT max_members FROM sys_tenant_role_limits WHERE tenant_id = $1 AND role_id = $2"
+            "SELECT max_members FROM sys_tenant_role_limits WHERE tenant_id = $1 AND role_id = $2",
         )
         .bind(tenant_id)
         .bind(role_id)
@@ -930,7 +1153,7 @@ impl AuthService {
             let count: i64 = sqlx::query_scalar(
                 r#"SELECT COUNT(*) FROM auth_memberships m
                  JOIN auth_users u ON m.user_id = u.id
-                 WHERE m.tenant_id = $1 AND m.role_id = $2 AND u.deleted_at IS NULL"#
+                 WHERE m.tenant_id = $1 AND m.role_id = $2 AND u.deleted_at IS NULL"#,
             )
             .bind(tenant_id)
             .bind(role_id)
@@ -944,7 +1167,10 @@ impl AuthService {
             if count >= max as i64 {
                 return Err(AppError {
                     code: 400,
-                    message: format!("Role limit reached for '{}'. Max allowed: {}", role_slug, max),
+                    message: format!(
+                        "Role limit reached for '{}'. Max allowed: {}",
+                        role_slug, max
+                    ),
                 });
             }
         }
@@ -986,7 +1212,7 @@ impl AuthService {
                 code: 400,
                 message: format!("Tenant type '{}' not found", req.plan_type),
             })?;
-        
+
         let tenant_type_id = type_row.get::<Uuid, _>("id");
 
         // 5. Create Tenant
@@ -1006,17 +1232,18 @@ impl AuthService {
 
         let tenant_id = tenant_row.get::<Uuid, _>("id");
 
-        // 6. Create User
-        use crate::core::utils::avatar::generate_default_avatar;
-        let default_avatar = generate_default_avatar(&req.full_name);
+        // 6. Create User with auto-generated avatar, cover, and images
+        use crate::core::utils::avatar::generate_user_images;
+        let user_images = generate_user_images(&req.full_name);
         let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
         let user_row = sqlx::query(
-            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id"
+            "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url, cover_url) VALUES ($1, $2, $3, $4, $5) RETURNING id"
         )
         .bind(&req.email)
         .bind(hashed_pw)
         .bind(&req.full_name)
-        .bind(default_avatar)
+        .bind(&user_images.avatar_url)
+        .bind(&user_images.cover_url)
         .fetch_one(&mut *tx)
         .await
         .map_err(|e| AppError {
@@ -1026,6 +1253,20 @@ impl AuthService {
 
         let user_id = user_row.get::<Uuid, _>("id");
 
+        // Insert auto-generated images into auth_user_images
+        for (idx, img_url) in user_images.images.iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO auth_user_images (user_id, url, image_type, is_primary) VALUES ($1, $2, $3, $4)"
+            )
+            .bind(user_id)
+            .bind(img_url)
+            .bind("gallery")
+            .bind(idx == 0)
+            .execute(&mut *tx)
+            .await
+            .ok();
+        }
+
         // 7. Find 'superadmin' role (all tenants have one admin)
         let role_row = sqlx::query("SELECT id FROM sys_roles WHERE slug = 'superadmin'")
             .fetch_one(&mut *tx)
@@ -1034,7 +1275,7 @@ impl AuthService {
                 code: 500,
                 message: format!("Failed to find superadmin role: {}", e),
             })?;
-        
+
         let role_id = role_row.get::<Uuid, _>("id");
 
         // 6. Create Membership
@@ -1078,7 +1319,7 @@ impl AuthService {
 
         // 9. Generate Tokens
         let user_id_str = user_id.to_string();
-        
+
         // Fetch permissions for the role
         let permission_rows = sqlx::query(
             r#"
@@ -1086,7 +1327,7 @@ impl AuthService {
             FROM sys_permissions p
             JOIN sys_role_permissions rp ON p.id = rp.permission_id
             WHERE rp.role_id = $1 AND p.is_active = TRUE AND p.deleted_at IS NULL
-            "#
+            "#,
         )
         .bind(role_id)
         .fetch_all(&self.db.pool)
@@ -1099,14 +1340,36 @@ impl AuthService {
         let permissions: Vec<String> = permission_rows.iter().map(|r| r.get("slug")).collect();
 
         // For internal use or platform setup, we can use None for sid
-        let access_token = self.jwt.generate_access_token(&user_id_str, "superadmin", tenant_id, permissions.clone(), false, None)?;
-        let refresh_token = self.jwt.generate_refresh_token(&user_id_str, "superadmin", tenant_id, permissions.clone(), false, None)?;
+        let access_token = self.jwt.generate_access_token(
+            &user_id_str,
+            "superadmin",
+            tenant_id,
+            permissions.clone(),
+            false,
+            None,
+        )?;
+        let refresh_token = self.jwt.generate_refresh_token(
+            &user_id_str,
+            "superadmin",
+            tenant_id,
+            permissions.clone(),
+            false,
+            None,
+        )?;
 
         // 10. Audit & Cache
-        self.audit.log(&user_id_str, "USER_SIGNUP", Some(&tenant_id.to_string()), "SUCCESS", None).await?;
+        self.audit
+            .log(
+                &user_id_str,
+                "USER_SIGNUP",
+                Some(&tenant_id.to_string()),
+                "SUCCESS",
+                None,
+            )
+            .await?;
 
-        Ok(AuthResponse { 
-            access_token, 
+        Ok(AuthResponse {
+            access_token,
             refresh_token,
             user: UserInfo {
                 id: user_id,
@@ -1118,7 +1381,7 @@ impl AuthService {
                 avatar_url: None,
                 cover_url: None,
                 images: vec![],
-            }
+            },
         })
     }
 
@@ -1127,7 +1390,10 @@ impl AuthService {
     // ════════════════════════════════════════════════════════════════════════════
 
     /// Get current user profile
-    pub async fn get_profile(&self, user_id: &Uuid) -> Result<crate::modules::auth::interface::http::dto::auth::ProfileResponse, AppError> {
+    pub async fn get_profile(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<crate::modules::auth::interface::http::dto::auth::ProfileResponse, AppError> {
         use crate::modules::auth::interface::http::dto::auth::{ProfileResponse, UserImageInfo};
 
         // Get user
@@ -1149,16 +1415,19 @@ impl AuthService {
         .await
         .map_err(|e| AppError { code: 500, message: format!("Database error: {}", e) })?;
 
-        let images: Vec<UserImageInfo> = image_rows.iter().map(|r| {
-            let created: chrono::DateTime<chrono::Utc> = r.get("created_at");
-            UserImageInfo {
-                id: r.get("id"),
-                url: r.get("url"),
-                image_type: r.get("image_type"),
-                is_primary: r.get("is_primary"),
-                created_at: created.to_rfc3339(),
-            }
-        }).collect();
+        let images: Vec<UserImageInfo> = image_rows
+            .iter()
+            .map(|r| {
+                let created: chrono::DateTime<chrono::Utc> = r.get("created_at");
+                UserImageInfo {
+                    id: r.get("id"),
+                    url: r.get("url"),
+                    image_type: r.get("image_type"),
+                    is_primary: r.get("is_primary"),
+                    created_at: created.to_rfc3339(),
+                }
+            })
+            .collect();
 
         let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
 
@@ -1174,7 +1443,12 @@ impl AuthService {
     }
 
     /// Update user profile (name, cover)
-    pub async fn update_profile(&self, user_id: &Uuid, full_name: Option<String>, cover_url: Option<String>) -> Result<(), AppError> {
+    pub async fn update_profile(
+        &self,
+        user_id: &Uuid,
+        full_name: Option<String>,
+        cover_url: Option<String>,
+    ) -> Result<(), AppError> {
         let mut updates = Vec::new();
         let mut bind_idx = 1;
 
@@ -1207,17 +1481,30 @@ impl AuthService {
         }
         q = q.bind(user_id);
 
-        q.execute(&self.db.pool)
-            .await
-            .map_err(|e| AppError { code: 500, message: format!("Failed to update profile: {}", e) })?;
+        q.execute(&self.db.pool).await.map_err(|e| AppError {
+            code: 500,
+            message: format!("Failed to update profile: {}", e),
+        })?;
 
-        self.audit.log(&user_id.to_string(), "PROFILE_UPDATED", None, "SUCCESS", None).await?;
+        self.audit
+            .log(
+                &user_id.to_string(),
+                "PROFILE_UPDATED",
+                None,
+                "SUCCESS",
+                None,
+            )
+            .await?;
 
         Ok(())
     }
 
     /// Update user avatar
-    pub async fn update_avatar(&self, user_id: &Uuid, avatar_url: &str) -> Result<String, AppError> {
+    pub async fn update_avatar(
+        &self,
+        user_id: &Uuid,
+        avatar_url: &str,
+    ) -> Result<String, AppError> {
         // Update avatar_url in auth_users
         sqlx::query("UPDATE auth_users SET avatar_url = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL")
             .bind(avatar_url)
@@ -1244,7 +1531,15 @@ impl AuthService {
             .await
             .ok();
 
-        self.audit.log(&user_id.to_string(), "AVATAR_UPDATED", None, "SUCCESS", None).await?;
+        self.audit
+            .log(
+                &user_id.to_string(),
+                "AVATAR_UPDATED",
+                None,
+                "SUCCESS",
+                None,
+            )
+            .await?;
 
         Ok(avatar_url.to_string())
     }

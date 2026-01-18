@@ -1,7 +1,7 @@
-use crate::modules::system::domain::audit::{AuditRepository, AuditLogFilter, PaginatedAuditLogs};
 use crate::core::infrastructure::database::Database;
-use async_trait::async_trait;
+use crate::modules::system::domain::audit::{AuditLogFilter, AuditRepository, PaginatedAuditLogs};
 use anyhow::Result;
+use async_trait::async_trait;
 use std::sync::Arc;
 
 mod list_query;

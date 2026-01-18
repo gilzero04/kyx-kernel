@@ -1,11 +1,11 @@
 use crate::core::domain::event_bus::EventBus;
-use async_trait::async_trait;
 use anyhow::Result;
+use async_trait::async_trait;
 use serde::Serialize;
-use tokio::sync::broadcast;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::sync::broadcast;
 
 pub struct InMemoryEventBus {
     // Mapping from topic to broadcast sender
@@ -30,16 +30,17 @@ impl EventBus for InMemoryEventBus {
     {
         let event_json = serde_json::to_string(&event)?;
         let mut channels = self.channels.lock().await;
-        
+
         if let Some(sender) = channels.get(topic) {
             let _ = sender.send(event_json);
         } else {
             // If no channel exists, create one (lazy initialization)
-            let (tx, _) = broadcast::channel(100);
+            // Capacity 1000 for backpressure - drops oldest if full
+            let (tx, _) = broadcast::channel(1000);
             let _ = tx.send(event_json);
             channels.insert(topic.to_string(), tx);
         }
-        
+
         Ok(())
     }
 

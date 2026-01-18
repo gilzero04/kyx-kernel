@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UserInfo {
@@ -40,9 +40,6 @@ pub struct SetupRequest {
     pub org_slug: Option<String>,
     pub app_name: Option<String>,
     pub platform_type: String, // 'single' | 'multi'
-    pub primary_color: Option<String>,
-    pub secondary_color: Option<String>,
-    pub accent_color: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

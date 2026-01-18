@@ -1,0 +1,331 @@
+/**
+ * KYX Light Theme - CSS Variables Foundation
+ * =========================================
+ * Converted from kyx-dark to light mode
+ * Uses oklch() for perceptually uniform colors
+ * 
+ * ONLY THIS FILE differs from kyx-dark!
+ */
+
+:root {
+  /* ==========================================
+   * BASE COLORS (Background Layers) - LIGHT MODE
+   * ========================================== */
+  
+  /* Base 100: Primary background (lightest) */
+  --color-base-100: oklch(98% 0.01 256);         /* #f8fafc */
+  --color-base-100-rgb: 248, 250, 252;
+  
+  /* Base 200: Surface/Card background */
+  --color-base-200: oklch(96% 0.01 256);         /* #f1f5f9 */
+  --color-base-200-rgb: 241, 245, 249;
+  
+  /* Base 300: Elevated surfaces */
+  --color-base-300: oklch(92% 0.02 256);         /* #e2e8f0 */
+  --color-base-300-rgb: 226, 232, 240;
+  
+  /* Base Content: Primary text on light bg (DARK) */
+  --color-base-content: oklch(20% 0.03 256);     /* #0f172a */
+  --color-base-content-rgb: 15, 23, 42;
+  
+  /* ==========================================
+   * BRAND COLORS (same as dark)
+   * ========================================== */
+  
+  /* Primary: Cyan */
+  --color-primary: oklch(55% 0.18 195);          /* #0891b2 */
+  --color-primary-rgb: 8, 145, 178;
+  --color-primary-content: oklch(100% 0 0);      /* white */
+  --color-primary-hover: oklch(48% 0.16 195);    /* #0e7490 */
+  
+  /* Secondary: Blue */
+  --color-secondary: oklch(50% 0.22 261);        /* #2563eb */
+  --color-secondary-rgb: 37, 99, 235;
+  --color-secondary-content: oklch(100% 0 0);
+  
+  /* Accent: Purple */
+  --color-accent: oklch(48% 0.28 293);           /* #7c3aed */
+  --color-accent-rgb: 124, 58, 237;
+  --color-accent-content: oklch(100% 0 0);
+  
+  /* Neutral: Slate */
+  --color-neutral: oklch(60% 0.02 256);          /* #64748b */
+  --color-neutral-rgb: 100, 116, 139;
+  --color-neutral-content: oklch(100% 0 0);
+  
+  /* ==========================================
+   * SEMANTIC COLORS (same as dark)
+   * ========================================== */
+  
+  --color-info: oklch(50% 0.22 261);             /* #2563eb */
+  --color-info-rgb: 37, 99, 235;
+  --color-info-content: oklch(100% 0 0);
+  
+  --color-success: oklch(55% 0.22 145);          /* #16a34a */
+  --color-success-rgb: 22, 163, 74;
+  --color-success-content: oklch(100% 0 0);
+  
+  --color-warning: oklch(70% 0.18 75);           /* #d97706 */
+  --color-warning-rgb: 217, 119, 6;
+  --color-warning-content: oklch(15% 0.05 75);
+  
+  --color-error: oklch(52% 0.25 27);             /* #dc2626 */
+  --color-error-rgb: 220, 38, 38;
+  --color-error-content: oklch(100% 0 0);
+  
+  /* ==========================================
+   * TEXT COLORS - DARK ON LIGHT
+   * ========================================== */
+  --color-text-primary: var(--color-base-content);
+  --color-text-secondary: oklch(45% 0.02 256);   /* #475569 */
+  --color-text-muted: oklch(55% 0.02 256);       /* #64748b */
+  --color-text-disabled: oklch(70% 0.01 256);    /* #94a3b8 */
+  
+  /* ==========================================
+   * INTERACTIVE COLORS - LIGHT MODE
+   * ========================================== */
+  --color-border: oklch(85% 0.02 256);           /* #cbd5e1 */
+  --color-border-subtle: oklch(90% 0.01 256 / 0.6);
+  --color-ring: var(--color-primary);
+  --color-input-bg: oklch(100% 0 0);             /* white */
+  
+  /* ==========================================
+   * GLASS/SURFACE EFFECTS - LIGHT MODE
+   * ========================================== */
+  --glass-bg: oklch(100% 0 0 / 0.15);            /* Light white tint - not too dark */
+  --glass-border: oklch(88% 0.04 195 / 0.6);     /* Thicker, more visible cyan border */
+  --glass-blur: blur(40px);
+  --glass-shadow: none;                          /* No shadow for clean look */
+  
+  --color-popover: oklch(100% 0 0 / 0.95);
+  --color-popover-content: var(--color-base-content);
+  --color-card: oklch(100% 0 0 / 0.8);
+  --color-card-content: var(--color-base-content);
+  
+  /* ==========================================
+   * SPACING SCALE (same as dark)
+   * ========================================== */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  
+  /* ==========================================
+   * BORDER RADIUS (same as dark)
+   * ========================================== */
+  --radius-selector: 0.25rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --radius-full: 9999px;
+  
+  /* ==========================================
+   * TYPOGRAPHY (same as dark)
+   * ========================================== */
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-heading: 'Playfair Display', serif;
+  --font-family-mono: 'Fira Code', 'JetBrains Mono', monospace;
+  
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* ==========================================
+   * HEADING HIERARCHY (Semantic Typography)
+   * ==========================================
+   * Standardized sizes for consistent visual hierarchy
+   * Page > Section > Card > Label
+   */
+  --heading-page: 1.5rem;            /* 24px - PageHeader title (largest) */
+  --heading-page-mobile: 1.25rem;    /* 20px */
+  --heading-section: 1.125rem;       /* 18px - Section headers */
+  --heading-section-mobile: 1rem;    /* 16px */
+  --heading-card: 1rem;              /* 16px - Card titles */
+  --heading-card-mobile: 0.9375rem;  /* 15px */
+  --heading-label: 0.5625rem;        /* 9px - Breadcrumb, subtitle */
+  
+  /* Stat Card Typography */
+  --stat-value: 1.25rem;              /* 20px - Stat numbers (smaller than page title) */
+  --stat-value-mobile: 1.125rem;      /* 18px */
+  --stat-label: 0.625rem;             /* 10px - Stat labels */
+  
+  /* ==========================================
+   * SHADOWS - Lighter for light mode
+   * ========================================== */
+  --shadow-xs: 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow-sm: 0 2px 4px oklch(0% 0 0 / 0.06);
+  --shadow-md: 0 4px 8px oklch(0% 0 0 / 0.08);
+  --shadow-lg: 0 8px 16px oklch(0% 0 0 / 0.1);
+  --shadow-xl: 0 16px 32px oklch(0% 0 0 / 0.12);
+  
+  /* ==========================================
+   * TRANSITIONS (same as dark)
+   * ========================================== */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  /* ==========================================
+   * Z-INDEX SCALE (same as dark)
+   * ========================================== */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  --z-splash: 9999;
+  
+  /* ==========================================
+   * THEME-SPECIFIC: Sunrise Pearl Azure
+   * ========================================== */
+  --color-sea-morning: #f0f9ff;
+  --color-sea-azure: var(--color-base-200);
+  --color-sun-gold: #fbbf24;
+  
+  --bg-gradient: linear-gradient(
+    135deg,
+    var(--color-base-100) 0%,
+    var(--color-base-200) 25%,
+    var(--color-base-300) 50%,
+    var(--color-base-200) 75%,
+    var(--color-base-100) 100%
+  );
+  
+  --particle-color: oklch(55% 0.18 195 / 0.4);
+  --particle-shadow: oklch(55% 0.18 195 / 0.2);
+  --wave-color: oklch(55% 0.18 195 / 0.15);
+  
+  /* Sidebar Aura - Light mode */
+  --aura-colors: #0891b2 15%, #0ea5e9 30%, transparent 45%, #38bdf8 60%, #e0f2fe 75%;
+  --aura-icon-glow: rgba(8, 145, 178, 0.5);
+  --aura-opacity: 0.25;
+  --aura-rotation-speed: 25s;
+  
+  /* Theme Toggle Icon - Yin Yang (Sun/Warm version for light theme) */
+  --theme-toggle-icon: url("data:image/svg+xml,%3csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='12' cy='12' r='11' stroke='%23fbbf24' stroke-width='1.5'/%3e%3cpath d='M12 1A11 11 0 0 0 12 23A5.5 5.5 0 0 0 12 12A5.5 5.5 0 0 1 12 1z' fill='%23fef3c7'/%3e%3ccircle cx='12' cy='6.5' r='1.5' fill='%23f59e0b'/%3e%3ccircle cx='12' cy='17.5' r='1.5' fill='%23fef3c7'/%3e%3c/svg%3e");
+  
+  --bg-opacity: 1.0;
+  
+  /* ==========================================
+   * SIDEBAR DIMENSION VARIABLES (same as dark)
+   * ========================================== */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 80px;
+  --sidebar-header-height: 48px;
+  --sidebar-mini-icon-size: 20px;
+  --sidebar-mini-item-size: 32px;
+  --sidebar-mini-context-size: 48px;
+  --sidebar-mini-user-btn-size: 32px;
+  --sidebar-mini-user-btn-radius: 10px;
+  --sidebar-toggle-size: 36px;
+  --sidebar-toggle-top: 12px;
+  --sidebar-toggle-top-collapsed: 12px;
+  --sidebar-context-inner-size: 36px;
+  --sidebar-context-icon-size: 20px;
+  
+  /* ==========================================
+   * HEADER COMPONENT VARIABLES - LIGHT MODE
+   * ========================================== */
+  --header-bg: rgba(255, 255, 255, 0.25);      /* Reduced from 0.7 to match glass effect */
+  --header-border: rgba(8, 145, 178, 0.12);
+  --header-text: #0f172a;
+  --header-input-bg: rgba(0, 0, 0, 0.03);
+  --header-input-bg-hover: rgba(0, 0, 0, 0.06);
+  
+  /* ==========================================
+   * FOOTER COMPONENT VARIABLES - LIGHT MODE
+   * ========================================== */
+  --footer-bg: rgba(255, 255, 255, 0.7);
+  --footer-border: rgba(8, 145, 178, 0.12);
+  --footer-text: rgba(15, 23, 42, 0.6);
+  --footer-message: #0891b2;
+  
+  /* ==========================================
+   * SIDEBAR COMPONENT VARIABLES - LIGHT MODE
+   * ========================================== */
+  --sidebar-bg: rgba(255, 255, 255, 0.85);
+  --sidebar-border: rgba(8, 145, 178, 0.12);
+  --sidebar-item-active-bg: linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(14, 165, 233, 0.08) 100%);
+  --sidebar-item-active-color: #0891b2;
+  --sidebar-item-active-border: rgba(8, 145, 178, 0.25);
+  --sidebar-item-hover-bg: rgba(0, 0, 0, 0.04);
+  --sidebar-item-hover-color: #0f172a;
+  --sidebar-text: rgba(15, 23, 42, 0.7);
+  --sidebar-header-text: #0f172a;
+  --sidebar-label-text: rgba(15, 23, 42, 0.45);
+  --sidebar-muted-text: rgba(15, 23, 42, 0.5);
+  --sidebar-user-text: #0f172a;
+  --sidebar-submenu-active-bg: rgba(8, 145, 178, 0.08);
+  --sidebar-submenu-active-color: #0891b2;
+  --sidebar-profile-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  --sidebar-profile-border: rgba(0, 0, 0, 0.08);
+  --sidebar-logout-bg: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  --sidebar-logout-border: rgba(239, 68, 68, 0.15);
+  --sidebar-logout-hover-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(185, 28, 28, 0.2) 100%);
+  --sidebar-logout-hover-border: rgba(239, 68, 68, 0.35);
+  --sidebar-logout-hover-color: #dc2626;
+  
+  /* ==========================================
+   * TOAST COMPONENT VARIABLES - LIGHT MODE
+   * ========================================== */
+  --toast-bg: rgba(255, 255, 255, 0.9);
+  --toast-blur: 24px;
+  --toast-border: rgba(0, 0, 0, 0.08);
+  --toast-highlight: rgba(0, 0, 0, 0.03);
+  --toast-text: rgba(15, 23, 42, 0.95);
+  
+  /* ==========================================
+   * USER PROFILE PILL VARIABLES - LIGHT MODE
+   * ========================================== */
+  --user-pill-bg: rgba(0, 0, 0, 0.04);
+  --user-pill-border: rgba(0, 0, 0, 0.08);
+  --user-pill-bg-hover: rgba(0, 0, 0, 0.08);
+  --user-pill-border-hover: rgba(0, 0, 0, 0.12);
+  --user-pill-avatar-from: #0891b2;
+  --user-pill-avatar-to: #0e7490;
+  --user-pill-name-color: rgba(15, 23, 42, 0.9);
+  --user-pill-role-color: rgba(15, 23, 42, 0.6);
+  
+  /* ==========================================
+   * ACTION BUTTON COMPONENT VARIABLES - LIGHT MODE
+   * ========================================== */
+  --action-btn-bg: rgba(100, 116, 139, 0.2);
+  --action-btn-bg-hover: rgba(100, 116, 139, 0.35);
+  --action-btn-border: rgba(51, 65, 85, 0.4);
+  --action-btn-color: rgba(30, 41, 59, 1);
+  
+  /* ==========================================
+   * LEGACY ALIASES (for backward compatibility)
+   * ========================================== */
+  --color-background: var(--color-base-100);
+  --color-background-rgb: var(--color-base-100-rgb);
+  --color-surface: var(--color-base-200);
+  --color-surface-hover: var(--color-base-300);
+  --color-foreground: var(--color-base-content);
+  --color-muted: var(--color-text-secondary);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-error-content);
+  --font-heading: var(--font-family-heading);
+}

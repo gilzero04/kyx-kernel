@@ -1,3 +1,3 @@
+pub mod dto;
 pub mod handlers;
 pub mod routers;
-pub mod dto;

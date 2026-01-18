@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use crate::modules::system::domain::audit::{AuditRepository, AuditLogFilter, PaginatedAuditLogs};
+use crate::modules::system::domain::audit::{AuditLogFilter, AuditRepository, PaginatedAuditLogs};
 use anyhow::Result;
+use std::sync::Arc;
 
 pub struct AuditQueryService {
     repo: Arc<dyn AuditRepository>,

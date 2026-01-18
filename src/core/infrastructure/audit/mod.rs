@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use crate::core::infrastructure::database::Database;
 use crate::core::AppError;
+use crate::core::infrastructure::database::Database;
 use serde_json::Value;
+use std::sync::Arc;
 
 pub struct AuditService {
     db: Arc<Database>,

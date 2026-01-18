@@ -1,7 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Theme {
@@ -11,7 +11,7 @@ pub struct Theme {
     pub description: Option<String>,
     pub config: serde_json::Value,
     pub tenant_id: Option<Uuid>,
-    pub is_shared: bool,  // Replaces visibility - TRUE = all descendants can see
+    pub is_shared: bool, // Replaces visibility - TRUE = all descendants can see
     pub version: Option<String>,
     pub author: Option<String>,
     pub preview_url: Option<String>,

@@ -53,10 +53,8 @@ pub async fn list_shares(
     let repo = ShareRepository::new(db.get_ref().clone());
     match repo.list_by_owner(tenant_id).await {
         Ok(shares) => {
-            let response = ApiResponse::ok(
-                json!({ "shares": shares }),
-                "Shares listed successfully",
-            );
+            let response =
+                ApiResponse::ok(json!({ "shares": shares }), "Shares listed successfully");
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
@@ -109,10 +107,8 @@ pub async fn create_share(
 
     match repo.create(cmd, tenant_id, user_id).await {
         Ok(share) => {
-            let response = ApiResponse::created(
-                json!({ "share": share }),
-                "Share created successfully",
-            );
+            let response =
+                ApiResponse::created(json!({ "share": share }), "Share created successfully");
             web::HttpResponse::Created().json(&response)
         }
         Err(e) => {
@@ -144,7 +140,9 @@ pub async fn revoke_share(
                     );
                     web::HttpResponse::Ok().json(&response)
                 } else {
-                    let response = ApiResponse::<()>::not_found("Share not found or you don't have permission");
+                    let response = ApiResponse::<()>::not_found(
+                        "Share not found or you don't have permission",
+                    );
                     web::HttpResponse::NotFound().json(&response)
                 }
             }
@@ -158,10 +156,8 @@ pub async fn revoke_share(
         match repo.revoke(share_id, tenant_id).await {
             Ok((revoked, usage_count)) => {
                 if revoked {
-                    let response = ApiResponse::ok(
-                        json!({ "revoked": true }),
-                        "Share revoked successfully",
-                    );
+                    let response =
+                        ApiResponse::ok(json!({ "revoked": true }), "Share revoked successfully");
                     web::HttpResponse::Ok().json(&response)
                 } else {
                     let response = ApiResponse::<()>::conflict(&format!(

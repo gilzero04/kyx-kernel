@@ -1,16 +1,13 @@
-use crate::modules::system::domain::tenant::{TenantFilter, PaginatedTenants, TenantRepository};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::tenant::{PaginatedTenants, TenantFilter, TenantRepository};
+use anyhow::{Result, anyhow};
+use argon2::{
+    Argon2,
+    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
+};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use anyhow::{Result, anyhow};
 use std::sync::Arc;
-use argon2::{
-    password_hash::{
-        rand_core::OsRng,
-        PasswordHasher, SaltString
-    },
-    Argon2
-};
 
 mod list_query;
 
@@ -39,22 +36,22 @@ impl TenantRepository for PostgresTenantRepository {
     }
 
     async fn update_owner(
-        &self, 
-        name: Option<String>, 
-        slug: Option<String>, 
+        &self,
+        name: Option<String>,
+        slug: Option<String>,
         branding_id: Option<sqlx::types::Uuid>,
-        contact_email: Option<String>, 
-        contact_phone: Option<String>, 
-        website_url: Option<String>, 
-        social_links: Option<serde_json::Value>, 
-        address: Option<String>, 
-        business_type: Option<String>, 
-        tax_id: Option<String>, 
-        config: Option<serde_json::Value>, 
-        custom_domain: Option<String>, 
-        allow_child_subdomains: Option<bool>, 
-        domain_verified_at: Option<DateTime<Utc>>, 
-        verification_token: Option<String>
+        contact_email: Option<String>,
+        contact_phone: Option<String>,
+        website_url: Option<String>,
+        social_links: Option<serde_json::Value>,
+        address: Option<String>,
+        business_type: Option<String>,
+        tax_id: Option<String>,
+        config: Option<serde_json::Value>,
+        custom_domain: Option<String>,
+        allow_child_subdomains: Option<bool>,
+        domain_verified_at: Option<DateTime<Utc>>,
+        verification_token: Option<String>,
     ) -> Result<()> {
         if let Some(ref s) = slug {
             let exists = sqlx::query_scalar::<_, bool>(
@@ -88,7 +85,7 @@ impl TenantRepository for PostgresTenantRepository {
              domain_verified_at = COALESCE($14, domain_verified_at),
              verification_token = COALESCE($15, verification_token),
              updated_at = NOW() 
-             WHERE parent_id = id AND deleted_at IS NULL"
+             WHERE parent_id = id AND deleted_at IS NULL",
         )
         .bind(name)
         .bind(slug)
@@ -112,20 +109,20 @@ impl TenantRepository for PostgresTenantRepository {
     }
 
     async fn create(
-        &self, 
-        name: String, 
-        slug: String, 
-        type_slug: String, 
-        plan: Option<String>, 
-        admin_infos: Option<(String, String, String)>, 
+        &self,
+        name: String,
+        slug: String,
+        type_slug: String,
+        plan: Option<String>,
+        admin_infos: Option<(String, String, String)>,
         parent_id: Option<sqlx::types::Uuid>,
         branding_id: Option<sqlx::types::Uuid>,
-        contact_email: Option<String>, 
-        contact_phone: Option<String>, 
-        website_url: Option<String>, 
-        social_links: Option<serde_json::Value>, 
-        address: Option<String>, 
-        business_type: Option<String>
+        contact_email: Option<String>,
+        contact_phone: Option<String>,
+        website_url: Option<String>,
+        social_links: Option<serde_json::Value>,
+        address: Option<String>,
+        business_type: Option<String>,
     ) -> Result<crate::modules::system::domain::tenant::entity::TenantEntry> {
         let type_id = self.resolve_tenant_type(&type_slug).await?;
         let config = if let Some(p) = plan {
@@ -167,7 +164,7 @@ impl TenantRepository for PostgresTenantRepository {
                 "INSERT INTO sys_tenant_permissions (tenant_id, permission_id)
                  SELECT $1, tp.permission_id FROM sys_tenant_permissions tp
                  JOIN sys_permissions p ON tp.permission_id = p.id
-                 WHERE tp.tenant_id = $2 AND p.is_system = FALSE"
+                 WHERE tp.tenant_id = $2 AND p.is_system = FALSE",
             )
             .bind(entry.id)
             .bind(pid)
@@ -178,7 +175,7 @@ impl TenantRepository for PostgresTenantRepository {
             // System Owner: Get ALL permissions
             sqlx::query(
                 "INSERT INTO sys_tenant_permissions (tenant_id, permission_id)
-                 SELECT $1, id FROM sys_permissions"
+                 SELECT $1, id FROM sys_permissions",
             )
             .bind(entry.id)
             .execute(&mut *tx)
@@ -200,7 +197,7 @@ impl TenantRepository for PostgresTenantRepository {
         // 4. Map Local SuperAdmin to all delegated permissions
         sqlx::query(
             "INSERT INTO sys_role_permissions (role_id, permission_id)
-             SELECT $1, permission_id FROM sys_tenant_permissions WHERE tenant_id = $2"
+             SELECT $1, permission_id FROM sys_tenant_permissions WHERE tenant_id = $2",
         )
         .bind(role_id)
         .bind(entry.id)
@@ -212,7 +209,7 @@ impl TenantRepository for PostgresTenantRepository {
         if let Some((email, password, full_name)) = admin_infos {
             // Check if user exists
             let existing_user_id = sqlx::query_scalar::<_, sqlx::types::Uuid>(
-                "SELECT id FROM auth_users WHERE email = $1"
+                "SELECT id FROM auth_users WHERE email = $1",
             )
             .bind(&email)
             .fetch_optional(&mut *tx)
@@ -221,28 +218,46 @@ impl TenantRepository for PostgresTenantRepository {
             let user_id = if let Some(uid) = existing_user_id {
                 uid
             } else {
-                // Create new user
+                // Create new user with auto-generated avatar, cover, and images
                 let salt = SaltString::generate(&mut OsRng);
                 let argon2 = Argon2::default();
-                let password_hash = argon2.hash_password(password.as_bytes(), &salt)
+                let password_hash = argon2
+                    .hash_password(password.as_bytes(), &salt)
                     .map_err(|e| anyhow!("Password hashing failed: {}", e))?
                     .to_string();
 
-                use crate::core::utils::avatar::generate_default_avatar;
-                let default_avatar = generate_default_avatar(&full_name);
-                
-                sqlx::query_scalar::<_, sqlx::types::Uuid>(
-                    "INSERT INTO auth_users (id, email, hashed_password, full_name, avatar_url, is_active, created_at, updated_at)
-                     VALUES (gen_random_uuid(), $1, $2, $3, $4, true, NOW(), NOW())
+                use crate::core::utils::avatar::generate_user_images;
+                let user_images = generate_user_images(&full_name);
+
+                let new_user_id = sqlx::query_scalar::<_, sqlx::types::Uuid>(
+                    "INSERT INTO auth_users (id, email, hashed_password, full_name, avatar_url, cover_url, is_active, created_at, updated_at)
+                     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, true, NOW(), NOW())
                      RETURNING id"
                 )
                 .bind(&email)
                 .bind(password_hash)
                 .bind(&full_name)
-                .bind(default_avatar)
+                .bind(&user_images.avatar_url)
+                .bind(&user_images.cover_url)
                 .fetch_one(&mut *tx)
                 .await
-                .map_err(|e| anyhow!("Failed to create admin user: {}", e))?
+                .map_err(|e| anyhow!("Failed to create admin user: {}", e))?;
+
+                // Insert auto-generated images
+                for (idx, img_url) in user_images.images.iter().enumerate() {
+                    sqlx::query(
+                        "INSERT INTO auth_user_images (user_id, url, image_type, is_primary) VALUES ($1, $2, $3, $4)"
+                    )
+                    .bind(new_user_id)
+                    .bind(img_url)
+                    .bind("gallery")
+                    .bind(idx == 0)
+                    .execute(&mut *tx)
+                    .await
+                    .ok();
+                }
+
+                new_user_id
             };
 
             // Assign Membership
@@ -262,10 +277,10 @@ impl TenantRepository for PostgresTenantRepository {
         // 6. CMS: Seed Home Page
         use crate::core::utils::seeding::get_default_home_page_content;
         let home_page_content = get_default_home_page_content(&name);
-        
+
         sqlx::query(
             "INSERT INTO sys_pages (tenant_id, slug, title, content, is_published)
-             VALUES ($1, 'home', 'Home', $2, TRUE)"
+             VALUES ($1, 'home', 'Home', $2, TRUE)",
         )
         .bind(entry.id)
         .bind(home_page_content)
@@ -278,25 +293,25 @@ impl TenantRepository for PostgresTenantRepository {
     }
 
     async fn update_tenant(
-        &self, 
-        id: sqlx::types::Uuid, 
-        name: Option<String>, 
-        slug: Option<String>, 
+        &self,
+        id: sqlx::types::Uuid,
+        name: Option<String>,
+        slug: Option<String>,
         is_active: Option<bool>,
         branding_id: Option<sqlx::types::Uuid>,
-        contact_email: Option<String>, 
-        contact_phone: Option<String>, 
-        website_url: Option<String>, 
-        social_links: Option<serde_json::Value>, 
-        address: Option<String>, 
-        business_type: Option<String>, 
-        config: Option<serde_json::Value>, 
-        actor_tenant_id: Option<sqlx::types::Uuid>, 
-        custom_domain: Option<String>, 
-        allow_child_subdomains: Option<bool>, 
-        use_parent_subdomain: Option<bool>, 
-        domain_verified_at: Option<DateTime<Utc>>, 
-        verification_token: Option<String>
+        contact_email: Option<String>,
+        contact_phone: Option<String>,
+        website_url: Option<String>,
+        social_links: Option<serde_json::Value>,
+        address: Option<String>,
+        business_type: Option<String>,
+        config: Option<serde_json::Value>,
+        actor_tenant_id: Option<sqlx::types::Uuid>,
+        custom_domain: Option<String>,
+        allow_child_subdomains: Option<bool>,
+        use_parent_subdomain: Option<bool>,
+        domain_verified_at: Option<DateTime<Utc>>,
+        verification_token: Option<String>,
     ) -> Result<crate::modules::system::domain::tenant::entity::TenantEntry> {
         let entry = sqlx::query_as::<_, crate::modules::system::domain::tenant::entity::TenantEntry>(
             "UPDATE auth_tenants SET 
@@ -347,24 +362,30 @@ impl TenantRepository for PostgresTenantRepository {
         Ok(entry)
     }
 
-    async fn delete(&self, id: sqlx::types::Uuid, actor_tenant_id: Option<sqlx::types::Uuid>) -> Result<()> {
+    async fn delete(
+        &self,
+        id: sqlx::types::Uuid,
+        actor_tenant_id: Option<sqlx::types::Uuid>,
+    ) -> Result<()> {
         let mut tx = self.pool.pool.begin().await?;
 
         // 1. Deactivate Tenant (Isolation: must be ancestor of target or platform owner)
         let row = sqlx::query(
             "UPDATE auth_tenants SET is_active = FALSE, deleted_at = NOW() 
              WHERE id = $1 AND parent_id != id
-             AND ($2::uuid IS NULL OR can_view_tenant($2, id))"
+             AND ($2::uuid IS NULL OR can_view_tenant($2, id))",
         )
-            .bind(id)
-            .bind(actor_tenant_id)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| anyhow!("Failed to delete tenant: {}", e))?;
+        .bind(id)
+        .bind(actor_tenant_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| anyhow!("Failed to delete tenant: {}", e))?;
 
         if row.rows_affected() == 0 {
             tx.rollback().await?;
-            return Err(anyhow!("Cannot delete owner organization or organization not found"));
+            return Err(anyhow!(
+                "Cannot delete owner organization or organization not found"
+            ));
         }
 
         // 2. Deactivate Memberships
@@ -380,7 +401,7 @@ impl TenantRepository for PostgresTenantRepository {
 
     async fn get_owner_id(&self) -> Result<sqlx::types::Uuid> {
         let id = sqlx::query_scalar::<_, sqlx::types::Uuid>(
-            "SELECT id FROM auth_tenants WHERE parent_id = id AND deleted_at IS NULL"
+            "SELECT id FROM auth_tenants WHERE parent_id = id AND deleted_at IS NULL",
         )
         .fetch_one(&self.pool.pool)
         .await
@@ -388,7 +409,11 @@ impl TenantRepository for PostgresTenantRepository {
         Ok(id)
     }
 
-     async fn get_by_id(&self, id: sqlx::types::Uuid, actor_tenant_id: Option<sqlx::types::Uuid>) -> Result<Option<crate::modules::system::domain::tenant::entity::TenantEntry>> {
+    async fn get_by_id(
+        &self,
+        id: sqlx::types::Uuid,
+        actor_tenant_id: Option<sqlx::types::Uuid>,
+    ) -> Result<Option<crate::modules::system::domain::tenant::entity::TenantEntry>> {
         let entry = sqlx::query_as::<_, crate::modules::system::domain::tenant::entity::TenantEntry>(
             "SELECT id, parent_id, name, slug, branding_id, contact_email, contact_phone, website_url, social_links, address, business_type, config, custom_domain, allow_child_subdomains, use_parent_subdomain, domain_verified_at, verification_token, is_active, created_at, 
              (SELECT COUNT(*) FROM auth_memberships WHERE tenant_id = auth_tenants.id AND deleted_at IS NULL) as member_count
@@ -400,11 +425,14 @@ impl TenantRepository for PostgresTenantRepository {
         .fetch_optional(&self.pool.pool)
         .await
         .map_err(|e| anyhow!("Failed to fetch tenant: {}", e))?;
-        
+
         Ok(entry)
     }
 
-    async fn get_by_slug(&self, slug: String) -> Result<Option<crate::modules::system::domain::tenant::entity::TenantEntry>> {
+    async fn get_by_slug(
+        &self,
+        slug: String,
+    ) -> Result<Option<crate::modules::system::domain::tenant::entity::TenantEntry>> {
         let entry = sqlx::query_as::<_, crate::modules::system::domain::tenant::entity::TenantEntry>(
             "SELECT id, parent_id, name, slug, branding_id, contact_email, contact_phone, website_url, social_links, address, business_type, config, custom_domain, allow_child_subdomains, use_parent_subdomain, domain_verified_at, verification_token, is_active, created_at, 
              (SELECT COUNT(*) FROM auth_memberships WHERE tenant_id = auth_tenants.id AND deleted_at IS NULL) as member_count
@@ -414,7 +442,7 @@ impl TenantRepository for PostgresTenantRepository {
         .fetch_optional(&self.pool.pool)
         .await
         .map_err(|e| anyhow!("Failed to fetch tenant by slug: {}", e))?;
-        
+
         Ok(entry)
     }
 
@@ -456,6 +484,20 @@ impl TenantRepository for PostgresTenantRepository {
             .execute(&mut *tx)
             .await
             .map_err(|e| anyhow!("Failed to assign orphaned sys_api_keys: {}", e))?;
+
+        // 6. Update sys_plugins
+        sqlx::query("UPDATE sys_plugins SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| anyhow!("Failed to assign orphaned sys_plugins: {}", e))?;
+
+        // 7. Update sys_i18n_translations
+        sqlx::query("UPDATE sys_i18n_translations SET tenant_id = $1 WHERE tenant_id IS NULL")
+            .bind(tenant_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| anyhow!("Failed to assign orphaned sys_i18n_translations: {}", e))?;
 
         tx.commit().await?;
         Ok(())

@@ -1,12 +1,17 @@
-use ntex::web;
-use std::sync::Arc;
-use serde_json::json;
+use crate::core::infrastructure::config_service::ConfigService;
+use crate::core::utils::response::ApiResponse;
 use crate::modules::auth::application::services::auth::AuthService;
 use crate::modules::auth::domain::login::UserCredentials;
-use crate::modules::auth::interface::http::dto::auth::{RefreshRequest, SetupRequest, CreateUserRequest, SignupRequest};
 #[allow(unused_imports)]
-use crate::modules::auth::interface::http::dto::auth::{AuthResponse, SessionInfo, AdminSessionInfo};
-use crate::core::infrastructure::config_service::ConfigService;
+use crate::modules::auth::interface::http::dto::auth::{
+    AdminSessionInfo, AuthResponse, SessionInfo,
+};
+use crate::modules::auth::interface::http::dto::auth::{
+    CreateUserRequest, RefreshRequest, SetupRequest, SignupRequest,
+};
+use ntex::web;
+use serde_json::json;
+use std::sync::Arc;
 use uuid::Uuid;
 
 /// User Login
@@ -25,28 +30,38 @@ pub async fn login(
     creds: web::types::Json<UserCredentials>,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let ip = if let Some(real_ip) = req.headers().get("X-Real-IP")
-        .and_then(|h| h.to_str().ok()) {
+    let ip = if let Some(real_ip) = req.headers().get("X-Real-IP").and_then(|h| h.to_str().ok()) {
         real_ip.trim().to_string()
-    } else if let Some(forwarded) = req.headers().get("X-Forwarded-For")
+    } else if let Some(forwarded) = req
+        .headers()
+        .get("X-Forwarded-For")
         .and_then(|h| h.to_str().ok())
-        .and_then(|list| list.split(',').next()) {
+        .and_then(|list| list.split(',').next())
+    {
         forwarded.trim().to_string()
     } else {
-        req.connection_info().remote().unwrap_or("unknown").to_string()
+        req.connection_info()
+            .remote()
+            .unwrap_or("unknown")
+            .to_string()
     };
 
-    let ua = req.headers().get("User-Agent")
+    let ua = req
+        .headers()
+        .get("User-Agent")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("unknown")
         .to_string();
 
     match service.login(creds.into_inner(), ip, ua).await {
-        Ok(auth_response) => Ok(web::HttpResponse::Ok().json(&auth_response)),
-        Err(e) => Ok(web::HttpResponse::Unauthorized().json(&json!({
-            "status": "error",
-            "message": e.message
-        }))),
+        Ok(auth_response) => {
+            let response = ApiResponse::ok(auth_response, "Login successful");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::unauthorized(&e.message);
+            Ok(web::HttpResponse::Unauthorized().json(&response))
+        }
     }
 }
 
@@ -66,11 +81,14 @@ pub async fn refresh_session(
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
     match service.refresh_session(&req.refresh_token).await {
-        Ok(auth_response) => Ok(web::HttpResponse::Ok().json(&auth_response)),
-        Err(e) => Ok(web::HttpResponse::Unauthorized().json(&json!({
-            "status": "error",
-            "message": e.message
-        }))),
+        Ok(auth_response) => {
+            let response = ApiResponse::ok(auth_response, "Token refreshed");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::unauthorized(&e.message);
+            Ok(web::HttpResponse::Unauthorized().json(&response))
+        }
     }
 }
 
@@ -105,11 +123,12 @@ pub async fn logout(
             }
         }
     }
-    
-    Ok(web::HttpResponse::Ok().json(&json!({
-        "status": "success",
-        "message": "Logged out successfully"
-    })))
+
+    let response = ApiResponse::ok(
+        serde_json::json!({"logged_out": true}),
+        "Logged out successfully",
+    );
+    Ok(web::HttpResponse::Ok().json(&response))
 }
 
 /// Check if system setup is completed
@@ -123,30 +142,12 @@ pub async fn logout(
 )]
 pub async fn get_setup_status(
     service: web::types::State<Arc<AuthService>>,
-    config: web::types::State<Arc<ConfigService>>,
+    _config: web::types::State<Arc<ConfigService>>,
 ) -> Result<web::HttpResponse, web::Error> {
     match service.is_setup_done().await {
-        Ok(is_done) => {
-            // Fetch branding data for theme switching
-            let theme_light_id = config.get_string("theme_light_id", "").await;
-            let theme_dark_id = config.get_string("theme_dark_id", "").await;
-            let app_name = config.get_string("branding_app_name", "").await;
-            let splash_text = config.get_string("branding_splash_text", "").await;
-            let splash_init_text = config.get_string("branding_splash_init_text", "").await;
-            
-            Ok(web::HttpResponse::Ok().json(&json!({ 
-                "is_setup": is_done,
-                "branding": {
-                    "app_name": if app_name.is_empty() { None } else { Some(app_name) },
-                    "theme_light_id": theme_light_id,
-                    "theme_dark_id": theme_dark_id,
-                    "splash": {
-                        "text": if splash_text.is_empty() { None } else { Some(splash_text) },
-                        "subtext": if splash_init_text.is_empty() { None } else { Some(splash_init_text) }
-                    }
-                }
-            })))
-        },
+        Ok(is_done) => Ok(web::HttpResponse::Ok().json(&json!({
+            "is_setup": is_done
+        }))),
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message
@@ -167,11 +168,11 @@ pub async fn get_setup_status(
         ("X-Engine-Secret" = String, Header, description = "Engine Secret Key")
     )
 )]
-pub async fn verify_engine_key(
-    req: web::HttpRequest,
-) -> Result<web::HttpResponse, web::Error> {
+pub async fn verify_engine_key(req: web::HttpRequest) -> Result<web::HttpResponse, web::Error> {
     let engine_secret = std::env::var("ENGINE_SECRET_KEY").unwrap_or_default();
-    let provided_secret = req.headers().get("X-Engine-Secret")
+    let provided_secret = req
+        .headers()
+        .get("X-Engine-Secret")
         .and_then(|h| h.to_str().ok())
         .unwrap_or_default();
 
@@ -216,7 +217,9 @@ pub async fn check_slug_availability(
 ) -> Result<web::HttpResponse, web::Error> {
     // 1. Verify Engine Secret
     let engine_secret = std::env::var("ENGINE_SECRET_KEY").unwrap_or_default();
-    let provided_secret = req.headers().get("X-Engine-Secret")
+    let provided_secret = req
+        .headers()
+        .get("X-Engine-Secret")
         .and_then(|h| h.to_str().ok())
         .unwrap_or_default();
 
@@ -230,10 +233,12 @@ pub async fn check_slug_availability(
     // 2. Get slug from query params
     let slug = match query.get("slug") {
         Some(s) if !s.is_empty() => s.clone(),
-        _ => return Ok(web::HttpResponse::BadRequest().json(&json!({
-            "status": "error",
-            "message": "Slug parameter is required"
-        }))),
+        _ => {
+            return Ok(web::HttpResponse::BadRequest().json(&json!({
+                "status": "error",
+                "message": "Slug parameter is required"
+            })));
+        }
     };
 
     // 3. Check availability via service
@@ -245,7 +250,7 @@ pub async fn check_slug_availability(
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message
-        })))
+        }))),
     }
 }
 
@@ -271,30 +276,35 @@ pub async fn initialize_system(
 ) -> Result<web::HttpResponse, web::Error> {
     // 1. Verify Engine Secret
     let engine_secret = std::env::var("ENGINE_SECRET_KEY").unwrap_or_default();
-    let provided_secret = http_req.headers().get("X-Engine-Secret")
+    let provided_secret = http_req
+        .headers()
+        .get("X-Engine-Secret")
         .and_then(|h| h.to_str().ok())
         .unwrap_or_default();
 
     if engine_secret.is_empty() || provided_secret != engine_secret {
-        return Ok(web::HttpResponse::Unauthorized().json(&json!({
-            "status": "error",
-            "message": "Invalid engine secret"
-        })));
+        let response = ApiResponse::<()>::unauthorized("Invalid engine secret");
+        return Ok(web::HttpResponse::Unauthorized().json(&response));
     }
 
     // 2. Initialize System
     match service.initialize_system(req.into_inner()).await {
-        Ok(response) => Ok(web::HttpResponse::Ok().json(&response)),
+        Ok(auth_response) => {
+            let response = ApiResponse::ok(auth_response, "System initialized successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => {
+            let response = if e.code == 403 {
+                ApiResponse::<()>::forbidden(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
             let mut status = if e.code == 403 {
                 web::HttpResponse::Forbidden()
             } else {
                 web::HttpResponse::InternalServerError()
             };
-            Ok(status.json(&json!({
-                "status": "error",
-                "message": e.message
-            })))
+            Ok(status.json(&response))
         }
     }
 }
@@ -386,9 +396,16 @@ pub async fn list_sessions(
     claims: crate::core::utils::jwt::Claims,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    let user_id =
+        Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
     match service.list_sessions(&user_id).await {
-        Ok(sessions) => Ok(web::HttpResponse::Ok().json(&sessions)),
+        Ok(sessions) => {
+            let response = ApiResponse::ok(
+                serde_json::json!({"sessions": sessions}),
+                "Sessions retrieved",
+            );
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message
@@ -414,14 +431,18 @@ pub async fn revoke_session(
     path: web::types::Path<(String,)>,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+    let user_id =
+        Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
     let (sid,) = path.into_inner();
-    
+
     match service.revoke_session(&user_id, &sid).await {
-        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
-            "status": "success",
-            "message": "Session revoked"
-        }))),
+        Ok(_) => {
+            let response = ApiResponse::ok(
+                serde_json::json!({"session_id": sid, "revoked": true}),
+                "Session revoked",
+            );
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message
@@ -474,7 +495,7 @@ pub async fn admin_revoke_session_handler(
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
     let (user_id, sid) = path.into_inner();
-    
+
     match service.admin_revoke_session(user_id, sid).await {
         Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
             "status": "success",
@@ -508,10 +529,14 @@ pub async fn get_me(
     claims: crate::core::utils::jwt::Claims,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
-    
+    let user_id =
+        Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+
     match service.get_profile(&user_id).await {
-        Ok(profile) => Ok(web::HttpResponse::Ok().json(&profile)),
+        Ok(profile) => {
+            let response = ApiResponse::ok(profile, "User profile retrieved");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => {
             let mut status = match e.code {
                 404 => web::HttpResponse::NotFound(),
@@ -544,13 +569,17 @@ pub async fn update_profile(
     req: web::types::Json<crate::modules::auth::interface::http::dto::auth::UpdateProfileRequest>,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
-    
-    match service.update_profile(&user_id, req.full_name.clone(), req.cover_url.clone()).await {
-        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
-            "status": "success",
-            "message": "Profile updated"
-        }))),
+    let user_id =
+        Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+
+    match service
+        .update_profile(&user_id, req.full_name.clone(), req.cover_url.clone())
+        .await
+    {
+        Ok(_) => {
+            let response = ApiResponse::ok(serde_json::json!({"updated": true}), "Profile updated");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message
@@ -577,14 +606,15 @@ pub async fn update_avatar(
     req: web::types::Json<crate::modules::auth::interface::http::dto::auth::UpdateAvatarRequest>,
     service: web::types::State<Arc<AuthService>>,
 ) -> Result<web::HttpResponse, web::Error> {
-    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
-    
+    let user_id =
+        Uuid::parse_str(&claims.sub).map_err(|_| web::error::ErrorBadRequest("Invalid user ID"))?;
+
     match service.update_avatar(&user_id, &req.avatar_url).await {
-        Ok(url) => Ok(web::HttpResponse::Ok().json(&json!({
-            "status": "success",
-            "message": "Avatar updated",
-            "data": { "avatar_url": url }
-        }))),
+        Ok(url) => {
+            let response =
+                ApiResponse::ok(serde_json::json!({"avatar_url": url}), "Avatar updated");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
         Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
             "status": "error",
             "message": e.message

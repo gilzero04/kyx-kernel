@@ -205,6 +205,63 @@
 | POST   | `/api/v1/admin/cors`      | `system:cors:manage` | Add origin           |
 | DELETE | `/api/v1/admin/cors/{id}` | `system:cors:manage` | Remove origin        |
 
+### CMS Pages ⭐ NEW
+
+| Method | Endpoint                       | Permission  | Description    |
+| ------ | ------------------------------ | ----------- | -------------- |
+| GET    | `/api/v1/admin/cms/pages`      | `cms:read`  | List CMS pages |
+| GET    | `/api/v1/admin/cms/pages/{id}` | `cms:read`  | Get page by ID |
+| POST   | `/api/v1/admin/cms/pages`      | `cms:write` | Create page    |
+| PUT    | `/api/v1/admin/cms/pages/{id}` | `cms:write` | Update page    |
+| DELETE | `/api/v1/admin/cms/pages/{id}` | `cms:write` | Delete page    |
+
+### Resource Sharing ⭐ NEW (RULE 19)
+
+| Method | Endpoint                          | Permission     | Description          |
+| ------ | --------------------------------- | -------------- | -------------------- |
+| GET    | `/api/v1/admin/shares`            | `share:read`   | List created shares  |
+| GET    | `/api/v1/admin/shares/received`   | `share:read`   | List received shares |
+| POST   | `/api/v1/admin/shares`            | `share:create` | Create share         |
+| DELETE | `/api/v1/admin/shares/{id}`       | `share:delete` | Revoke share         |
+| GET    | `/api/v1/admin/shares/{id}/usage` | `share:read`   | Get usage count      |
+
+**Share Request Body**:
+
+```json
+{
+  "resource_type": "role|theme|page|media",
+  "resource_id": "uuid",
+  "shared_to_tenant_id": "uuid",
+  "can_reshare": true
+}
+```
+
+### Branding Management
+
+| Method | Endpoint                           | Permission        | Description              |
+| ------ | ---------------------------------- | ----------------- | ------------------------ |
+| GET    | `/api/v1/admin/branding`           | `branding:read`   | Get current branding     |
+| PATCH  | `/api/v1/admin/branding`           | `branding:update` | Update branding settings |
+| GET    | `/api/v1/admin/branding/contexts`  | `branding:read`   | List all contexts        |
+| GET    | `/api/v1/admin/branding/{context}` | `branding:read`   | Get by context           |
+| PATCH  | `/api/v1/admin/branding/{context}` | `branding:update` | Update context branding  |
+
+**Contexts**: `console`, `workspace`
+
+---
+
+## Workspace Endpoints
+
+### Workspace Context
+
+| Method | Endpoint                       | Permission    | Description           |
+| ------ | ------------------------------ | ------------- | --------------------- |
+| GET    | `/api/v1/workspace/status`     | (public)      | Get workspace status  |
+| GET    | `/api/v1/workspace/roles`      | `role:read`   | List workspace roles  |
+| POST   | `/api/v1/workspace/roles`      | `role:create` | Create workspace role |
+| PATCH  | `/api/v1/workspace/roles/{id}` | `role:update` | Update workspace role |
+| DELETE | `/api/v1/workspace/roles/{id}` | `role:delete` | Delete workspace role |
+
 ---
 
 ## Media Endpoints
@@ -334,6 +391,30 @@
 | `media:upload` | Upload files   |
 | `media:delete` | Delete assets  |
 | `media:folder` | Manage folders |
+
+### CMS Permissions ⭐ NEW
+
+| Permission    | Description       |
+| ------------- | ----------------- |
+| `cms:read`    | View CMS pages    |
+| `cms:write`   | Create/edit pages |
+| `cms:publish` | Publish pages     |
+| `cms:delete`  | Delete pages      |
+
+### Sharing Permissions ⭐ NEW
+
+| Permission     | Description   |
+| -------------- | ------------- |
+| `share:read`   | View shares   |
+| `share:create` | Create shares |
+| `share:delete` | Revoke shares |
+
+### Branding Permissions ⭐ NEW
+
+| Permission        | Description            |
+| ----------------- | ---------------------- |
+| `branding:read`   | View branding settings |
+| `branding:update` | Update branding        |
 
 ### Tenant Permissions
 

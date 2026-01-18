@@ -34,16 +34,14 @@ pub async fn list_audit_logs(
 
     match service.list_logs(filter).await {
         Ok(data) => {
-            let response = ApiResponse::ok(
-                json!({ "logs": data }),
-                "Audit logs listed successfully",
-            );
+            let response =
+                ApiResponse::ok(json!({ "logs": data }), "Audit logs listed successfully");
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
-            let response = ApiResponse::<()>::internal_error(&format!("Failed to fetch logs: {}", e));
+            let response =
+                ApiResponse::<()>::internal_error(&format!("Failed to fetch logs: {}", e));
             web::HttpResponse::InternalServerError().json(&response)
         }
     }
 }
-

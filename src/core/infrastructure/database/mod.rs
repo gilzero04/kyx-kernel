@@ -1,7 +1,5 @@
-
-
-use sqlx::{postgres::PgPoolOptions, PgPool};
 use anyhow::Result;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub struct Database {
     pub pool: PgPool,
@@ -13,18 +11,13 @@ impl Database {
             .max_connections(10)
             .connect(database_url)
             .await?;
-        
+
         Ok(Self { pool })
     }
 
-    pub async fn initialize_tables(&self) -> Result<()> {
-        // Run SQL migrations from ./migrations directory
-        // All schema is now defined in migration files
-        sqlx::migrate!("./migrations")
-            .run(&self.pool)
-            .await?;
-
-        log::info!("✅ Database migrations completed successfully.");
-        Ok(())
-    }
+    // Note: Migrations are now run separately via `./scripts/migrate-db.sh`
+    // before starting the application. This ensures:
+    // 1. Migrations can fail without crashing the app
+    // 2. Rollback is possible before app update
+    // 3. Zero-downtime updates
 }

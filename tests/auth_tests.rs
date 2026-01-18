@@ -7,9 +7,9 @@
 //
 // ════════════════════════════════════════════════════════════════════════════
 
+use chrono::{Duration, Utc};
 use serde_json::json;
 use uuid::Uuid;
-use chrono::{Utc, Duration};
 
 // ════════════════════════════════════════════════════════════════════════════
 // User Credentials Tests
@@ -21,7 +21,7 @@ fn test_user_credentials_structure() {
         "username": "admin@example.com",
         "password": "SecurePass123!"
     });
-    
+
     assert!(credentials["username"].is_string());
     assert!(credentials["password"].is_string());
 }
@@ -33,7 +33,7 @@ fn test_username_email_format() {
         "admin@kyx.io",
         "test.user+tag@domain.org",
     ];
-    
+
     for email in valid_emails {
         assert!(email.contains('@'));
         assert!(email.contains('.'));
@@ -43,12 +43,8 @@ fn test_username_email_format() {
 #[test]
 fn test_password_requirements() {
     // Password must have: 8+ chars, uppercase, lowercase, digit, special
-    let valid_passwords = [
-        "SecurePass123!",
-        "MyP@ssw0rd",
-        "Complex1!Password",
-    ];
-    
+    let valid_passwords = ["SecurePass123!", "MyP@ssw0rd", "Complex1!Password"];
+
     for password in valid_passwords {
         assert!(password.len() >= 8);
         assert!(password.chars().any(|c| c.is_uppercase()));
@@ -60,17 +56,17 @@ fn test_password_requirements() {
 #[test]
 fn test_weak_password_detection() {
     let weak_passwords = [
-        "password",      // Too common
-        "12345678",      // Only numbers
-        "short",         // Too short
-        "alllowercase",  // No uppercase
+        "password",     // Too common
+        "12345678",     // Only numbers
+        "short",        // Too short
+        "alllowercase", // No uppercase
     ];
-    
+
     for password in weak_passwords {
         let has_valid_length = password.len() >= 8;
         let has_uppercase = password.chars().any(|c| c.is_uppercase());
         let has_number = password.chars().any(|c| c.is_numeric());
-        
+
         // At least one check should fail
         assert!(!has_valid_length || !has_uppercase || !has_number);
     }
@@ -91,7 +87,7 @@ fn test_jwt_claims_structure() {
         "iat": Utc::now().timestamp(),
         "exp": (Utc::now() + Duration::hours(1)).timestamp()
     });
-    
+
     assert!(claims["sub"].is_string());
     assert!(claims["exp"].as_i64().unwrap() > claims["iat"].as_i64().unwrap());
 }
@@ -101,10 +97,10 @@ fn test_jwt_expiration() {
     let now = Utc::now().timestamp();
     let expires_in_1_hour = (Utc::now() + Duration::hours(1)).timestamp();
     let expires_in_7_days = (Utc::now() + Duration::days(7)).timestamp();
-    
+
     // Access token: 1 hour
     assert!(expires_in_1_hour - now == 3600);
-    
+
     // Refresh token: 7 days
     assert!(expires_in_7_days - now == 604800);
 }
@@ -117,7 +113,7 @@ fn test_refresh_token_structure() {
         "expires_in": 3600,
         "token_type": "Bearer"
     });
-    
+
     assert_eq!(refresh_response["token_type"], "Bearer");
     assert_eq!(refresh_response["expires_in"], 3600);
 }
@@ -138,7 +134,7 @@ fn test_session_info_structure() {
         "last_activity": Utc::now().to_rfc3339(),
         "expires_at": (Utc::now() + Duration::hours(24)).to_rfc3339()
     });
-    
+
     assert!(session["session_id"].is_string());
     assert!(session["ip_address"].is_string());
 }
@@ -153,7 +149,7 @@ fn test_admin_session_extra_fields() {
         "sudo_expires_at": null,
         "mfa_verified": true
     });
-    
+
     assert!(admin_session["is_admin"].as_bool().unwrap());
     assert!(admin_session["mfa_verified"].as_bool().unwrap());
 }
@@ -165,7 +161,7 @@ fn test_admin_session_extra_fields() {
 #[test]
 fn test_user_roles() {
     let roles = ["superadmin", "admin", "manager", "user", "guest"];
-    
+
     for role in roles {
         assert!(!role.is_empty());
         assert!(role.chars().all(|c| c.is_lowercase()));
@@ -181,10 +177,10 @@ fn test_role_hierarchy() {
         ("admin", 90),
         ("superadmin", 100),
     ];
-    
+
     // Verify hierarchy order
     for i in 1..role_levels.len() {
-        assert!(role_levels[i].1 > role_levels[i-1].1);
+        assert!(role_levels[i].1 > role_levels[i - 1].1);
     }
 }
 
@@ -210,7 +206,7 @@ fn test_login_success_response() {
             "expires_at": (Utc::now() + Duration::hours(24)).to_rfc3339()
         }
     });
-    
+
     assert!(response["success"].as_bool().unwrap());
     assert!(response["token"].is_string());
     assert!(response["user"]["email"].is_string());
@@ -223,7 +219,7 @@ fn test_login_failure_response() {
         "error": "invalid_credentials",
         "message": "Invalid email or password"
     });
-    
+
     assert!(!response["success"].as_bool().unwrap());
     assert_eq!(response["error"], "invalid_credentials");
 }
@@ -237,7 +233,7 @@ fn test_setup_status_response() {
         "database_connected": true,
         "redis_connected": true
     });
-    
+
     for key in ["initialized", "has_superadmin", "database_connected"] {
         assert!(status[key].is_boolean());
     }
@@ -255,14 +251,14 @@ fn test_sql_injection_patterns_detected() {
         "admin'--",
         "1 OR 1=1",
     ];
-    
+
     for input in malicious_inputs {
         // Should be detected as potentially malicious
-        let has_sql_keyword = input.to_uppercase().contains("SELECT") 
+        let has_sql_keyword = input.to_uppercase().contains("SELECT")
             || input.to_uppercase().contains("DROP")
             || input.to_uppercase().contains(" OR ");
         let has_sql_comment = input.contains("--") || input.contains("'");
-        
+
         assert!(has_sql_keyword || has_sql_comment);
     }
 }
@@ -274,11 +270,11 @@ fn test_xss_patterns_detected() {
         "<img src=x onerror=alert(1)>",
         "javascript:alert(1)",
     ];
-    
+
     for input in malicious_inputs {
         let has_script = input.contains("<script") || input.contains("javascript:");
         let has_event = input.contains("onerror") || input.contains("onclick");
-        
+
         assert!(has_script || has_event);
     }
 }
@@ -290,7 +286,7 @@ fn test_rate_limit_response() {
         "message": "Too many requests",
         "retry_after": 60
     });
-    
+
     assert_eq!(response["error"], "rate_limited");
     assert!(response["retry_after"].as_i64().unwrap() > 0);
 }
@@ -306,7 +302,7 @@ fn test_mfa_setup_response() {
         "qr_code_url": "otpauth://totp/Kyx:user@example.com?secret=...",
         "backup_codes": ["12345678", "87654321", "11112222"]
     });
-    
+
     assert!(response["secret"].is_string());
     assert!(response["backup_codes"].is_array());
     assert_eq!(response["backup_codes"].as_array().unwrap().len(), 3);
@@ -315,7 +311,7 @@ fn test_mfa_setup_response() {
 #[test]
 fn test_mfa_code_format() {
     let valid_codes = ["123456", "000000", "999999"];
-    
+
     for code in valid_codes {
         assert_eq!(code.len(), 6);
         assert!(code.chars().all(|c| c.is_numeric()));
@@ -329,7 +325,7 @@ fn test_mfa_code_format() {
 #[test]
 fn test_oauth_providers() {
     let providers = ["google", "github", "facebook", "apple", "microsoft"];
-    
+
     for provider in providers {
         assert!(!provider.is_empty());
         assert!(provider.chars().all(|c| c.is_lowercase()));
@@ -343,7 +339,12 @@ fn test_oauth_callback_response() {
         "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?...",
         "state": Uuid::new_v4().to_string()
     });
-    
-    assert!(response["auth_url"].as_str().unwrap().starts_with("https://"));
+
+    assert!(
+        response["auth_url"]
+            .as_str()
+            .unwrap()
+            .starts_with("https://")
+    );
     assert!(response["state"].is_string());
 }

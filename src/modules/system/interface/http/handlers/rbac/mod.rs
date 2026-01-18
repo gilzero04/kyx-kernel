@@ -1,18 +1,17 @@
-use ntex::web;
-use std::sync::Arc;
-use crate::modules::system::application::services::rbac::RbacService;
-use crate::modules::system::interface::http::dto::rbac::{
-    CreateRoleRequest, UpdateRoleRequest, 
-    CreatePermissionRequest, UpdatePermissionRequest,
-    UpdateRolePermissionsRequest, RoleFilter
-};
-use crate::modules::system::domain::rbac::{
-    CreateRoleCmd, UpdateRoleCmd, 
-    CreatePermissionCmd, UpdatePermissionCmd
-};
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::utils::jwt::Claims;
+use crate::core::utils::response::ApiResponse;
+use crate::modules::system::application::services::rbac::RbacService;
 use crate::modules::system::application::services::tenant::TenantService;
+use crate::modules::system::domain::rbac::{
+    CreatePermissionCmd, CreateRoleCmd, UpdatePermissionCmd, UpdateRoleCmd,
+};
+use crate::modules::system::interface::http::dto::rbac::{
+    CreatePermissionRequest, CreateRoleRequest, RoleFilter, UpdatePermissionRequest,
+    UpdateRolePermissionsRequest, UpdateRoleRequest,
+};
+use ntex::web;
+use std::sync::Arc;
 use uuid::Uuid;
 
 // === Roles ===
@@ -63,9 +62,19 @@ pub async fn list_roles(
         }
     }
 
-    match service.list_roles(target_tenant_id, effective_actor_tid, show_all).await {
-        Ok(roles) => web::HttpResponse::Ok().json(&serde_json::json!({ "data": roles })),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+    match service
+        .list_roles(target_tenant_id, effective_actor_tid, show_all)
+        .await
+    {
+        Ok(roles) => {
+            let response =
+                ApiResponse::ok(serde_json::json!({ "roles": roles }), "Roles retrieved");
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -103,7 +112,10 @@ pub async fn create_role(
     let cmd = CreateRoleCmd {
         tenant_id: None, // Will be set by service based on actor_tenant_id
         code: body.code.clone(),
-        slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
+        slug: body
+            .slug
+            .clone()
+            .unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
         name: body.name.clone(),
         description: body.description.clone(),
         is_active: body.is_active,
@@ -111,10 +123,22 @@ pub async fn create_role(
 
     match service.create_role(cmd, actor_tenant_id).await {
         Ok(role) => {
-            let _ = audit.log("SuperAdmin", "ROLE_CREATED", Some(&role.name), "SUCCESS", None).await;
-            web::HttpResponse::Created().json(&role)
-        },
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "ROLE_CREATED",
+                    Some(&role.name),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::created(role, "Role created");
+            web::HttpResponse::Created().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -155,7 +179,10 @@ pub async fn update_role(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
     let cmd = UpdateRoleCmd {
@@ -167,12 +194,24 @@ pub async fn update_role(
 
     match service.update_role(id_uuid, cmd, actor_tenant_id).await {
         Ok(role) => {
-            let _ = audit.log("SuperAdmin", "ROLE_UPDATED", Some(&path), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&role)
-        },
+            let _ = audit
+                .log("SuperAdmin", "ROLE_UPDATED", Some(&path), "SUCCESS", None)
+                .await;
+            let response = ApiResponse::ok(role, "Role updated");
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -212,17 +251,32 @@ pub async fn delete_role(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
     match service.delete_role(id_uuid, actor_tenant_id).await {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "ROLE_DELETED", Some(&path), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
-        },
+            let _ = audit
+                .log("SuperAdmin", "ROLE_DELETED", Some(&path), "SUCCESS", None)
+                .await;
+            let response = ApiResponse::ok(serde_json::json!({ "deleted": true }), "Role deleted");
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -261,14 +315,32 @@ pub async fn get_role_permissions(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
     match service.get_role_permissions(id_uuid, actor_tenant_id).await {
-        Ok(perms) => web::HttpResponse::Ok().json(&perms),
+        Ok(perms) => {
+            let response = ApiResponse::ok(
+                serde_json::json!({ "permissions": perms }),
+                "Role permissions retrieved",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -310,21 +382,47 @@ pub async fn update_role_permissions(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
-    match service.update_role_permissions(id_uuid, body.permission_ids.clone(), actor_tenant_id).await {
+    match service
+        .update_role_permissions(id_uuid, body.permission_ids.clone(), actor_tenant_id)
+        .await
+    {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "ROLE_PERMISSIONS_UPDATED", Some(&path), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "ROLE_PERMISSIONS_UPDATED",
+                    Some(&path),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::ok(
+                serde_json::json!({ "updated": true }),
+                "Role permissions updated",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
-
 
 // === Permissions ===
 
@@ -357,8 +455,17 @@ pub async fn list_permissions(
     }
 
     match service.list_permissions(actor_tenant_id).await {
-        Ok(perms) => web::HttpResponse::Ok().json(&serde_json::json!({ "data": perms })),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+        Ok(perms) => {
+            let response = ApiResponse::ok(
+                serde_json::json!({ "permissions": perms }),
+                "Permissions retrieved",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -395,7 +502,10 @@ pub async fn create_permission(
 
     let cmd = CreatePermissionCmd {
         code: body.code.clone(),
-        slug: body.slug.clone().unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
+        slug: body
+            .slug
+            .clone()
+            .unwrap_or_else(|| body.name.to_lowercase().replace(" ", "-")),
         name: body.name.clone(),
         description: body.description.clone(),
         is_active: body.is_active,
@@ -403,12 +513,30 @@ pub async fn create_permission(
 
     match service.create_permission(cmd, actor_tenant_id).await {
         Ok(perm) => {
-            let _ = audit.log("SuperAdmin", "PERMISSION_CREATED", Some(&perm.name), "SUCCESS", None).await;
-            web::HttpResponse::Created().json(&perm)
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "PERMISSION_CREATED",
+                    Some(&perm.name),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::created(perm, "Permission created");
+            web::HttpResponse::Created().json(&response)
+        }
         Err(e) => {
-            let mut status = if e.code == 403 { web::HttpResponse::Forbidden() } else { web::HttpResponse::InternalServerError() };
-            status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 403 {
+                ApiResponse::<()>::forbidden(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 403 {
+                web::HttpResponse::Forbidden()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -442,7 +570,10 @@ pub async fn update_permission(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
     // If actor is system owner, treat as None
@@ -459,16 +590,39 @@ pub async fn update_permission(
         is_active: body.is_active,
     };
 
-    match service.update_permission(id_uuid, cmd, actor_tenant_id).await {
+    match service
+        .update_permission(id_uuid, cmd, actor_tenant_id)
+        .await
+    {
         Ok(perm) => {
-            let _ = audit.log("SuperAdmin", "PERMISSION_UPDATED", Some(&path), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&perm)
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "PERMISSION_UPDATED",
+                    Some(&path),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::ok(perm, "Permission updated");
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } 
-                             else if e.code == 403 { web::HttpResponse::Forbidden() }
-                             else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else if e.code == 403 {
+                ApiResponse::<()>::forbidden(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else if e.code == 403 {
+                web::HttpResponse::Forbidden()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -500,7 +654,10 @@ pub async fn delete_permission(
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
-        Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": "Invalid ID format" })),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid ID format");
+            return web::HttpResponse::BadRequest().json(&response);
+        }
     };
 
     // If actor is system owner, treat as None
@@ -512,14 +669,35 @@ pub async fn delete_permission(
 
     match service.delete_permission(id_uuid, actor_tenant_id).await {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "PERMISSION_DELETED", Some(&path), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "PERMISSION_DELETED",
+                    Some(&path),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response =
+                ApiResponse::ok(serde_json::json!({ "deleted": true }), "Permission deleted");
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             let mut status = if e.code == 404 { web::HttpResponse::NotFound() } 
-                             else if e.code == 403 { web::HttpResponse::Forbidden() }
-                             else { web::HttpResponse::InternalServerError() };
-             status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else if e.code == 403 {
+                ApiResponse::<()>::forbidden(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else if e.code == 403 {
+                web::HttpResponse::Forbidden()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }

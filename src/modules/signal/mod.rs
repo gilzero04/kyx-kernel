@@ -1,16 +1,16 @@
 // Signal Module for kyx-kernel
 // Handles signal token issuance for kyx-signal integration
 
-pub mod domain;
 pub mod application;
+pub mod domain;
 pub mod interface;
 
 use ntex::web;
 use std::sync::Arc;
 
 use crate::core::infrastructure::audit::AuditService;
-use crate::core::utils::jwt::JwtService;
 use crate::core::infrastructure::redis::Redis;
+use crate::core::utils::jwt::JwtService;
 
 pub struct SignalModule {
     jwt: Arc<JwtService>,
@@ -19,11 +19,7 @@ pub struct SignalModule {
 }
 
 impl SignalModule {
-    pub fn new(
-        jwt: Arc<JwtService>,
-        audit: Arc<AuditService>,
-        redis: Option<Arc<Redis>>,
-    ) -> Self {
+    pub fn new(jwt: Arc<JwtService>, audit: Arc<AuditService>, redis: Option<Arc<Redis>>) -> Self {
         Self { jwt, audit, redis }
     }
 
@@ -36,7 +32,7 @@ impl SignalModule {
             web::scope("/signal")
                 .state(jwt.clone())
                 .state(audit.clone())
-                .configure(|cfg| interface::http::routers::signal_routes(cfg, jwt, audit, redis))
+                .configure(|cfg| interface::http::routers::signal_routes(cfg, jwt, audit, redis)),
         );
     }
 }

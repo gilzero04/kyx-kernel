@@ -1,10 +1,10 @@
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
-use serde::{Deserialize, Serialize};
-use chrono::Duration;
 use crate::core::AppError;
-use uuid::Uuid;
-use ntex::web;
+use chrono::Duration;
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use ntex::http::Payload;
+use ntex::web;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -23,16 +23,16 @@ pub struct Claims {
     pub sid: Option<String>, // Session ID
     pub exp: usize,
     pub token_type: TokenType,
-    
+
     // Phase 2: Plan-specific claims
     /// User's plan type (free, pro, enterprise)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub plan_type: Option<String>,
-    
+
     /// Feature flags enabled for this user/tenant (flexible JSON from plugin)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub features: Option<serde_json::Value>,
-    
+
     // Phase 2: Signal-specific claims (for kyx-signal integration)
     /// Mapped signal permissions (subscribe, publish, join, etc.)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,12 +79,46 @@ impl JwtService {
         &self.encoding_key
     }
 
-    pub fn generate_access_token(&self, user_id: &str, role: &str, tenant_id: Uuid, permissions: Vec<String>, is_system_owner: bool, sid: Option<String>) -> Result<String, AppError> {
-        self.generate_token(user_id, role, tenant_id, permissions, is_system_owner, TokenType::Access, Duration::minutes(30), sid)
+    pub fn generate_access_token(
+        &self,
+        user_id: &str,
+        role: &str,
+        tenant_id: Uuid,
+        permissions: Vec<String>,
+        is_system_owner: bool,
+        sid: Option<String>,
+    ) -> Result<String, AppError> {
+        self.generate_token(
+            user_id,
+            role,
+            tenant_id,
+            permissions,
+            is_system_owner,
+            TokenType::Access,
+            Duration::minutes(30),
+            sid,
+        )
     }
 
-    pub fn generate_refresh_token(&self, user_id: &str, role: &str, tenant_id: Uuid, permissions: Vec<String>, is_system_owner: bool, sid: Option<String>) -> Result<String, AppError> {
-        self.generate_token(user_id, role, tenant_id, permissions, is_system_owner, TokenType::Refresh, Duration::hours(24), sid)
+    pub fn generate_refresh_token(
+        &self,
+        user_id: &str,
+        role: &str,
+        tenant_id: Uuid,
+        permissions: Vec<String>,
+        is_system_owner: bool,
+        sid: Option<String>,
+    ) -> Result<String, AppError> {
+        self.generate_token(
+            user_id,
+            role,
+            tenant_id,
+            permissions,
+            is_system_owner,
+            TokenType::Refresh,
+            Duration::hours(24),
+            sid,
+        )
     }
 
     /// Generate access token with plan information (for kyx-signal integration)
@@ -120,31 +154,66 @@ impl JwtService {
             signal_permissions,
         };
 
-        encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|e| AppError {
-                code: 500,
-                message: format!("Token generation failed: {}", e),
-            })
+        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| AppError {
+            code: 500,
+            message: format!("Token generation failed: {}", e),
+        })
     }
 
     /// Generate access token with custom expiry (in minutes)
-    pub fn generate_access_token_dynamic(&self, user_id: &str, role: &str, tenant_id: Uuid, permissions: Vec<String>, is_system_owner: bool, expiry_min: i64, sid: Option<String>) -> Result<String, AppError> {
-        self.generate_token(user_id, role, tenant_id, permissions, is_system_owner, TokenType::Access, Duration::minutes(expiry_min), sid)
-    }
-
-    /// Generate refresh token with custom expiry (in hours)
-    pub fn generate_refresh_token_dynamic(&self, user_id: &str, role: &str, tenant_id: Uuid, permissions: Vec<String>, is_system_owner: bool, expiry_hours: i64, sid: Option<String>) -> Result<String, AppError> {
-        self.generate_token(user_id, role, tenant_id, permissions, is_system_owner, TokenType::Refresh, Duration::hours(expiry_hours), sid)
-    }
-
-    pub fn generate_token(
-        &self, 
-        user_id: &str, 
-        role: &str, 
+    pub fn generate_access_token_dynamic(
+        &self,
+        user_id: &str,
+        role: &str,
         tenant_id: Uuid,
         permissions: Vec<String>,
         is_system_owner: bool,
-        token_type: TokenType, 
+        expiry_min: i64,
+        sid: Option<String>,
+    ) -> Result<String, AppError> {
+        self.generate_token(
+            user_id,
+            role,
+            tenant_id,
+            permissions,
+            is_system_owner,
+            TokenType::Access,
+            Duration::minutes(expiry_min),
+            sid,
+        )
+    }
+
+    /// Generate refresh token with custom expiry (in hours)
+    pub fn generate_refresh_token_dynamic(
+        &self,
+        user_id: &str,
+        role: &str,
+        tenant_id: Uuid,
+        permissions: Vec<String>,
+        is_system_owner: bool,
+        expiry_hours: i64,
+        sid: Option<String>,
+    ) -> Result<String, AppError> {
+        self.generate_token(
+            user_id,
+            role,
+            tenant_id,
+            permissions,
+            is_system_owner,
+            TokenType::Refresh,
+            Duration::hours(expiry_hours),
+            sid,
+        )
+    }
+
+    pub fn generate_token(
+        &self,
+        user_id: &str,
+        role: &str,
+        tenant_id: Uuid,
+        permissions: Vec<String>,
+        is_system_owner: bool,
+        token_type: TokenType,
         duration: chrono::Duration,
         sid: Option<String>,
     ) -> Result<String, AppError> {
@@ -168,19 +237,22 @@ impl JwtService {
             signal_permissions: None,
         };
 
-        encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|e| AppError {
-                code: 500,
-                message: format!("Token generation failed: {}", e),
-            })
+        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| AppError {
+            code: 500,
+            message: format!("Token generation failed: {}", e),
+        })
     }
 
     pub fn verify_token(&self, token: &str) -> Result<Claims, AppError> {
-        decode::<Claims>(token, &self.decoding_key, &Validation::new(Algorithm::HS256))
-            .map(|data| data.claims)
-            .map_err(|e| AppError {
-                code: 401,
-                message: format!("Invalid token: {}", e),
-            })
+        decode::<Claims>(
+            token,
+            &self.decoding_key,
+            &Validation::new(Algorithm::HS256),
+        )
+        .map(|data| data.claims)
+        .map_err(|e| AppError {
+            code: 401,
+            message: format!("Invalid token: {}", e),
+        })
     }
 }

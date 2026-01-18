@@ -1,7 +1,6 @@
 use crate::core::infrastructure::database::Database;
 use crate::core::utils::response::ApiResponse;
 use ntex::web;
-use serde_json::json;
 use sqlx::Row;
 use std::sync::Arc;
 

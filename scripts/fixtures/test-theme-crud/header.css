@@ -1,0 +1,8 @@
+/* Header Component - Uses variables from variables.css */
+
+.header-glass {
+    backdrop-filter: var(--glass-blur, blur(40px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(40px));
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
+}

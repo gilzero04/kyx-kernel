@@ -1,5 +1,10 @@
 FROM rust:1.92-slim-bookworm AS builder
 
+# Build arguments for version metadata
+ARG APP_VERSION=0.1.0
+ARG BUILD_DATE=unknown
+ARG GIT_COMMIT=unknown
+
 WORKDIR /app
 
 # Install build dependencies
@@ -18,7 +23,6 @@ RUN rm -rf src
 
 # Copy actual source code
 COPY src ./src
-COPY migrations ./migrations
 COPY .sqlx ./.sqlx
 # Touch main.rs to ensure rebuild
 RUN touch src/main.rs
@@ -31,6 +35,16 @@ RUN cargo build --release
 # Runtime Stage (minimal image)
 # ============================================
 FROM debian:bookworm-slim
+
+# Re-declare ARGs for this stage
+ARG APP_VERSION=0.1.0
+ARG BUILD_DATE=unknown
+ARG GIT_COMMIT=unknown
+
+# Set as ENV for runtime access
+ENV APP_VERSION=${APP_VERSION}
+ENV BUILD_DATE=${BUILD_DATE}
+ENV GIT_COMMIT=${GIT_COMMIT}
 
 WORKDIR /app
 
@@ -46,8 +60,7 @@ RUN apt-get update && apt-get install -y \
 # Copy binary from builder
 COPY --from=builder /app/target/release/kyx-kernel /app/kyx-kernel
 
-# Copy migrations for runtime execution
-COPY --from=builder /app/migrations /app/migrations
+
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

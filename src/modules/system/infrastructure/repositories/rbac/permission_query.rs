@@ -1,10 +1,14 @@
-use crate::modules::system::domain::rbac::{Permission, CreatePermissionCmd, UpdatePermissionCmd};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::rbac::{CreatePermissionCmd, Permission, UpdatePermissionCmd};
 use anyhow::{Result, anyhow};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub async fn list(pool: &Arc<Database>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>) -> Result<Vec<Permission>> {
+pub async fn list(
+    pool: &Arc<Database>,
+    tenant_id: Option<Uuid>,
+    actor_tenant_id: Option<Uuid>,
+) -> Result<Vec<Permission>> {
     // If actor is present, they ONLY see permissions delegated to their tenant
     let final_tid = actor_tenant_id.or(tenant_id);
 
@@ -37,7 +41,7 @@ pub async fn create(pool: &Arc<Database>, cmd: CreatePermissionCmd) -> Result<Pe
     let perm = sqlx::query_as::<_, Permission>(
         "INSERT INTO sys_permissions (code, slug, name, description, is_active) 
          VALUES ($1, $2, $3, $4, $5) 
-         RETURNING id, code, slug, name, description, is_system, is_active, created_at, updated_at"
+         RETURNING id, code, slug, name, description, is_system, is_active, created_at, updated_at",
     )
     .bind(cmd.code)
     .bind(cmd.slug)
@@ -50,7 +54,11 @@ pub async fn create(pool: &Arc<Database>, cmd: CreatePermissionCmd) -> Result<Pe
     Ok(perm)
 }
 
-pub async fn update(pool: &Arc<Database>, id: Uuid, cmd: UpdatePermissionCmd) -> Result<Option<Permission>> {
+pub async fn update(
+    pool: &Arc<Database>,
+    id: Uuid,
+    cmd: UpdatePermissionCmd,
+) -> Result<Option<Permission>> {
     let (code_val, code_present) = match cmd.code {
         Some(inner) => (inner, true),
         None => (None, false),
@@ -68,7 +76,7 @@ pub async fn update(pool: &Arc<Database>, id: Uuid, cmd: UpdatePermissionCmd) ->
          is_active = COALESCE($6, is_active),
          updated_at = NOW()
          WHERE id = $7 AND deleted_at IS NULL
-         RETURNING id, code, slug, name, description, is_system, is_active, created_at, updated_at"
+         RETURNING id, code, slug, name, description, is_system, is_active, created_at, updated_at",
     )
     .bind(cmd.name)
     .bind(code_present)

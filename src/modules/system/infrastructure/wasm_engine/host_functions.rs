@@ -7,9 +7,9 @@
 //
 // ════════════════════════════════════════════════════════════════════════════
 
-use std::sync::Arc;
-use std::collections::HashMap;
 use parking_lot::RwLock;
+use std::collections::HashMap;
+use std::sync::Arc;
 use uuid::Uuid;
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -32,7 +32,7 @@ impl PluginContext {
             capabilities,
         }
     }
-    
+
     /// Check if plugin has a specific capability
     pub fn has_capability(&self, cap: &str) -> bool {
         self.capabilities.contains(&cap.to_string())
@@ -61,14 +61,14 @@ impl PluginKvStore {
             data: RwLock::new(HashMap::new()),
         }
     }
-    
+
     /// Get value for a key (scoped to plugin)
     pub fn get(&self, plugin_id: &str, key: &str) -> Option<Vec<u8>> {
         let data = self.data.read();
         data.get(plugin_id)
             .and_then(|plugin_data| plugin_data.get(key).cloned())
     }
-    
+
     /// Set value for a key (scoped to plugin)
     pub fn set(&self, plugin_id: &str, key: &str, value: Vec<u8>) {
         let mut data = self.data.write();
@@ -76,7 +76,7 @@ impl PluginKvStore {
             .or_default()
             .insert(key.to_string(), value);
     }
-    
+
     /// Delete a key (scoped to plugin)
     pub fn delete(&self, plugin_id: &str, key: &str) -> bool {
         let mut data = self.data.write();
@@ -85,7 +85,7 @@ impl PluginKvStore {
         }
         false
     }
-    
+
     /// List all keys for a plugin
     pub fn list_keys(&self, plugin_id: &str) -> Vec<String> {
         let data = self.data.read();
@@ -93,7 +93,7 @@ impl PluginKvStore {
             .map(|plugin_data| plugin_data.keys().cloned().collect())
             .unwrap_or_default()
     }
-    
+
     /// Clear all data for a plugin
     pub fn clear(&self, plugin_id: &str) {
         let mut data = self.data.write();
@@ -134,9 +134,15 @@ impl PluginEventBus {
             subscribers: RwLock::new(HashMap::new()),
         }
     }
-    
+
     /// Emit an event
-    pub fn emit(&self, plugin_id: &str, tenant_id: Uuid, event_type: &str, payload: serde_json::Value) {
+    pub fn emit(
+        &self,
+        plugin_id: &str,
+        tenant_id: Uuid,
+        event_type: &str,
+        payload: serde_json::Value,
+    ) {
         let event = PluginEvent {
             plugin_id: plugin_id.to_string(),
             tenant_id,
@@ -144,18 +150,18 @@ impl PluginEventBus {
             payload,
             timestamp: chrono::Utc::now(),
         };
-        
+
         log::debug!("Plugin {} emitted event: {}", plugin_id, event_type);
-        
+
         let mut events = self.events.write();
         events.push(event);
-        
+
         // Keep last 1000 events
         if events.len() > 1000 {
             events.drain(0..100);
         }
     }
-    
+
     /// Subscribe to an event type
     pub fn subscribe(&self, plugin_id: &str, event_type: &str) {
         let mut subs = self.subscribers.write();
@@ -163,7 +169,7 @@ impl PluginEventBus {
             .or_default()
             .push(plugin_id.to_string());
     }
-    
+
     /// Unsubscribe from an event type
     pub fn unsubscribe(&self, plugin_id: &str, event_type: &str) {
         let mut subs = self.subscribers.write();
@@ -171,19 +177,21 @@ impl PluginEventBus {
             subscribers.retain(|id| id != plugin_id);
         }
     }
-    
+
     /// Get recent events for a plugin (based on subscriptions)
     pub fn get_events_for_plugin(&self, plugin_id: &str, limit: usize) -> Vec<PluginEvent> {
         let subs = self.subscribers.read();
         let events = self.events.read();
-        
+
         // Find event types this plugin is subscribed to
-        let subscribed_types: Vec<&String> = subs.iter()
+        let subscribed_types: Vec<&String> = subs
+            .iter()
             .filter(|(_, subscribers)| subscribers.contains(&plugin_id.to_string()))
             .map(|(event_type, _)| event_type)
             .collect();
-        
-        events.iter()
+
+        events
+            .iter()
             .filter(|e| subscribed_types.contains(&&e.event_type))
             .rev()
             .take(limit)
@@ -215,72 +223,96 @@ impl HostFunctions {
             event_bus: Arc::new(PluginEventBus::new()),
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Storage Functions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// kv_get(key: string) -> Option<bytes>
     pub fn kv_get(&self, ctx: &PluginContext, key: &str) -> Option<Vec<u8>> {
         if !ctx.has_capability("storage_read") && !ctx.has_capability("storage") {
-            log::warn!("Plugin {} denied: missing storage_read capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing storage_read capability",
+                ctx.plugin_id
+            );
             return None;
         }
         self.kv_store.get(&ctx.plugin_id, key)
     }
-    
+
     /// kv_set(key: string, value: bytes) -> bool
     pub fn kv_set(&self, ctx: &PluginContext, key: &str, value: Vec<u8>) -> bool {
         if !ctx.has_capability("storage_write") && !ctx.has_capability("storage") {
-            log::warn!("Plugin {} denied: missing storage_write capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing storage_write capability",
+                ctx.plugin_id
+            );
             return false;
         }
         self.kv_store.set(&ctx.plugin_id, key, value);
         true
     }
-    
+
     /// kv_delete(key: string) -> bool
     pub fn kv_delete(&self, ctx: &PluginContext, key: &str) -> bool {
         if !ctx.has_capability("storage_write") && !ctx.has_capability("storage") {
-            log::warn!("Plugin {} denied: missing storage_write capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing storage_write capability",
+                ctx.plugin_id
+            );
             return false;
         }
         self.kv_store.delete(&ctx.plugin_id, key)
     }
-    
+
     /// kv_list() -> Vec<string>
     pub fn kv_list(&self, ctx: &PluginContext) -> Vec<String> {
         if !ctx.has_capability("storage_read") && !ctx.has_capability("storage") {
-            log::warn!("Plugin {} denied: missing storage_read capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing storage_read capability",
+                ctx.plugin_id
+            );
             return vec![];
         }
         self.kv_store.list_keys(&ctx.plugin_id)
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Event Functions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// emit_event(type: string, payload: json) -> bool
-    pub fn emit_event(&self, ctx: &PluginContext, event_type: &str, payload: serde_json::Value) -> bool {
+    pub fn emit_event(
+        &self,
+        ctx: &PluginContext,
+        event_type: &str,
+        payload: serde_json::Value,
+    ) -> bool {
         if !ctx.has_capability("event_emit") && !ctx.has_capability("event") {
-            log::warn!("Plugin {} denied: missing event_emit capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing event_emit capability",
+                ctx.plugin_id
+            );
             return false;
         }
-        self.event_bus.emit(&ctx.plugin_id, ctx.tenant_id, event_type, payload);
+        self.event_bus
+            .emit(&ctx.plugin_id, ctx.tenant_id, event_type, payload);
         true
     }
-    
+
     /// subscribe_event(type: string) -> bool
     pub fn subscribe_event(&self, ctx: &PluginContext, event_type: &str) -> bool {
         if !ctx.has_capability("event_subscribe") && !ctx.has_capability("event") {
-            log::warn!("Plugin {} denied: missing event_subscribe capability", ctx.plugin_id);
+            log::warn!(
+                "Plugin {} denied: missing event_subscribe capability",
+                ctx.plugin_id
+            );
             return false;
         }
         self.event_bus.subscribe(&ctx.plugin_id, event_type);
         true
     }
-    
+
     /// get_events(limit: usize) -> Vec<PluginEvent>
     pub fn get_events(&self, ctx: &PluginContext, limit: usize) -> Vec<PluginEvent> {
         if !ctx.has_capability("event_subscribe") && !ctx.has_capability("event") {
@@ -288,36 +320,36 @@ impl HostFunctions {
         }
         self.event_bus.get_events_for_plugin(&ctx.plugin_id, limit)
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Logging Functions
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// log_info(message: string)
     pub fn log_info(&self, ctx: &PluginContext, message: &str) {
         if ctx.has_capability("log_info") {
             log::info!("[Plugin:{}] {}", ctx.plugin_id, message);
         }
     }
-    
+
     /// log_warn(message: string)
     pub fn log_warn(&self, ctx: &PluginContext, message: &str) {
         if ctx.has_capability("log_warn") {
             log::warn!("[Plugin:{}] {}", ctx.plugin_id, message);
         }
     }
-    
+
     /// log_error(message: string)
     pub fn log_error(&self, ctx: &PluginContext, message: &str) {
         if ctx.has_capability("log_error") {
             log::error!("[Plugin:{}] {}", ctx.plugin_id, message);
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Cleanup
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// Clean up all data for a plugin (called on uninstall)
     pub fn cleanup_plugin(&self, plugin_id: &str) {
         self.kv_store.clear(plugin_id);
@@ -333,53 +365,57 @@ impl HostFunctions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     fn test_context() -> PluginContext {
         PluginContext::new(
             "test-plugin",
             Uuid::new_v4(),
-            vec!["storage".to_string(), "event".to_string(), "log_info".to_string()],
+            vec![
+                "storage".to_string(),
+                "event".to_string(),
+                "log_info".to_string(),
+            ],
         )
     }
-    
+
     #[test]
     fn test_kv_store() {
         let hf = HostFunctions::new();
         let ctx = test_context();
-        
+
         // Set and get
         assert!(hf.kv_set(&ctx, "key1", b"value1".to_vec()));
         assert_eq!(hf.kv_get(&ctx, "key1"), Some(b"value1".to_vec()));
-        
+
         // List keys
         let keys = hf.kv_list(&ctx);
         assert!(keys.contains(&"key1".to_string()));
-        
+
         // Delete
         assert!(hf.kv_delete(&ctx, "key1"));
         assert_eq!(hf.kv_get(&ctx, "key1"), None);
     }
-    
+
     #[test]
     fn test_event_bus() {
         let hf = HostFunctions::new();
         let ctx = test_context();
-        
+
         // Subscribe and emit
         assert!(hf.subscribe_event(&ctx, "user.created"));
         assert!(hf.emit_event(&ctx, "user.created", serde_json::json!({"id": 123})));
-        
+
         // Get events
         let events = hf.get_events(&ctx, 10);
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, "user.created");
     }
-    
+
     #[test]
     fn test_capability_check() {
         let hf = HostFunctions::new();
         let restricted_ctx = PluginContext::new("restricted", Uuid::new_v4(), vec![]);
-        
+
         // Should fail without capability
         assert!(!hf.kv_set(&restricted_ctx, "key", b"value".to_vec()));
         assert!(!hf.emit_event(&restricted_ctx, "test", serde_json::json!({})));

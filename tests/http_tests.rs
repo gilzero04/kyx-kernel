@@ -2,8 +2,8 @@
 // HTTP & API Tests - Status Codes, Headers, Pagination, Edge Cases
 // ════════════════════════════════════════════════════════════════════════════
 
-use serde_json::json;
 use ntex::http::StatusCode;
+use serde_json::json;
 
 // ════════════════════════════════════════════════════════════════════════════
 // HTTP Status Code Tests
@@ -63,7 +63,7 @@ fn test_common_request_headers() {
         "X-Request-ID",
         "X-Tenant-ID",
     ];
-    
+
     for header in headers {
         assert!(!header.is_empty());
     }
@@ -78,7 +78,7 @@ fn test_security_response_headers() {
         "Content-Security-Policy": "default-src 'self'",
         "Strict-Transport-Security": "max-age=31536000"
     });
-    
+
     assert_eq!(security_headers["X-Content-Type-Options"], "nosniff");
     assert_eq!(security_headers["X-Frame-Options"], "DENY");
 }
@@ -91,8 +91,13 @@ fn test_cors_headers() {
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Max-Age": "86400"
     });
-    
-    assert!(cors_headers["Access-Control-Allow-Methods"].as_str().unwrap().contains("GET"));
+
+    assert!(
+        cors_headers["Access-Control-Allow-Methods"]
+            .as_str()
+            .unwrap()
+            .contains("GET")
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -109,12 +114,15 @@ fn test_pagination_metadata() {
         "has_next": true,
         "has_prev": false
     });
-    
+
     let total_items = pagination["total_items"].as_i64().unwrap();
     let per_page = pagination["per_page"].as_i64().unwrap();
     let total_pages = pagination["total_pages"].as_i64().unwrap();
-    
-    assert_eq!(total_pages, (total_items as f64 / per_page as f64).ceil() as i64);
+
+    assert_eq!(
+        total_pages,
+        (total_items as f64 / per_page as f64).ceil() as i64
+    );
 }
 
 #[test]
@@ -126,7 +134,7 @@ fn test_cursor_pagination() {
         "has_more": true,
         "limit": 50
     });
-    
+
     assert!(cursor_pagination["next_cursor"].is_string());
     assert!(cursor_pagination["has_more"].as_bool().unwrap());
 }
@@ -135,7 +143,7 @@ fn test_cursor_pagination() {
 fn test_pagination_limits() {
     let valid_per_page_values = [10, 20, 50, 100];
     let max_per_page = 100;
-    
+
     for value in valid_per_page_values {
         assert!(value <= max_per_page);
         assert!(value > 0);
@@ -156,7 +164,7 @@ fn test_error_response_format() {
             "request_id": "req_abc123"
         }
     });
-    
+
     assert!(error["error"]["code"].is_string());
     assert!(error["error"]["message"].is_string());
 }
@@ -173,7 +181,7 @@ fn test_error_codes() {
         "RATE_LIMITED",
         "INTERNAL_ERROR",
     ];
-    
+
     for code in error_codes {
         assert!(code.chars().all(|c| c.is_uppercase() || c == '_'));
     }
@@ -193,7 +201,7 @@ fn test_success_envelope() {
             "timestamp": "2025-01-01T00:00:00Z"
         }
     });
-    
+
     assert!(response["success"].as_bool().unwrap());
     assert!(response["data"].is_object());
 }
@@ -208,7 +216,7 @@ fn test_list_response_envelope() {
             "total": 100
         }
     });
-    
+
     assert!(response["data"].is_array());
     assert!(response["pagination"].is_object());
 }
@@ -226,7 +234,7 @@ fn test_filter_parameters() {
         "sort_by": "created_at",
         "sort_order": "desc"
     });
-    
+
     assert!(filters["sort_order"] == "asc" || filters["sort_order"] == "desc");
 }
 
@@ -238,7 +246,7 @@ fn test_search_query_structure() {
         "exact": false,
         "fuzzy": true
     });
-    
+
     assert!(search["fields"].is_array());
     assert!(search["q"].is_string());
 }

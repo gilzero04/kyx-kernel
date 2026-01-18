@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use crate::core::infrastructure::redis::Redis;
 use crate::core::AppError;
+use crate::core::infrastructure::redis::Redis;
 use dashmap::DashMap;
-use std::time::{Duration, Instant};
 use serde_json::Value;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 pub struct ConfigService {
     db: Arc<crate::core::infrastructure::database::Database>,
@@ -15,7 +15,7 @@ pub struct ConfigService {
 impl ConfigService {
     pub fn new(
         db: Arc<crate::core::infrastructure::database::Database>,
-        redis: Arc<Redis>
+        redis: Arc<Redis>,
     ) -> Self {
         Self {
             db,
@@ -29,61 +29,104 @@ impl ConfigService {
         self.get_tenant_string(None, key, default).await
     }
 
-    pub async fn get_tenant_string(&self, tenant_id: Option<uuid::Uuid>, key: &str, default: &str) -> String {
+    pub async fn get_tenant_string(
+        &self,
+        tenant_id: Option<uuid::Uuid>,
+        key: &str,
+        default: &str,
+    ) -> String {
         // 1. Try Tenant Workspace Scope
         if let Some(tid) = tenant_id {
-            if let Some(val) = self.find_config_entry(Some(tid), key, Some("workspace")).await {
-                return val.as_str().unwrap_or(default).to_string();
+            if let Some(val) = self
+                .find_config_entry(Some(tid), key, Some("workspace"))
+                .await
+            {
+                return self.value_to_string(&val, default);
             }
         }
 
         // 2. Try Global Workspace Default (Owner's workspace scope)
         if let Ok(owner_id) = self.get_owner_id().await {
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("workspace")).await {
-                return val.as_str().unwrap_or(default).to_string();
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("workspace"))
+                .await
+            {
+                return self.value_to_string(&val, default);
             }
-            
+
             // 3. Try Platform Scope
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("platform")).await {
-                return val.as_str().unwrap_or(default).to_string();
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("platform"))
+                .await
+            {
+                return self.value_to_string(&val, default);
             }
 
             // 4. Try System Scope
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("system")).await {
-                return val.as_str().unwrap_or(default).to_string();
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("system"))
+                .await
+            {
+                return self.value_to_string(&val, default);
             }
         }
 
         // 5. Fallback to Env or default
-        std::env::var(key.to_uppercase())
-            .unwrap_or_else(|_| default.to_string())
+        std::env::var(key.to_uppercase()).unwrap_or_else(|_| default.to_string())
+    }
+
+    fn value_to_string(&self, v: &Value, default: &str) -> String {
+        match v {
+            Value::String(s) => s.clone(),
+            Value::Bool(b) => b.to_string(),
+            Value::Number(n) => n.to_string(),
+            Value::Null => default.to_string(),
+            _ => v.to_string(),
+        }
     }
 
     pub async fn get_int(&self, key: &str, default: i64) -> i64 {
         self.get_tenant_int(None, key, default).await
     }
 
-    pub async fn get_tenant_int(&self, tenant_id: Option<uuid::Uuid>, key: &str, default: i64) -> i64 {
+    pub async fn get_tenant_int(
+        &self,
+        tenant_id: Option<uuid::Uuid>,
+        key: &str,
+        default: i64,
+    ) -> i64 {
         // 1. Try Tenant Workspace Scope
         if let Some(tid) = tenant_id {
-            if let Some(val) = self.find_config_entry(Some(tid), key, Some("workspace")).await {
+            if let Some(val) = self
+                .find_config_entry(Some(tid), key, Some("workspace"))
+                .await
+            {
                 return val.as_i64().unwrap_or(default);
             }
         }
 
         // 2. Try Global Workspace Default (Owner's workspace scope)
         if let Ok(owner_id) = self.get_owner_id().await {
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("workspace")).await {
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("workspace"))
+                .await
+            {
                 return val.as_i64().unwrap_or(default);
             }
-            
+
             // 3. Try Platform Scope
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("platform")).await {
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("platform"))
+                .await
+            {
                 return val.as_i64().unwrap_or(default);
             }
 
             // 4. Try System Scope
-            if let Some(val) = self.find_config_entry(Some(owner_id), key, Some("system")).await {
+            if let Some(val) = self
+                .find_config_entry(Some(owner_id), key, Some("system"))
+                .await
+            {
                 return val.as_i64().unwrap_or(default);
             }
         }
@@ -97,7 +140,12 @@ impl ConfigService {
 
     /// Helper to find config for a SPECIFIC tenant scope (or strictly None)
     /// Does not recurse or fallback. Checks L1(Mem) -> L2(Redis) -> L3(DB)
-    async fn find_config_entry(&self, tenant_id: Option<uuid::Uuid>, key: &str, scope: Option<&str>) -> Option<Value> {
+    async fn find_config_entry(
+        &self,
+        tenant_id: Option<uuid::Uuid>,
+        key: &str,
+        scope: Option<&str>,
+    ) -> Option<Value> {
         let scp = scope.unwrap_or("platform");
         let cache_key = if let Some(tid) = tenant_id {
             format!("{}:{}:{}", tid, scp, key)
@@ -129,7 +177,8 @@ impl ConfigService {
 
         if let Some(s) = val_str {
             let json_val = serde_json::from_str(&s).unwrap_or_else(|_| Value::from(s.clone()));
-            self.cache.insert(cache_key.clone(), (json_val.clone(), Instant::now()));
+            self.cache
+                .insert(cache_key.clone(), (json_val.clone(), Instant::now()));
             return Some(json_val);
         }
 
@@ -142,15 +191,21 @@ impl ConfigService {
 
         if let Some(tid) = effective_tid {
             if let Some(db_val) = self.get_from_db(tid, key, scp).await {
-                 self.cache.insert(cache_key.clone(), (db_val.clone(), Instant::now()));
-                 
-                 let redis_val = match &db_val {
-                     Value::String(s) => s.clone(),
-                     _ => db_val.to_string()
-                 };
-                 
-                 let _ : () = redis::cmd("SET").arg(&redis_key).arg(&redis_val).query_async(&mut conn).await.unwrap_or(());
-                 return Some(db_val);
+                self.cache
+                    .insert(cache_key.clone(), (db_val.clone(), Instant::now()));
+
+                let redis_val = match &db_val {
+                    Value::String(s) => s.clone(),
+                    _ => db_val.to_string(),
+                };
+
+                let _: () = redis::cmd("SET")
+                    .arg(&redis_key)
+                    .arg(&redis_val)
+                    .query_async(&mut conn)
+                    .await
+                    .unwrap_or(());
+                return Some(db_val);
             }
         }
 
@@ -161,7 +216,13 @@ impl ConfigService {
         self.set_tenant_config(None, key, value, None).await
     }
 
-    pub async fn set_tenant_config(&self, tenant_id: Option<uuid::Uuid>, key: &str, value: Value, scope: Option<&str>) -> Result<(), AppError> {
+    pub async fn set_tenant_config(
+        &self,
+        tenant_id: Option<uuid::Uuid>,
+        key: &str,
+        value: Value,
+        scope: Option<&str>,
+    ) -> Result<(), AppError> {
         let tid = if let Some(id) = tenant_id {
             id
         } else {
@@ -171,16 +232,17 @@ impl ConfigService {
             })?
         };
 
-        // Determine scope automatically if not specified? 
+        // Determine scope automatically if not specified?
         // For now, let's use a heuristic or just default to workspace if not platform-like
         let scope = if let Some(s) = scope {
             s
-        } else if key.starts_with("console_") || 
-                  key.starts_with("access_token") || 
-                  key.starts_with("refresh_token") || 
-                  key.starts_with("branding_") || 
-                  key.starts_with("platform_") || 
-                  key.starts_with("theme_") {
+        } else if key.starts_with("console_")
+            || key.starts_with("access_token")
+            || key.starts_with("refresh_token")
+            || key.starts_with("branding_")
+            || key.starts_with("platform_")
+            || key.starts_with("theme_")
+        {
             "platform"
         } else {
             "workspace"
@@ -192,7 +254,7 @@ impl ConfigService {
         sqlx::query(
             "INSERT INTO sys_configs (key, value, tenant_id, scope) VALUES ($1, $2, $3, $4)
              ON CONFLICT (key, tenant_id, scope)
-             DO UPDATE SET value = EXCLUDED.value"
+             DO UPDATE SET value = EXCLUDED.value",
         )
         .bind(key)
         .bind(&value)
@@ -211,7 +273,7 @@ impl ConfigService {
             Value::String(s) => s.clone(),
             _ => value.to_string(),
         };
-        
+
         let _: () = redis::cmd("SET")
             .arg(&redis_key)
             .arg(&val_str)
@@ -224,13 +286,13 @@ impl ConfigService {
 
         // 3. Invalidate local memory cache
         self.cache.remove(&cache_key);
-        
+
         Ok(())
     }
 
     async fn get_from_db(&self, tenant_id: uuid::Uuid, key: &str, scope: &str) -> Option<Value> {
         let row: Option<(Value,)> = sqlx::query_as::<_, (Value,)>(
-            "SELECT value FROM sys_configs WHERE key = $1 AND tenant_id = $2 AND scope = $3"
+            "SELECT value FROM sys_configs WHERE key = $1 AND tenant_id = $2 AND scope = $3",
         )
         .bind(key)
         .bind(tenant_id)
@@ -238,7 +300,7 @@ impl ConfigService {
         .fetch_optional(&self.db.pool)
         .await
         .unwrap_or(None);
-        
+
         row.map(|(v,)| v)
     }
 
@@ -249,7 +311,7 @@ impl ConfigService {
             .fetch_optional(&self.db.pool)
             .await
             .unwrap_or(None);
-        
+
         owner_id.ok_or_else(|| AppError {
             code: 500,
             message: "System Owner not found".to_string(),

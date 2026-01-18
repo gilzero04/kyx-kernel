@@ -1,35 +1,35 @@
-use ntex::web;
 use crate::core::AppModule;
-use crate::core::infrastructure::redis::Redis;
+use crate::core::infrastructure::ai_service::AIService;
 use crate::core::infrastructure::audit::AuditService;
-use crate::core::infrastructure::database::Database;
-use crate::core::utils::jwt::JwtService;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::cors::CorsManager;
+use crate::core::infrastructure::database::Database;
+use crate::core::infrastructure::redis::Redis;
+use crate::core::utils::jwt::JwtService;
 use crate::modules::system::application::services::api_key::ApiKeyService;
-use crate::modules::system::application::services::i18n::I18nService;
-use crate::modules::system::infrastructure::repositories::i18n::PostgresI18nRepositoryImpl;
-use crate::core::infrastructure::ai_service::AIService;
-use crate::modules::system::application::services::cors::CORSService;
 use crate::modules::system::application::services::audit::AuditQueryService;
-use crate::modules::system::infrastructure::repositories::audit::PostgresAuditRepository;
-use crate::modules::system::infrastructure::repositories::cors::PostgresCorsRepository;
-use crate::modules::system::infrastructure::repositories::tenant::PostgresTenantRepository;
+use crate::modules::system::application::services::cms::CmsService;
+use crate::modules::system::application::services::cors::CORSService;
+use crate::modules::system::application::services::i18n::I18nService;
+use crate::modules::system::application::services::rbac::RbacService;
 use crate::modules::system::application::services::tenant::TenantService;
 use crate::modules::system::application::services::tenant::domain_verification::DomainVerificationService;
-use crate::modules::system::infrastructure::repositories::rbac::PostgresRbacRepository;
-use crate::modules::system::application::services::rbac::RbacService;
-use crate::modules::system::infrastructure::repositories::user::PostgresUserRepository;
-use crate::modules::system::application::services::user::UserAdminService;
-use crate::modules::system::infrastructure::repositories::theme::PostgresThemeRepository;
 use crate::modules::system::application::services::theme::ThemeService;
-use crate::modules::system::infrastructure::repositories::cms::PostgresCmsRepository;
-use crate::modules::system::application::services::cms::CmsService;
+use crate::modules::system::application::services::user::UserAdminService;
 use crate::modules::system::domain::plugin::registry::PluginRegistry;
+use crate::modules::system::infrastructure::repositories::audit::PostgresAuditRepository;
+use crate::modules::system::infrastructure::repositories::cms::PostgresCmsRepository;
+use crate::modules::system::infrastructure::repositories::cors::PostgresCorsRepository;
+use crate::modules::system::infrastructure::repositories::i18n::PostgresI18nRepositoryImpl;
+use crate::modules::system::infrastructure::repositories::rbac::PostgresRbacRepository;
+use crate::modules::system::infrastructure::repositories::tenant::PostgresTenantRepository;
+use crate::modules::system::infrastructure::repositories::theme::PostgresThemeRepository;
+use crate::modules::system::infrastructure::repositories::user::PostgresUserRepository;
+use ntex::web;
 use std::sync::Arc;
 
-pub mod domain;
 pub mod application;
+pub mod domain;
 pub mod infrastructure;
 pub mod interface;
 
@@ -62,14 +62,14 @@ impl SystemModule {
         cors_manager: Arc<CorsManager>,
         api_key_service: Arc<ApiKeyService>,
     ) -> Self {
-
         let cors_repo = Arc::new(PostgresCorsRepository::new(db.clone()));
         let cors_service = Arc::new(CORSService::new(cors_repo, cors_manager));
-        
+
         // Tenant
         let tenant_repo = Arc::new(PostgresTenantRepository::new(db.clone()));
         let tenant_service = Arc::new(TenantService::new(tenant_repo.clone()));
-        let domain_verification_service = Arc::new(DomainVerificationService::new(tenant_repo.clone()));
+        let domain_verification_service =
+            Arc::new(DomainVerificationService::new(tenant_repo.clone()));
 
         // RBAC
         let rbac_repo = Arc::new(PostgresRbacRepository::new(db.clone()));
@@ -140,14 +140,14 @@ impl AppModule for SystemModule {
         let domain_verification_s = self.domain_verification_service.clone();
         let theme_s = self.theme_service.clone();
         let cms_s = self.cms_service.clone();
-        
+
         // ═══════════════════════════════════════════════════════════════════════════
         // 1. UNIFIED ADMIN SCOPE - All protected management endpoints
         // ═══════════════════════════════════════════════════════════════════════════
         config.service(
             web::scope("/admin")
                 .state(self.db.clone())
-                .state(self.jwt.clone()) 
+                .state(self.jwt.clone())
                 .state(config_service.clone())
                 .state(audit_service.clone())
                 .state(i18n_s.clone())
@@ -162,35 +162,119 @@ impl AppModule for SystemModule {
                 .state(cms_s.clone())
                 .state(self.plugin_registry.clone())
                 // Config & Settings
-                .configure(|conf| interface::http::routers::config::config_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
-                .configure(|conf| interface::http::routers::system::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::config::config_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
+                .configure(|conf| {
+                    interface::http::routers::system::admin_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Users
-                .configure(|conf| interface::http::routers::user::user_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::user::user_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Tenants
-                .configure(|conf| interface::http::routers::tenant::tenant_routes_system(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::tenant::tenant_routes_system(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // RBAC (Roles & Permissions)
-                .configure(|conf| interface::http::routers::rbac::rbac_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::rbac::rbac_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Sessions (Admin) - handled by auth module
                 // Audit Logs
-                .configure(|conf| interface::http::routers::audit::audit_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::audit::audit_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // API Keys
-                .configure(|conf| interface::http::routers::api_key::api_key_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::api_key::api_key_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // CORS
-                .configure(|conf| interface::http::routers::cors::cors_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::cors::cors_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // i18n
-                .configure(|conf| interface::http::routers::i18n::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::i18n::admin_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Themes
-                .configure(|conf| interface::http::routers::theme::theme_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::theme::theme_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Plugins
-                .configure(|conf| interface::http::routers::plugin::plugin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::plugin::plugin_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // CMS
-                .configure(|conf| interface::http::routers::cms::admin_routes(conf, self.jwt.clone(), self.audit.clone(), Some(self._redis.clone())))
+                .configure(|conf| {
+                    interface::http::routers::cms::admin_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                })
                 // Resource Sharing
-                .configure(interface::http::routers::share::configure)
+                .configure(interface::http::routers::share::configure),
         );
-        
+
         // ═══════════════════════════════════════════════════════════════════════════
-        // 2. PUBLIC SCOPE - Unauthenticated access  
+        // 2. PUBLIC SCOPE - Unauthenticated access
         // ═══════════════════════════════════════════════════════════════════════════
         config.service(
             web::scope("/public")
@@ -202,26 +286,34 @@ impl AppModule for SystemModule {
                 .state(theme_s)
                 .state(i18n_s)
                 // System Info
-                .route("/system/info", web::get().to(interface::http::handlers::system::get_system_info))
-                .route("/system/status", web::get().to(interface::http::handlers::system::get_system_status))
+                .route(
+                    "/system/info",
+                    web::get().to(interface::http::handlers::system::get_system_info),
+                )
+                .route(
+                    "/system/status",
+                    web::get().to(interface::http::handlers::system::get_system_status),
+                )
                 // Public Tenant Info
-                .route("/tenants/{slug}", web::get().to(interface::http::handlers::tenant::get_tenant_by_slug))
+                .route(
+                    "/tenants/{slug}",
+                    web::get().to(interface::http::handlers::tenant::get_tenant_by_slug),
+                )
                 // Public Theme List
-                .route("/themes", web::get().to(interface::http::handlers::theme::list_themes))
+                .route(
+                    "/themes",
+                    web::get().to(interface::http::handlers::theme::list_themes),
+                )
                 // Public i18n
                 .service(interface::http::routers::i18n::public_routes())
-                // System Info
+                // System Info (legacy - keep for backward compatibility)
                 .service(interface::http::routers::system::public_routes())
-                // Workspace Status (tenant-specific branding)
-                .service(
-                    web::scope("/workspace")
-                        .service(interface::http::routers::workspace::public_routes())
-                )
+                // Unified Branding (replaces workspace/status and system/branding)
+                .service(interface::http::routers::branding::branding_public_routes())
                 // CMS Pages
-                .service(
-                    web::scope("/cms/pages/{tenant_id}")
-                        .default_service(web::get().to(interface::http::handlers::cms::get_page_by_slug))
-                )
+                .service(web::scope("/cms/pages/{tenant_id}").default_service(
+                    web::get().to(interface::http::handlers::cms::get_page_by_slug),
+                )),
         );
 
         // ═══════════════════════════════════════════════════════════════════════════

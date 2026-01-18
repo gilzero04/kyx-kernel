@@ -1,9 +1,7 @@
-use ntex::web;
 use crate::modules::system::interface::http::handlers::share;
+use ntex::web;
 
-pub fn configure(
-    cfg: &mut web::ServiceConfig, 
-) {
+pub fn configure(cfg: &mut web::ServiceConfig) {
     // Resource Sharing endpoints
     cfg.service(
         web::scope("/shares")
@@ -11,6 +9,6 @@ pub fn configure(
             .route("", web::post().to(share::create_share))
             .route("/received", web::get().to(share::list_received_shares))
             .route("/{id}", web::delete().to(share::revoke_share))
-            .route("/{id}/usage", web::get().to(share::get_share_usage))
+            .route("/{id}/usage", web::get().to(share::get_share_usage)),
     );
 }

@@ -4,15 +4,15 @@
 
 use anyhow::{Result, anyhow};
 use dashmap::DashMap;
+use log::{info, warn};
 use std::sync::Arc;
 use uuid::Uuid;
-use log::{info, warn};
 
-use crate::modules::system::domain::plugin::{Plugin, Manifest, Capability};
-use crate::modules::system::infrastructure::repositories::plugin::PluginRepository;
-use crate::modules::system::infrastructure::wasm_engine::WasmEngine;
 use crate::core::infrastructure::database::Database;
 use crate::core::infrastructure::redis::Redis;
+use crate::modules::system::domain::plugin::{Capability, Manifest, Plugin};
+use crate::modules::system::infrastructure::repositories::plugin::PluginRepository;
+use crate::modules::system::infrastructure::wasm_engine::WasmEngine;
 
 /// Loaded plugin with runtime instance
 pub struct LoadedPlugin {
@@ -42,15 +42,15 @@ impl PluginRegistry {
             redis,
         }
     }
-    
+
     /// Load all active plugins for a tenant into memory
     pub async fn load_tenant_plugins(&self, tenant_id: Uuid) -> Result<usize> {
         let plugins = self.repository.find_active_by_tenant(tenant_id).await?;
         let count = plugins.len();
-        
+
         for plugin in plugins {
             let key = format!("{}:{}", tenant_id, plugin.plugin_id);
-            
+
             // Try to load WASM if path exists
             let wasm_instance = if let Some(ref path) = plugin.wasm_path {
                 match self.wasm_engine.load_from_path(path).await {
@@ -66,20 +66,30 @@ impl PluginRegistry {
             } else {
                 None
             };
-            
-            self.plugins.insert(key, LoadedPlugin { plugin, wasm_instance });
+
+            self.plugins.insert(
+                key,
+                LoadedPlugin {
+                    plugin,
+                    wasm_instance,
+                },
+            );
         }
-        
+
         info!("Loaded {} plugins for tenant {}", count, tenant_id);
         Ok(count)
     }
-    
+
     /// Get a loaded plugin by ID
-    pub fn get(&self, tenant_id: Uuid, plugin_id: &str) -> Option<dashmap::mapref::one::Ref<'_, String, LoadedPlugin>> {
+    pub fn get(
+        &self,
+        tenant_id: Uuid,
+        plugin_id: &str,
+    ) -> Option<dashmap::mapref::one::Ref<'_, String, LoadedPlugin>> {
         let key = format!("{}:{}", tenant_id, plugin_id);
         self.plugins.get(&key)
     }
-    
+
     /// Get a loaded plugin by slug (e.g., "kyx-plan", "kyx-affiliate")
     /// This is the primary method for optional plugin lookups
     /// Returns cloned Plugin since we're iterating
@@ -88,38 +98,46 @@ impl PluginRegistry {
         for entry in self.plugins.iter() {
             if entry.value().plugin.plugin_id == slug {
                 // Check if it's for this tenant or a global plugin
-                if entry.value().plugin.tenant_id == Some(tenant_id) || entry.value().plugin.tenant_id.is_none() {
+                if entry.value().plugin.tenant_id == Some(tenant_id)
+                    || entry.value().plugin.tenant_id.is_none()
+                {
                     return Some(entry.value().plugin.clone());
                 }
             }
         }
         None
     }
-    
+
     /// Check if a plugin is installed and active (for optional integrations)
     pub fn is_available(&self, tenant_id: Uuid, slug: &str) -> bool {
         self.get_by_slug(tenant_id, slug).is_some()
     }
-    
+
     /// Check if a plugin is loaded
     pub fn is_loaded(&self, tenant_id: Uuid, plugin_id: &str) -> bool {
         let key = format!("{}:{}", tenant_id, plugin_id);
         self.plugins.contains_key(&key)
     }
-    
+
     /// List all plugins for a tenant (from DB)
     pub async fn list_plugins(&self, tenant_id: Uuid) -> Result<Vec<Plugin>> {
         self.repository.find_by_tenant(tenant_id).await
     }
-    
+
     /// Get plugin by database ID
     pub async fn get_plugin(&self, id: Uuid) -> Result<Option<Plugin>> {
         self.repository.find_by_id(id).await
     }
-    
+
     /// Find available plugins (Private + Shared/Global from parent)
-    pub async fn find_available_plugins(&self, tenant_id: Uuid, parent_id: Option<Uuid>) -> Result<Vec<Plugin>> {
-        self.repository.find_available_plugins(tenant_id, parent_id).await
+    pub async fn find_available_plugins(
+        &self,
+        tenant_id: Uuid,
+        parent_id: Option<Uuid>,
+    ) -> Result<Vec<Plugin>> {
+        self.repository
+            .find_available_plugins(tenant_id, parent_id)
+            .await
     }
 
     /// Install a new plugin
@@ -139,20 +157,24 @@ impl PluginRegistry {
                 ));
             }
         }
-        
+
         // Check if already installed
-        if let Some(_) = self.repository.find_by_plugin_id(tenant_id, &manifest.id).await? {
+        if let Some(_) = self
+            .repository
+            .find_by_plugin_id(tenant_id, &manifest.id)
+            .await?
+        {
             return Err(anyhow!("Plugin {} is already installed", manifest.id));
         }
-        
+
         // Create plugin record
         let mut plugin = Plugin::from_manifest(&manifest, Some(tenant_id));
-        
+
         // Set config if provided
         if let Some(cfg) = config {
             plugin.config = cfg;
         }
-        
+
         // Save WASM bytes if provided
         if let Some(bytes) = wasm_bytes {
             let wasm_path = save_plugin_file(tenant_id, &manifest.id, &bytes)?;
@@ -160,39 +182,47 @@ impl PluginRegistry {
             plugin.wasm_size_bytes = Some(bytes.len() as i64);
             plugin.wasm_hash = Some(simple_hash_hex(&bytes));
         }
-        
+
         // Insert into database
         let installed = self.repository.insert(&plugin).await?;
-        
+
         // Log event
-        self.repository.log_event(
-            installed.id,
-            tenant_id,
-            "installed",
-            serde_json::json!({
-                "version": installed.version,
-                "capabilities": installed.capabilities
-            })
-        ).await?;
-        
-        info!("Installed plugin: {} v{} for tenant {}", installed.name, installed.version, tenant_id);
-        
+        self.repository
+            .log_event(
+                installed.id,
+                tenant_id,
+                "installed",
+                serde_json::json!({
+                    "version": installed.version,
+                    "capabilities": installed.capabilities
+                }),
+            )
+            .await?;
+
+        info!(
+            "Installed plugin: {} v{} for tenant {}",
+            installed.name, installed.version, tenant_id
+        );
+
         Ok(installed)
     }
-    
+
     /// Enable a plugin
     pub async fn enable(&self, tenant_id: Uuid, plugin_id: Uuid) -> Result<()> {
-        let plugin = self.repository.find_by_id(plugin_id).await?
+        let plugin = self
+            .repository
+            .find_by_id(plugin_id)
+            .await?
             .ok_or_else(|| anyhow!("Plugin not found"))?;
-        
+
         // Verify tenant ownership
         if plugin.tenant_id != Some(tenant_id) {
             return Err(anyhow!("Plugin does not belong to this tenant"));
         }
-        
+
         // Enable in database
         self.repository.enable(plugin_id).await?;
-        
+
         // Load into memory
         let key = format!("{}:{}", tenant_id, plugin.plugin_id);
         let wasm_instance = if let Some(ref path) = plugin.wasm_path {
@@ -200,107 +230,138 @@ impl PluginRegistry {
         } else {
             None
         };
-        
+
         let mut updated_plugin = plugin.clone();
         updated_plugin.is_active = true;
         updated_plugin.status = "enabled".to_string();
-        
-        self.plugins.insert(key, LoadedPlugin { 
-            plugin: updated_plugin, 
-            wasm_instance 
-        });
-        
+
+        self.plugins.insert(
+            key,
+            LoadedPlugin {
+                plugin: updated_plugin,
+                wasm_instance,
+            },
+        );
+
         // Log event
-        self.repository.log_event(plugin_id, tenant_id, "enabled", serde_json::json!({})).await?;
-        
+        self.repository
+            .log_event(plugin_id, tenant_id, "enabled", serde_json::json!({}))
+            .await?;
+
         info!("Enabled plugin: {}", plugin.name);
         Ok(())
     }
-    
+
     /// Disable a plugin
     pub async fn disable(&self, tenant_id: Uuid, plugin_id: Uuid) -> Result<()> {
-        let plugin = self.repository.find_by_id(plugin_id).await?
+        let plugin = self
+            .repository
+            .find_by_id(plugin_id)
+            .await?
             .ok_or_else(|| anyhow!("Plugin not found"))?;
-        
+
         // Verify tenant ownership
         if plugin.tenant_id != Some(tenant_id) {
             return Err(anyhow!("Plugin does not belong to this tenant"));
         }
-        
+
         // Disable in database
         self.repository.disable(plugin_id).await?;
-        
+
         // Remove from memory
         let key = format!("{}:{}", tenant_id, plugin.plugin_id);
         self.plugins.remove(&key);
-        
+
         // Log event
-        self.repository.log_event(plugin_id, tenant_id, "disabled", serde_json::json!({})).await?;
-        
+        self.repository
+            .log_event(plugin_id, tenant_id, "disabled", serde_json::json!({}))
+            .await?;
+
         info!("Disabled plugin: {}", plugin.name);
         Ok(())
     }
-    
+
     /// Uninstall a plugin
     pub async fn uninstall(&self, tenant_id: Uuid, plugin_id: Uuid) -> Result<()> {
-        let plugin = self.repository.find_by_id(plugin_id).await?
+        let plugin = self
+            .repository
+            .find_by_id(plugin_id)
+            .await?
             .ok_or_else(|| anyhow!("Plugin not found"))?;
-        
+
         // Verify tenant ownership
         if plugin.tenant_id != Some(tenant_id) {
             return Err(anyhow!("Plugin does not belong to this tenant"));
         }
-        
+
         // Remove from memory first
         let key = format!("{}:{}", tenant_id, plugin.plugin_id);
         self.plugins.remove(&key);
-        
+
         // Delete WASM file from storage
         if let Err(e) = delete_plugin_dir(tenant_id, &plugin.plugin_id) {
-            warn!("Failed to delete plugin files (continuing with DB deletion): {}", e);
+            warn!(
+                "Failed to delete plugin files (continuing with DB deletion): {}",
+                e
+            );
         }
-        
+
         // Delete from database (cascades to events)
         self.repository.delete(plugin_id).await?;
-        
+
         info!("Uninstalled plugin: {}", plugin.name);
         Ok(())
     }
-    
+
     /// Update plugin configuration
-    pub async fn update_config(&self, tenant_id: Uuid, plugin_id: Uuid, config: serde_json::Value) -> Result<()> {
-        let plugin = self.repository.find_by_id(plugin_id).await?
+    pub async fn update_config(
+        &self,
+        tenant_id: Uuid,
+        plugin_id: Uuid,
+        config: serde_json::Value,
+    ) -> Result<()> {
+        let plugin = self
+            .repository
+            .find_by_id(plugin_id)
+            .await?
             .ok_or_else(|| anyhow!("Plugin not found"))?;
-        
+
         // Verify tenant ownership
         if plugin.tenant_id != Some(tenant_id) {
             return Err(anyhow!("Plugin does not belong to this tenant"));
         }
-        
-        self.repository.update_config(plugin_id, config.clone()).await?;
-        
+
+        self.repository
+            .update_config(plugin_id, config.clone())
+            .await?;
+
         // Update in memory if loaded
         let key = format!("{}:{}", tenant_id, plugin.plugin_id);
         if let Some(mut loaded) = self.plugins.get_mut(&key) {
             loaded.plugin.config = config;
         }
-        
+
         Ok(())
     }
-    
+
     /// Validate that a plugin has a required capability
-    pub fn validate_capability(&self, tenant_id: Uuid, plugin_id: &str, required: &Capability) -> bool {
+    pub fn validate_capability(
+        &self,
+        tenant_id: Uuid,
+        plugin_id: &str,
+        required: &Capability,
+    ) -> bool {
         if let Some(loaded) = self.get(tenant_id, plugin_id) {
             loaded.plugin.has_capability(required)
         } else {
             false
         }
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Security Methods (Phase 3)
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// Install a plugin WITH dangerous capabilities (requires explicit approval)
     /// This is a privileged operation that bypasses the dangerous capability check.
     /// Caller must verify `plugin:approve` permission before calling.
@@ -310,33 +371,40 @@ impl PluginRegistry {
         manifest: Manifest,
         wasm_bytes: Option<Vec<u8>>,
         config: Option<serde_json::Value>,
-        approved_by: Uuid,  // Admin user who approved
+        approved_by: Uuid, // Admin user who approved
         approval_reason: &str,
     ) -> Result<Plugin> {
         // Log the dangerous capabilities being approved
-        let dangerous_caps: Vec<_> = manifest.capabilities.iter()
+        let dangerous_caps: Vec<_> = manifest
+            .capabilities
+            .iter()
             .filter(|c| c.is_dangerous())
             .collect();
-        
+
         if !dangerous_caps.is_empty() {
-            warn!("SECURITY: Admin {} approving dangerous capabilities {:?} for plugin {} - Reason: {}",
+            warn!(
+                "SECURITY: Admin {} approving dangerous capabilities {:?} for plugin {} - Reason: {}",
                 approved_by, dangerous_caps, manifest.id, approval_reason
             );
         }
-        
+
         // Check if already installed
-        if let Some(_) = self.repository.find_by_plugin_id(tenant_id, &manifest.id).await? {
+        if let Some(_) = self
+            .repository
+            .find_by_plugin_id(tenant_id, &manifest.id)
+            .await?
+        {
             return Err(anyhow!("Plugin {} is already installed", manifest.id));
         }
-        
+
         // Create plugin record
         let mut plugin = Plugin::from_manifest(&manifest, Some(tenant_id));
-        
+
         // Set config if provided
         if let Some(cfg) = config {
             plugin.config = cfg;
         }
-        
+
         // Save WASM bytes if provided
         if let Some(bytes) = wasm_bytes {
             let wasm_path = save_plugin_file(tenant_id, &manifest.id, &bytes)?;
@@ -344,10 +412,10 @@ impl PluginRegistry {
             plugin.wasm_size_bytes = Some(bytes.len() as i64);
             plugin.wasm_hash = Some(simple_hash_hex(&bytes));
         }
-        
+
         // Insert into database
         let installed = self.repository.insert(&plugin).await?;
-        
+
         // Log approval event with full audit trail
         self.repository.log_event(
             installed.id,
@@ -361,74 +429,94 @@ impl PluginRegistry {
                 "approval_reason": approval_reason
             })
         ).await?;
-        
-        info!("SECURITY: Installed plugin {} v{} with approval from {} for tenant {}",
+
+        info!(
+            "SECURITY: Installed plugin {} v{} with approval from {} for tenant {}",
             installed.name, installed.version, approved_by, tenant_id
         );
-        
+
         Ok(installed)
     }
-    
+
     /// Check if plugin has any dangerous capabilities
     pub fn has_dangerous_capabilities(&self, manifest: &Manifest) -> bool {
         manifest.capabilities.iter().any(|c| c.is_dangerous())
     }
-    
+
     /// Get list of dangerous capabilities in manifest
     pub fn get_dangerous_capabilities<'a>(&self, manifest: &'a Manifest) -> Vec<&'a Capability> {
-        manifest.capabilities.iter()
+        manifest
+            .capabilities
+            .iter()
             .filter(|c| c.is_dangerous())
             .collect()
     }
-    
+
     /// Get capabilities that require approval
-    pub fn get_capabilities_requiring_approval<'a>(&self, manifest: &'a Manifest) -> Vec<&'a Capability> {
-        manifest.capabilities.iter()
+    pub fn get_capabilities_requiring_approval<'a>(
+        &self,
+        manifest: &'a Manifest,
+    ) -> Vec<&'a Capability> {
+        manifest
+            .capabilities
+            .iter()
             .filter(|c| c.requires_approval())
             .collect()
     }
-    
+
     /// Validate plugin security before enabling
     /// Returns list of security warnings (empty if all safe)
     pub fn validate_plugin_security(&self, plugin: &Plugin) -> Vec<String> {
         let mut warnings = Vec::new();
-        
+
         // Check for dangerous capabilities
         for cap in &plugin.capabilities {
             match cap.as_str() {
                 "financial_write" => {
-                    warnings.push("Plugin has FINANCIAL_WRITE capability - can modify financial data".to_string());
+                    warnings.push(
+                        "Plugin has FINANCIAL_WRITE capability - can modify financial data"
+                            .to_string(),
+                    );
                 }
                 "tenant_data_write" => {
-                    warnings.push("Plugin has TENANT_DATA_WRITE capability - can modify tenant data".to_string());
+                    warnings.push(
+                        "Plugin has TENANT_DATA_WRITE capability - can modify tenant data"
+                            .to_string(),
+                    );
                 }
                 _ => {}
             }
         }
-        
+
         // Check for network access
         if !plugin.network_access.is_empty() {
-            warnings.push(format!("Plugin has network access to: {}", plugin.network_access.join(", ")));
+            warnings.push(format!(
+                "Plugin has network access to: {}",
+                plugin.network_access.join(", ")
+            ));
         }
-        
+
         // Check for data access
         if !plugin.data_access.is_empty() {
-            warnings.push(format!("Plugin has data access to: {}", plugin.data_access.join(", ")));
+            warnings.push(format!(
+                "Plugin has data access to: {}",
+                plugin.data_access.join(", ")
+            ));
         }
-        
+
         // Check for unverified plugin
         if !plugin.verified {
             warnings.push("Plugin is not verified by the platform".to_string());
         }
-        
+
         warnings
     }
-    
+
     /// Get security summary for a plugin
     pub fn get_security_summary(&self, manifest: &Manifest) -> SecuritySummary {
         let dangerous = self.get_dangerous_capabilities(manifest);
         let requires_approval = self.get_capabilities_requiring_approval(manifest);
-        
+
         SecuritySummary {
             risk_level: if !dangerous.is_empty() {
                 RiskLevel::Critical
@@ -475,7 +563,7 @@ pub enum RiskLevel {
 fn simple_hash_hex(data: &[u8]) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     data.hash(&mut hasher);
     let hash = hasher.finish();
@@ -495,40 +583,42 @@ fn get_plugin_storage_base() -> std::path::PathBuf {
 fn save_plugin_file(tenant_id: Uuid, plugin_id: &str, data: &[u8]) -> Result<String> {
     use std::fs;
     use std::io::Write;
-    
+
     let base_path = get_plugin_storage_base();
     let plugin_dir = base_path.join(tenant_id.to_string()).join(plugin_id);
-    
+
     // Create directory structure
     fs::create_dir_all(&plugin_dir)
         .map_err(|e| anyhow!("Failed to create plugin directory: {}", e))?;
-    
+
     // Save WASM file
     let wasm_path = plugin_dir.join("plugin.wasm");
-    let mut file = fs::File::create(&wasm_path)
-        .map_err(|e| anyhow!("Failed to create plugin.wasm: {}", e))?;
+    let mut file =
+        fs::File::create(&wasm_path).map_err(|e| anyhow!("Failed to create plugin.wasm: {}", e))?;
     file.write_all(data)
         .map_err(|e| anyhow!("Failed to write plugin.wasm: {}", e))?;
-    
+
     info!("Saved plugin file to: {:?}", wasm_path);
-    
+
     // Return relative path for database storage
-    Ok(format!("assets/plugins/{}/{}/plugin.wasm", tenant_id, plugin_id))
+    Ok(format!(
+        "assets/plugins/{}/{}/plugin.wasm",
+        tenant_id, plugin_id
+    ))
 }
 
 /// Helper: Delete plugin directory on uninstall
 fn delete_plugin_dir(tenant_id: Uuid, plugin_id: &str) -> Result<()> {
     use std::fs;
-    
+
     let base_path = get_plugin_storage_base();
     let plugin_dir = base_path.join(tenant_id.to_string()).join(plugin_id);
-    
+
     if plugin_dir.exists() {
         fs::remove_dir_all(&plugin_dir)
             .map_err(|e| anyhow!("Failed to delete plugin directory: {}", e))?;
         info!("Deleted plugin directory: {:?}", plugin_dir);
     }
-    
+
     Ok(())
 }
-

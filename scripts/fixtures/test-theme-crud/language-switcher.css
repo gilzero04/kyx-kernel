@@ -1,0 +1,365 @@
+/* Language Switcher Styles - Themed & Refined (Flexbox) */
+
+/* Portal Wrapper - ensures high z-index */
+.language-portal-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 10010;
+    /* Very high to be above everything */
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Backdrop */
+.language-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: -1;
+    /* Behind popup content */
+    opacity: 0;
+    animation: fadeIn 0.2s forwards;
+}
+
+/* Popup Container */
+.language-popup {
+    position: relative;
+    /* Relative to wrapper */
+    /* Use theme background with opacity */
+    background: color-mix(in srgb, var(--color-background) 95%, transparent);
+    backdrop-filter: blur(16px);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mobile: Bottom Sheet (Auto Height) */
+@media (max-width: 768px) {
+    .language-portal-wrapper {
+        justify-content: flex-end;
+    }
+
+    .language-popup {
+        width: 100%;
+        height: auto;
+        /* Fit content */
+        max-height: 85vh;
+        /* Don't cover entire screen */
+        border-radius: 16px 16px 0 0;
+        /* Rounded top */
+        border-bottom: none;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Show backdrop on mobile because it's a sheet */
+    .language-backdrop {
+        display: block;
+    }
+
+    .modal-header {
+        padding: 2px 14px;
+    }
+}
+
+/* Desktop: Dropdown below header */
+@media (min-width: 769px) {
+    .language-portal-wrapper {
+        align-items: flex-end;
+        /* Align to right */
+        justify-content: flex-start;
+        /* Align to top */
+        padding-top: 70px;
+        /* Below header */
+        padding-right: 24px;
+        /* Align with header padding */
+        pointer-events: none;
+        /* Let clicks pass through empty space */
+    }
+
+    .language-backdrop {
+        pointer-events: auto;
+        /* Capture clicks on backdrop */
+    }
+
+    .language-popup {
+        width: fit-content;
+        /* Adapt to content */
+        min-width: 340px;
+        max-width: 600px;
+        max-height: calc(100vh - 90px);
+        border-radius: 12px;
+        transform-origin: top right;
+        animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        pointer-events: auto;
+        /* Re-enable clicks on popup */
+        overflow: hidden;
+    }
+}
+
+/* Header & Title - Using Standard Modal Classes for consistency */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--color-background) 50%, transparent);
+    position: relative;
+    z-index: 20;
+}
+
+.modal-title {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--sidebar-item-active-color, #0891b2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.2));
+    margin: 0;
+}
+
+.modal-close {
+    height: 28px;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--color-muted-foreground);
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Language List (Flexbox for Horizontal Flow) */
+.language-list {
+    padding: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    overflow-y: auto;
+    flex: 1;
+    position: relative;
+    z-index: 10;
+}
+
+/* Desktop override pad */
+@media (min-width: 769px) {
+    .language-list {
+        padding: 16px;
+        gap: 12px;
+    }
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Flex sizing: Grow, Shrink, Base 160px */
+    flex: 1 0 160px;
+    /* Max width to prevent overly wide buttons on last row */
+    max-width: 1fr;
+
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    color: var(--color-foreground);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Mobile specific styling for list items if needed */
+@media (max-width: 768px) {
+    .language-option {
+        /* On mobile, maybe 2 per row is enforced? Flex 1 0 45%? */
+        flex: 1 0 40%;
+    }
+}
+
+.language-option:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.language-option.active {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--color-background) 60%, transparent), color-mix(in srgb, var(--color-primary) 40%, transparent));
+    border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 20px color-mix(in srgb, var(--color-primary) 40%, transparent);
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 20px color-mix(in srgb, var(--color-primary) 40%, transparent);
+    }
+
+    50% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 30px color-mix(in srgb, var(--color-primary) 60%, transparent);
+    }
+}
+
+.flag-icon {
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.language-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.language-name {
+    font-family: var(--font-heading, 'Cinzel', serif);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.language-native {
+    font-size: 0.75rem;
+    color: var(--color-muted-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.check-icon {
+    color: var(--color-primary);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s;
+}
+
+.language-option.active .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animated gradient background */
+.language-gradient-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 25%, #bae6fd 50%, #e0f2fe 75%, #f0f9ff 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 8s ease infinite;
+    opacity: 1;
+    z-index: 1;
+}
+
+@keyframes gradientShift {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Floating particles */
+.language-particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.language-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(8, 145, 178, 0.5);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(8, 145, 178, 0.6);
+    animation: floatParticle var(--duration, 4s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s);
+    left: calc(10% + var(--delay, 0s) * 15);
+    top: calc(20% + var(--delay, 0s) * 10);
+}
+
+@keyframes floatParticle {
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    50% {
+        transform: translate(calc(var(--delay, 0s) * 30px), calc(var(--delay, 0s) * -40px)) scale(1.5);
+        opacity: 0.8;
+    }
+
+    90% {
+        opacity: 1;
+    }
+}
+
+/* Editor Canvas Support - Ensures popup stays within canvas frame */
+#portal-host .language-portal-wrapper,
+#portal-host .language-backdrop {
+    position: absolute;
+}

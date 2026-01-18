@@ -1,15 +1,15 @@
-use std::sync::Arc;
-use std::io;
-use crate::core::infrastructure::redis::Redis;
-use crate::core::infrastructure::database::Database;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::config_service::ConfigService;
 use crate::core::infrastructure::cors::CorsManager;
+use crate::core::infrastructure::database::Database;
+use crate::core::infrastructure::redis::Redis;
 use crate::core::utils::jwt::JwtService;
 use crate::modules::auth::AuthModule;
-use crate::modules::system::SystemModule;
 use crate::modules::media::MediaModule;
+use crate::modules::system::SystemModule;
 use crate::modules::system::application::services::api_key::ApiKeyService;
+use std::io;
+use std::sync::Arc;
 
 pub mod infrastructure;
 pub mod registry;
@@ -29,7 +29,7 @@ pub struct Kernel {
     pub jwt_service: Arc<JwtService>,
     #[allow(dead_code)] // Kept for API key management extension
     pub api_key_service: Arc<ApiKeyService>,
-    
+
     // Modules
     pub auth_module: Arc<AuthModule>,
     pub system_module: Arc<SystemModule>,
@@ -45,14 +45,11 @@ impl Kernel {
         // 2. Initialize Infrastructure (Storage/Bus)
         let redis = infrastructure::init_redis().await?;
         let database = infrastructure::init_database().await?;
-        
+
         // 3. Initialize Shared Services & Modules (Wiring)
-        let registry = registry::Registry::new(
-            database.clone(), 
-            redis.clone(), 
-            &jwt_secret,
-            &engine_secret
-        ).await?;
+        let registry =
+            registry::Registry::new(database.clone(), redis.clone(), &jwt_secret, &engine_secret)
+                .await?;
 
         log::info!("🚀 Kernel bootstrap completed successfully.");
 

@@ -1,0 +1,6 @@
+/* Footer Component - Uses variables from variables.css */
+
+.footer-glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}

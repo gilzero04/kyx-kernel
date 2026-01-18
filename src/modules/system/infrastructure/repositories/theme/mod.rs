@@ -1,9 +1,9 @@
-use async_trait::async_trait;
-use uuid::Uuid;
 use crate::core::AppResult;
 use crate::core::infrastructure::database::Database;
-use crate::modules::system::domain::theme::{ThemeRepository, Theme};
+use crate::modules::system::domain::theme::{Theme, ThemeRepository};
 use crate::modules::system::interface::http::dto::theme::{CreateThemeDto, UpdateThemeDto};
+use async_trait::async_trait;
+use uuid::Uuid;
 
 pub struct PostgresThemeRepository {
     db: std::sync::Arc<Database>,
@@ -20,7 +20,7 @@ impl ThemeRepository for PostgresThemeRepository {
     async fn create(&self, dto: CreateThemeDto) -> AppResult<Theme> {
         // Use provided ID from manifest or auto-generate
         let theme_id = dto.id.unwrap_or_else(Uuid::new_v4);
-        
+
         let theme = sqlx::query_as::<_, Theme>(
             r#"
             INSERT INTO sys_themes (id, slug, name, description, config, is_shared, tenant_id, author, preview_url, logo_url, version)
@@ -47,12 +47,10 @@ impl ThemeRepository for PostgresThemeRepository {
 
     #[allow(dead_code)]
     async fn find_by_id(&self, id: Uuid) -> AppResult<Option<Theme>> {
-        let theme = sqlx::query_as::<_, Theme>(
-            "SELECT * FROM sys_themes WHERE id = $1"
-        )
-        .bind(id)
-        .fetch_optional(&self.db.pool)
-        .await?;
+        let theme = sqlx::query_as::<_, Theme>("SELECT * FROM sys_themes WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.db.pool)
+            .await?;
 
         Ok(theme)
     }
@@ -60,14 +58,14 @@ impl ThemeRepository for PostgresThemeRepository {
     async fn find_available(&self, tenant_id: Option<Uuid>) -> AppResult<Vec<Theme>> {
         // Explicit column list to match Theme struct (avoids issues with dropped columns or extra columns)
         let columns = "id, slug, name, description, config, tenant_id, is_shared, version, author, preview_url, logo_url, is_system, is_active, created_at, updated_at";
-        
+
         let themes = if let Some(tid) = tenant_id {
             // Simplified sharing logic:
             // 1. Own themes (tenant_id matches)
             // 2. Shared themes (is_shared = TRUE) - broadcast to all
             // 3. System themes (is_system = TRUE)
             let query = format!(
-                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL AND (tenant_id = $1 OR is_shared = TRUE OR is_system = TRUE) ORDER BY created_at DESC",
+                "SELECT {} FROM sys_themes WHERE tenant_id = $1 OR is_shared = TRUE OR is_system = TRUE ORDER BY created_at DESC",
                 columns
             );
             sqlx::query_as::<_, Theme>(&query)
@@ -77,7 +75,7 @@ impl ThemeRepository for PostgresThemeRepository {
         } else {
             // System Admin sees ALL
             let query = format!(
-                "SELECT {} FROM sys_themes WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                "SELECT {} FROM sys_themes ORDER BY created_at DESC",
                 columns
             );
             sqlx::query_as::<_, Theme>(&query)
@@ -87,8 +85,6 @@ impl ThemeRepository for PostgresThemeRepository {
 
         Ok(themes)
     }
-
-
 
     #[allow(dead_code)]
     async fn update(&self, id: Uuid, dto: UpdateThemeDto) -> AppResult<Theme> {
@@ -111,7 +107,7 @@ impl ThemeRepository for PostgresThemeRepository {
                 updated_at = NOW()
             WHERE id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(id)
         .bind(dto.slug)
@@ -133,17 +129,17 @@ impl ThemeRepository for PostgresThemeRepository {
     #[allow(dead_code)]
     async fn delete(&self, id: Uuid) -> AppResult<()> {
         sqlx::query("DELETE FROM sys_themes WHERE id = $1")
-        .bind(id)
-        .execute(&self.db.pool)
-        .await?;
-        
+            .bind(id)
+            .execute(&self.db.pool)
+            .await?;
+
         Ok(())
     }
 
     #[allow(dead_code)]
     async fn set_active_theme(&self, tenant_id: Uuid, theme_id: Uuid) -> AppResult<()> {
         sqlx::query(
-            "UPDATE auth_tenants SET active_theme_id = $2, updated_at = NOW() WHERE id = $1"
+            "UPDATE auth_tenants SET active_theme_id = $2, updated_at = NOW() WHERE id = $1",
         )
         .bind(tenant_id)
         .bind(theme_id)
@@ -162,7 +158,7 @@ impl ThemeRepository for PostgresThemeRepository {
             FROM sys_themes t
             JOIN auth_tenants at ON at.active_theme_id = t.id
             WHERE at.id = $1
-            "#
+            "#,
         )
         .bind(tenant_id)
         .fetch_optional(&self.db.pool)
@@ -171,7 +167,11 @@ impl ThemeRepository for PostgresThemeRepository {
         Ok(theme)
     }
 
-    async fn is_in_use(&self, theme_id: Uuid, exclude_tenant_id: Option<Uuid>) -> AppResult<Option<String>> {
+    async fn is_in_use(
+        &self,
+        theme_id: Uuid,
+        exclude_tenant_id: Option<Uuid>,
+    ) -> AppResult<Option<String>> {
         let theme = self.find_by_id(theme_id).await?;
         if theme.is_none() {
             return Ok(None);
@@ -189,7 +189,7 @@ impl ThemeRepository for PostgresThemeRepository {
                 WHERE (b.theme_light_id = $1 OR b.theme_dark_id = $1)
                 AND t.id != $2
                 LIMIT 1
-                "#
+                "#,
             )
             .bind(theme_id)
             .bind(skip_id)
@@ -203,7 +203,7 @@ impl ThemeRepository for PostgresThemeRepository {
                 JOIN sys_brandings b ON t.branding_id = b.id
                 WHERE b.theme_light_id = $1 OR b.theme_dark_id = $1
                 LIMIT 1
-                "#
+                "#,
             )
             .bind(theme_id)
             .fetch_optional(&self.db.pool)
@@ -218,12 +218,11 @@ impl ThemeRepository for PostgresThemeRepository {
     }
 
     async fn get_owner_id(&self) -> AppResult<Option<Uuid>> {
-        let owner_id: Option<Uuid> = sqlx::query_scalar(
-            "SELECT id FROM auth_tenants WHERE parent_id = id LIMIT 1"
-        )
-        .fetch_optional(&self.db.pool)
-        .await?;
-        
+        let owner_id: Option<Uuid> =
+            sqlx::query_scalar("SELECT id FROM auth_tenants WHERE parent_id = id LIMIT 1")
+                .fetch_optional(&self.db.pool)
+                .await?;
+
         Ok(owner_id)
     }
 }

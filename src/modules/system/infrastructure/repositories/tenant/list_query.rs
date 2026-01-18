@@ -1,5 +1,5 @@
-use crate::modules::system::domain::tenant::{TenantEntry, TenantFilter, PaginatedTenants};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::tenant::{PaginatedTenants, TenantEntry, TenantFilter};
 use anyhow::Result;
 use std::sync::Arc;
 
@@ -23,7 +23,11 @@ pub fn build_tenant_order_clause(sort_param: &Option<String>) -> String {
                 let col = parts[0].trim();
                 let dir = parts.get(1).map(|d| d.trim()).unwrap_or("asc");
                 if let Some(sql_col) = get_tenant_sort_column(col) {
-                    let direction = if dir.eq_ignore_ascii_case("desc") { "DESC" } else { "ASC" };
+                    let direction = if dir.eq_ignore_ascii_case("desc") {
+                        "DESC"
+                    } else {
+                        "ASC"
+                    };
                     order_parts.push(format!("{} {} NULLS LAST", sql_col, direction));
                 }
             }
@@ -52,7 +56,7 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
                 INNER JOIN tenant_tree tt ON t.parent_id = tt.id
                 WHERE t.deleted_at IS NULL
             )"#,
-            "AND t.id IN (SELECT id FROM tenant_tree)"
+            "AND t.id IN (SELECT id FROM tenant_tree)",
         )
     } else {
         ("", "")
@@ -71,7 +75,7 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
         WHERE t.deleted_at IS NULL {}"#,
         hierarchy_cte, hierarchy_where
     );
-    
+
     let count_base_sql = format!(
         "{} SELECT COUNT(*) FROM auth_tenants t WHERE t.deleted_at IS NULL {}",
         hierarchy_cte, hierarchy_where
@@ -80,18 +84,38 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
     let order_clause = build_tenant_order_clause(&filter.sort);
 
     // Determine parameter offset based on whether hierarchy_cte is used
-    let p_offset = if filter.actor_tenant_id.is_some() { 1 } else { 0 };
+    let p_offset = if filter.actor_tenant_id.is_some() {
+        1
+    } else {
+        0
+    };
 
     let (data_sql, count_sql, search_bind) = if let Some(s) = &filter.search {
         let search_term = format!("%{}%", s);
         let data = format!(
             "{} AND (t.name ILIKE ${} OR t.slug ILIKE ${}) {} LIMIT ${} OFFSET ${}",
-            base_sql, p_offset + 1, p_offset + 1, order_clause, p_offset + 2, p_offset + 3
+            base_sql,
+            p_offset + 1,
+            p_offset + 1,
+            order_clause,
+            p_offset + 2,
+            p_offset + 3
         );
-        let count = format!("{} AND (t.name ILIKE ${} OR t.slug ILIKE ${})", count_base_sql, p_offset + 1, p_offset + 1);
+        let count = format!(
+            "{} AND (t.name ILIKE ${} OR t.slug ILIKE ${})",
+            count_base_sql,
+            p_offset + 1,
+            p_offset + 1
+        );
         (data, count, Some(search_term))
     } else {
-        let data = format!("{} {} LIMIT ${} OFFSET ${}", base_sql, order_clause, p_offset + 1, p_offset + 2);
+        let data = format!(
+            "{} {} LIMIT ${} OFFSET ${}",
+            base_sql,
+            order_clause,
+            p_offset + 1,
+            p_offset + 2
+        );
         (data, count_base_sql.to_string(), None)
     };
 
@@ -115,7 +139,7 @@ pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<Paginate
 
     let total = query_total.fetch_one(&pool.pool).await.unwrap_or(0);
     let entries = query_data.fetch_all(&pool.pool).await?;
-    
+
     let total_pages = (total as f64 / limit as f64).ceil() as i64;
 
     Ok(PaginatedTenants {

@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use anyhow::Result;
-use crate::modules::system::domain::i18n::{I18nRepository, Locale};
-use std::collections::HashMap;
-use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::ai_service::AIService;
+use crate::core::infrastructure::audit::AuditService;
+use crate::modules::system::domain::i18n::{I18nRepository, Locale};
+use anyhow::Result;
 use sqlx::types::Uuid;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct I18nService {
     repo: Arc<dyn I18nRepository>,
@@ -14,7 +14,11 @@ pub struct I18nService {
 }
 
 impl I18nService {
-    pub fn new(repo: Arc<dyn I18nRepository>, audit: Arc<AuditService>, ai: Arc<AIService>) -> Self {
+    pub fn new(
+        repo: Arc<dyn I18nRepository>,
+        audit: Arc<AuditService>,
+        ai: Arc<AIService>,
+    ) -> Self {
         Self { repo, audit, ai }
     }
 
@@ -23,8 +27,16 @@ impl I18nService {
     }
 
     /// Get translations map for a locale, optionally filtered by tenant and context
-    pub async fn get_translations_map(&self, locale: &str, tenant_id: Option<Uuid>, context: Option<&str>) -> Result<HashMap<String, String>> {
-        let translations = self.repo.get_translations(locale, tenant_id, context).await?;
+    pub async fn get_translations_map(
+        &self,
+        locale: &str,
+        tenant_id: Option<Uuid>,
+        context: Option<&str>,
+    ) -> Result<HashMap<String, String>> {
+        let translations = self
+            .repo
+            .get_translations(locale, tenant_id, context)
+            .await?;
         let mut map = HashMap::new();
         for t in translations {
             map.insert(t.key, t.message);
@@ -33,17 +45,34 @@ impl I18nService {
     }
 
     /// Create a translation key, optionally for a specific tenant/context
-    pub async fn create_key(&self, key: &str, default_message: &str, tenant_id: Option<Uuid>, context: Option<&str>) -> Result<()> {
+    pub async fn create_key(
+        &self,
+        key: &str,
+        default_message: &str,
+        tenant_id: Option<Uuid>,
+        context: Option<&str>,
+    ) -> Result<()> {
         let locales = self.repo.list_locales().await?;
         for locale in locales {
-            self.repo.create_key(&locale.code, key, default_message, tenant_id, context).await?;
+            self.repo
+                .create_key(&locale.code, key, default_message, tenant_id, context)
+                .await?;
         }
         Ok(())
     }
 
     /// Update a translation, optionally for a specific tenant/context
-    pub async fn update_translation(&self, locale: &str, key: &str, message: &str, tenant_id: Option<Uuid>, context: Option<&str>) -> Result<()> {
-        self.repo.update_translation(locale, key, message, tenant_id, context).await
+    pub async fn update_translation(
+        &self,
+        locale: &str,
+        key: &str,
+        message: &str,
+        tenant_id: Option<Uuid>,
+        context: Option<&str>,
+    ) -> Result<()> {
+        self.repo
+            .update_translation(locale, key, message, tenant_id, context)
+            .await
     }
 
     pub async fn create_locale(&self, code: &str, name: &str) -> Result<()> {
@@ -55,7 +84,7 @@ impl I18nService {
 
         if let Some(source) = default_locale {
             let translations = self.repo.get_translations(&source.code, None, None).await?;
-            
+
             // Process in batches of 50 to avoid API limits (Context Window)
             for chunk in translations.chunks(50) {
                 let keys: Vec<String> = chunk.iter().map(|t| t.key.clone()).collect();
@@ -75,7 +104,12 @@ impl I18nService {
     }
 
     /// Delete a key, optionally only for a specific tenant/context
-    pub async fn delete_key(&self, key: &str, tenant_id: Option<Uuid>, context: Option<&str>) -> Result<()> {
+    pub async fn delete_key(
+        &self,
+        key: &str,
+        tenant_id: Option<Uuid>,
+        context: Option<&str>,
+    ) -> Result<()> {
         self.repo.delete_key(key, tenant_id, context).await
     }
 
@@ -102,4 +136,3 @@ impl I18nService {
         Ok(result)
     }
 }
-

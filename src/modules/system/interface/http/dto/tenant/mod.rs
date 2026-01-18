@@ -1,6 +1,6 @@
-use serde::Deserialize;
 use chrono::{DateTime, Utc};
-use utoipa::{ToSchema, IntoParams};
+use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct TenantsQuery {

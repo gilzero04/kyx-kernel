@@ -1,5 +1,5 @@
-use crate::modules::system::domain::audit::{AuditLogFilter, PaginatedAuditLogs, AuditLogEntry};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::audit::{AuditLogEntry, AuditLogFilter, PaginatedAuditLogs};
 use anyhow::Result;
 use std::sync::Arc;
 
@@ -23,7 +23,11 @@ pub fn build_audit_log_order_clause(sort_param: &Option<String>) -> String {
                 let col = parts[0].trim();
                 let dir = parts.get(1).map(|d| d.trim()).unwrap_or("asc");
                 if let Some(sql_col) = get_audit_log_sort_column(col) {
-                    let direction = if dir.eq_ignore_ascii_case("desc") { "DESC" } else { "ASC" };
+                    let direction = if dir.eq_ignore_ascii_case("desc") {
+                        "DESC"
+                    } else {
+                        "ASC"
+                    };
                     order_parts.push(format!("{} {} NULLS LAST", sql_col, direction));
                 }
             }
@@ -50,8 +54,8 @@ pub async fn list(pool: &Arc<Database>, filter: AuditLogFilter) -> Result<Pagina
         LEFT JOIN auth_users u2 ON l.target = u2.id::varchar
         LEFT JOIN auth_tenants t ON l.target = t.id::varchar
     "#;
-    
-    // Simplified count query to avoid unnecessary joins if mostly counting rows, 
+
+    // Simplified count query to avoid unnecessary joins if mostly counting rows,
     // but since search needs joins, we keep them for consistency in filtering.
     let count_base_sql = "SELECT COUNT(*) FROM audit_logs l LEFT JOIN auth_users u ON l.actor = u.id::varchar LEFT JOIN auth_users u2 ON l.target = u2.id::varchar LEFT JOIN auth_tenants t ON l.target = t.id::varchar";
 
@@ -63,7 +67,10 @@ pub async fn list(pool: &Arc<Database>, filter: AuditLogFilter) -> Result<Pagina
             "{} WHERE (l.action ILIKE $1 OR l.actor ILIKE $1 OR l.target ILIKE $1 OR u.email ILIKE $1 OR u2.email ILIKE $1 OR t.name ILIKE $1) {} LIMIT $2 OFFSET $3",
             base_sql, order_clause
         );
-        let count = format!("{} WHERE (l.action ILIKE $1 OR l.actor ILIKE $1 OR l.target ILIKE $1 OR u.email ILIKE $1 OR u2.email ILIKE $1 OR t.name ILIKE $1)", count_base_sql);
+        let count = format!(
+            "{} WHERE (l.action ILIKE $1 OR l.actor ILIKE $1 OR l.target ILIKE $1 OR u.email ILIKE $1 OR u2.email ILIKE $1 OR t.name ILIKE $1)",
+            count_base_sql
+        );
         (logs, count, Some(search_term))
     } else {
         let logs = format!("{} {} LIMIT $1 OFFSET $2", base_sql, order_clause);

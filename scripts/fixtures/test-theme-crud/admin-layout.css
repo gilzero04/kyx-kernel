@@ -1,0 +1,25 @@
+/* =====================================================
+   Admin Layout - Light Theme
+   =====================================================
+   Transparent content area to reveal background gradient
+   ===================================================== */
+
+/* Admin Layout Wrapper - Transparent */
+.admin-layout-wrapper {
+  background: transparent !important;
+}
+
+/* Main Content Wrapper - Transparent */
+.main-content-wrapper {
+  background: transparent !important;
+}
+
+/* Page Main - Transparent */
+.page-main {
+  background: transparent !important;
+}
+
+/* Content Viewport - Transparent */
+.content-viewport {
+  background: transparent !important;
+}

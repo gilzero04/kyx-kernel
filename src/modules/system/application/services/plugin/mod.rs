@@ -3,12 +3,12 @@
 // Use PluginRegistry instead for new implementations
 // ════════════════════════════════════════════════════════════════════════════
 
-use anyhow::Result;
-use crate::modules::system::domain::plugin::{Plugin, Manifest};
-use crate::modules::system::infrastructure::wasm_engine::WasmEngine;
 use crate::core::infrastructure::redis::Redis;
-use std::sync::Arc;
+use crate::modules::system::domain::plugin::{Manifest, Plugin};
+use crate::modules::system::infrastructure::wasm_engine::WasmEngine;
+use anyhow::Result;
 use serde_json::to_string;
+use std::sync::Arc;
 
 /// Legacy Plugin Service
 /// @deprecated Use PluginRegistry for new implementations
@@ -34,22 +34,31 @@ impl PluginService {
         // 1. Persistence via RedisJSON
         let key = format!("plugin:{}", manifest.id);
         let manifest_json = to_string(&manifest)?;
-        
+
         // JSON.SET key $ json
-        self.redis.cmd("JSON.SET", vec![&key, "$", &manifest_json]).await?;
+        self.redis
+            .cmd("JSON.SET", vec![&key, "$", &manifest_json])
+            .await?;
 
         // 2. WASM Instantiation
         let _status = match self.wasm_engine.load(&manifest, wasm_path).await {
             Ok(_) => {
-                log::info!("[System] Plugin {} initialized and persisted", manifest.name);
+                log::info!(
+                    "[System] Plugin {} initialized and persisted",
+                    manifest.name
+                );
                 "enabled".to_string()
             }
             Err(e) => {
-                log::warn!("[System] Plugin {} persisted but failed to load WASM: {}", manifest.name, e);
+                log::warn!(
+                    "[System] Plugin {} persisted but failed to load WASM: {}",
+                    manifest.name,
+                    e
+                );
                 "error".to_string()
             }
         };
-        
+
         // Create minimal plugin record
         let plugin = Plugin::from_manifest(&manifest, None);
         Ok(plugin)

@@ -1,5 +1,5 @@
 use ntex::service::{Middleware, Service};
-use ntex::{web, ServiceCtx};
+use ntex::{ServiceCtx, web};
 
 pub struct EngineHandshake {
     secret_key: String,
@@ -34,7 +34,11 @@ where
     type Response = web::WebResponse;
     type Error = web::Error;
 
-    async fn call(&self, req: web::WebRequest<Err>, ctx: ServiceCtx<'_, Self>) -> Result<Self::Response, Self::Error> {
+    async fn call(
+        &self,
+        req: web::WebRequest<Err>,
+        ctx: ServiceCtx<'_, Self>,
+    ) -> Result<Self::Response, Self::Error> {
         let handshake_header = req.headers().get("X-Engine-Secret");
 
         let is_valid = match handshake_header {
@@ -43,12 +47,11 @@ where
         };
 
         if !is_valid {
-            return Ok(req.into_response(
-                web::HttpResponse::Forbidden()
-                    .json(&serde_json::json!({
-                        "error": "Handshake failed: Invalid Engine Secret"
-                    }))
-            ));
+            return Ok(req.into_response(web::HttpResponse::Forbidden().json(
+                &serde_json::json!({
+                    "error": "Handshake failed: Invalid Engine Secret"
+                }),
+            )));
         }
 
         ctx.call(&self.service, req).await

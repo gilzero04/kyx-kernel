@@ -1,0 +1,139 @@
+/* Avatar Component - Dark Theme */
+
+.avatar-container {
+    position: relative;
+    display: inline-block;
+}
+
+.avatar {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--color-surface);
+}
+
+.avatar-image {
+    aspect-ratio: 1/1;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+
+.avatar-fallback {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    color: var(--color-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* Shapes */
+.avatar-circle {
+    border-radius: 9999px;
+}
+
+.avatar-square {
+    border-radius: 0;
+}
+
+.avatar-rounded {
+    border-radius: 0.5rem;
+}
+
+/* Sizes */
+.avatar-xs {
+    height: 1.5rem;
+    width: 1.5rem;
+    font-size: 10px;
+}
+
+.avatar-sm {
+    height: 2rem;
+    width: 2rem;
+    font-size: 12px;
+}
+
+.avatar-md {
+    height: 2.5rem;
+    width: 2.5rem;
+    font-size: 14px;
+}
+
+.avatar-lg {
+    height: 3.5rem;
+    width: 3.5rem;
+    font-size: 16px;
+}
+
+.avatar-xl {
+    height: 5rem;
+    width: 5rem;
+    font-size: 20px;
+}
+
+/* Status Indicator */
+.avatar-status {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: block;
+    border-radius: 9999px;
+    border: 2px solid var(--color-background);
+}
+
+.avatar-status-online {
+    background: #22c55e;
+}
+
+.avatar-status-offline {
+    background: #94a3b8;
+}
+
+.avatar-status-busy {
+    background: #ef4444;
+}
+
+.avatar-status-away {
+    background: #f59e0b;
+}
+
+/* Status Sizes */
+.avatar-status-xs {
+    height: 0.5rem;
+    width: 0.5rem;
+}
+
+.avatar-status-sm {
+    height: 0.625rem;
+    width: 0.625rem;
+}
+
+.avatar-status-md {
+    height: 0.75rem;
+    width: 0.75rem;
+}
+
+.avatar-status-lg {
+    height: 1rem;
+    width: 1rem;
+}
+
+.avatar-status-xl {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+
+/* Status Positioning adjustments */
+.avatar-circle .avatar-status {
+    transform: translate(5%, 5%);
+}
+
+.avatar-square .avatar-status,
+.avatar-rounded .avatar-status {
+    transform: translate(25%, 25%);
+}

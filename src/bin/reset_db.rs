@@ -12,6 +12,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .execute(&pool)
         .await?;
     println!("Database reset successful.");
-    
+
     Ok(())
 }

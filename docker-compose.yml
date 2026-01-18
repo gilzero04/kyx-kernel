@@ -4,6 +4,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - APP_VERSION=${APP_VERSION:-0.1.0}
+        - BUILD_DATE=${BUILD_DATE:-unknown}
+        - GIT_COMMIT=${GIT_COMMIT:-unknown}
     image: kyx/kernel
     container_name: kyx-kernel-app
     environment:
@@ -23,6 +27,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      - ./migrations:/app/migrations:ro # Dev: no rebuild needed when editing migrations
       - ./assets:/app/assets
       - ./uploads:/app/uploads
     restart: unless-stopped

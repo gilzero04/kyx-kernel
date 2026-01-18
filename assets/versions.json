@@ -1,0 +1,21 @@
+{
+  "latest": "0.1.0",
+  "current_stable": "0.1.0",
+  "minimum_required": "0.1.0",
+  "releases": [
+    {
+      "version": "0.1.0",
+      "date": "2026-01-18",
+      "channel": "stable",
+      "changelog": "Initial release with core features",
+      "docker_image": "kyx/kernel:0.1.0",
+      "breaking_changes": false,
+      "requires_migration": false
+    }
+  ],
+  "developer": {
+    "name": "Kyx Team",
+    "website": "https://kyx.tech",
+    "support": "support@kyx.tech"
+  }
+}

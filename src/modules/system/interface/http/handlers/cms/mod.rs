@@ -1,13 +1,13 @@
-use ntex::web;
-use std::sync::Arc;
-use serde::Deserialize;
-use serde_json::json;
-use uuid::Uuid;
-use chrono::Utc;
 use crate::core::utils::jwt::Claims;
 use crate::core::utils::response::ApiResponse;
 use crate::modules::system::application::services::cms::CmsService;
 use crate::modules::system::domain::cms::entity::PageEntry;
+use chrono::Utc;
+use ntex::web;
+use serde::Deserialize;
+use serde_json::json;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct CmsPageRequest {
@@ -36,20 +36,20 @@ pub async fn get_page_by_slug(
     // Manually parse path: .../cms/pages/{tenant_id}/{slug}
     let path_str = req.path();
     let segments: Vec<&str> = path_str.split("/cms/pages/").collect();
-    
+
     if segments.len() < 2 {
         let response = ApiResponse::<()>::bad_request("Invalid CMS path");
         return Ok(web::HttpResponse::BadRequest().json(&response));
     }
-    
+
     let remainder = segments[1];
     let parts: Vec<&str> = remainder.splitn(2, '/').collect();
-    
+
     if parts.len() < 2 {
         let response = ApiResponse::<()>::not_found("Tenant ID and slug required");
         return Ok(web::HttpResponse::NotFound().json(&response));
     }
-    
+
     let tenant_id = match Uuid::parse_str(parts[0]) {
         Ok(id) => id,
         Err(_) => {
@@ -57,14 +57,14 @@ pub async fn get_page_by_slug(
             return Ok(web::HttpResponse::BadRequest().json(&response));
         }
     };
-    
+
     let slug = parts[1].to_string();
-    
+
     if slug.is_empty() {
         let response = ApiResponse::<()>::not_found("Page slug required");
         return Ok(web::HttpResponse::NotFound().json(&response));
     }
-    
+
     // Strict tenant scoping: Only find pages belonging to the specified tenant
     match service.get_page_by_slug(tenant_id, &slug).await {
         Ok(Some(page)) => {
@@ -148,7 +148,8 @@ pub async fn create_admin_page(
 
     match service.save_page(page).await {
         Ok(_) => {
-            let response = ApiResponse::created(json!({ "id": new_id }), "Page created successfully");
+            let response =
+                ApiResponse::created(json!({ "id": new_id }), "Page created successfully");
             Ok(web::HttpResponse::Created().json(&response))
         }
         Err(e) => {
@@ -194,7 +195,10 @@ pub async fn update_admin_page(
 
     match service.save_page(updated_page).await {
         Ok(_) => {
-            let response = ApiResponse::ok(json!({ "updated": true, "id": page_id }), "Page updated successfully");
+            let response = ApiResponse::ok(
+                json!({ "updated": true, "id": page_id }),
+                "Page updated successfully",
+            );
             Ok(web::HttpResponse::Ok().json(&response))
         }
         Err(e) => {

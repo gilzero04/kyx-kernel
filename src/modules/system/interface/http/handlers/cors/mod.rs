@@ -1,8 +1,9 @@
+use crate::core::infrastructure::audit::AuditService;
+use crate::core::utils::response::ApiResponse;
+use crate::modules::system::application::services::cors::CORSService;
+use crate::modules::system::interface::http::dto::cors::{AddCorsRequest, UpdateCorsRequest};
 use ntex::web;
 use std::sync::Arc;
-use crate::modules::system::application::services::cors::CORSService;
-use crate::core::infrastructure::audit::AuditService;
-use crate::modules::system::interface::http::dto::cors::{AddCorsRequest, UpdateCorsRequest};
 
 /// List allowed CORS origins (Admin)
 #[utoipa::path(
@@ -16,10 +17,21 @@ use crate::modules::system::interface::http::dto::cors::{AddCorsRequest, UpdateC
         ("bearer_auth" = [])
     )
 )]
-pub async fn list_cors_origins(service: web::types::State<Arc<CORSService>>) -> impl web::Responder {
+pub async fn list_cors_origins(
+    service: web::types::State<Arc<CORSService>>,
+) -> impl web::Responder {
     match service.list_origins().await {
-        Ok(origins) => web::HttpResponse::Ok().json(&origins),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+        Ok(origins) => {
+            let response = ApiResponse::ok(
+                serde_json::json!({ "origins": origins }),
+                "CORS origins retrieved",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -41,12 +53,27 @@ pub async fn add_cors_origin(
     service: web::types::State<Arc<CORSService>>,
     audit: web::types::State<Arc<AuditService>>,
 ) -> impl web::Responder {
-    match service.add_origin(&body.origin, body.description.clone()).await {
+    match service
+        .add_origin(&body.origin, body.description.clone())
+        .await
+    {
         Ok(origin) => {
-            let _ = audit.log("SuperAdmin", "CORS_ORIGIN_ADDED", Some(&origin.origin), "SUCCESS", None).await;
-            web::HttpResponse::Created().json(&origin)
-        },
-        Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": e.message }))
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "CORS_ORIGIN_ADDED",
+                    Some(&origin.origin),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::created(origin, "CORS origin added");
+            web::HttpResponse::Created().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::bad_request(&e.message);
+            web::HttpResponse::BadRequest().json(&response)
+        }
     }
 }
 
@@ -74,15 +101,35 @@ pub async fn update_cors_origin(
     path: web::types::Path<i32>,
 ) -> impl web::Responder {
     let id = path.into_inner();
-    match service.update_origin(id, body.is_active, body.description.clone()).await {
+    match service
+        .update_origin(id, body.is_active, body.description.clone())
+        .await
+    {
         Ok(origin) => {
-            let _ = audit.log("SuperAdmin", "CORS_ORIGIN_UPDATED", Some(&origin.origin), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&origin)
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "CORS_ORIGIN_UPDATED",
+                    Some(&origin.origin),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::ok(origin, "CORS origin updated");
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-             // Basic error handling for not found
-             let mut status = if e.message.contains("no rows returned") { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-            status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.message.contains("no rows returned") {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.message.contains("no rows returned") {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }
@@ -111,12 +158,33 @@ pub async fn delete_cors_origin(
     let id = path.into_inner();
     match service.delete_origin(id).await {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "CORS_ORIGIN_DELETED", Some(&id.to_string()), "SUCCESS", None).await;
-            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
-        },
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "CORS_ORIGIN_DELETED",
+                    Some(&id.to_string()),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::ok(
+                serde_json::json!({ "deleted": true }),
+                "CORS origin deleted",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
-            let mut status = if e.code == 404 { web::HttpResponse::NotFound() } else { web::HttpResponse::InternalServerError() };
-            status.json(&serde_json::json!({ "error": e.message }))
+            let response = if e.code == 404 {
+                ApiResponse::<()>::not_found(&e.message)
+            } else {
+                ApiResponse::<()>::internal_error(&e.message)
+            };
+            let mut status = if e.code == 404 {
+                web::HttpResponse::NotFound()
+            } else {
+                web::HttpResponse::InternalServerError()
+            };
+            status.json(&response)
         }
     }
 }

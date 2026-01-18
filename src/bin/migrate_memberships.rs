@@ -24,19 +24,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     sqlx::query("DROP TRIGGER IF EXISTS update_auth_memberships_updated_at ON auth_memberships;")
         .execute(&pool)
         .await?;
-    
+
     sqlx::query(
         r#"
         CREATE TRIGGER update_auth_memberships_updated_at
         BEFORE UPDATE ON auth_memberships
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-        "#
+        "#,
     )
     .execute(&pool)
     .await?;
     println!("  ✅ Added update_updated_at_column trigger");
 
     println!("🎉 Migration completed successfully!");
-    
+
     Ok(())
 }

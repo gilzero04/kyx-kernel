@@ -63,6 +63,7 @@ test_multi "GET" "/api/v1/public/tenants/test-slug" "200,404"
 test_endpoint "GET" "/api/v1/public/themes" "200"
 test_endpoint "GET" "/api/v1/public/i18n/locales" "200"
 test_multi "GET" "/api/v1/public/i18n/translations/en" "200,404"
+test_multi "GET" "/api/v1/public/system/branding" "200,404"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 log_section "HEALTH & DOCS"
@@ -88,7 +89,7 @@ test_endpoint "POST" "/api/v1/auth/setup/verify-key" "401"
 
 # Try login
 echo "Attempting login..."
-LOGIN_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/v1/auth/login" -H "Content-Type: application/json" -d '{"username":"admin@kyx.local","password":"Admin123!"}' 2>/dev/null || echo "{}")
+LOGIN_RESPONSE=$(curl -s -X POST "${BASE_URL}/api/v1/auth/login" -H "Content-Type: application/json" -d '{"username":"admin@kyx.tech","password":"Admin123!"}' 2>/dev/null || echo "{}")
 TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.access_token // empty' 2>/dev/null || echo "")
 [[ -n "$TOKEN" && "$TOKEN" != "null" ]] && log_pass "Login successful" || { log_skip "Login - using 401 expectations" "no credentials"; TOKEN=""; }
 
@@ -163,6 +164,17 @@ if [[ -n "$TOKEN" ]]; then
     test_multi "GET" "/api/v1/admin/plugins/${TEST_UUID}" "200,404" "$TOKEN"
     test_multi "POST" "/api/v1/admin/plugins/${TEST_UUID}/enable" "200,404" "$TOKEN"
     test_multi "POST" "/api/v1/admin/plugins/${TEST_UUID}/disable" "200,404" "$TOKEN"
+    
+    # CMS Pages
+    test_endpoint "GET" "/api/v1/admin/cms/pages" "200" "$TOKEN"
+    test_multi "GET" "/api/v1/admin/cms/pages/${TEST_UUID}" "200,404" "$TOKEN"
+    test_endpoint "POST" "/api/v1/admin/cms/pages" "400" "$TOKEN" '{}'
+    test_multi "PUT" "/api/v1/admin/cms/pages/${TEST_UUID}" "200,400,404" "$TOKEN" '{"title":"test"}'
+    test_multi "DELETE" "/api/v1/admin/cms/pages/${TEST_UUID}" "200,404" "$TOKEN"
+    
+    test_multi "GET" "/api/v1/admin/shares/${TEST_UUID}/usage" "200,401,404" "$TOKEN"
+    
+    # Branding
 else
     test_endpoint "GET" "/api/v1/admin/config" "401"
     test_endpoint "GET" "/api/v1/admin/users" "401"

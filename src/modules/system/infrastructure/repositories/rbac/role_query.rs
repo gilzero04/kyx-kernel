@@ -1,17 +1,22 @@
-use crate::modules::system::domain::rbac::{Role, Permission, CreateRoleCmd, UpdateRoleCmd};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::rbac::{CreateRoleCmd, Permission, Role, UpdateRoleCmd};
 use anyhow::{Result, anyhow};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub async fn list(pool: &Arc<Database>, tenant_id: Option<Uuid>, actor_tenant_id: Option<Uuid>, show_all: bool) -> Result<Vec<Role>> {
+pub async fn list(
+    pool: &Arc<Database>,
+    tenant_id: Option<Uuid>,
+    actor_tenant_id: Option<Uuid>,
+    show_all: bool,
+) -> Result<Vec<Role>> {
     // Visibility rules:
     // - System owner (actor_tenant_id IS NULL): can see all or filter by tenant_id
     // - Regular tenant: sees own roles + shared roles (broadcast or explicit)
-    
+
     let (final_tid, override_all) = match actor_tenant_id {
         Some(aid) => (Some(aid), false), // Restricted to own + shared
-        None => (tenant_id, show_all),    // System owner can query specific or all
+        None => (tenant_id, show_all),   // System owner can query specific or all
     };
 
     let roles = sqlx::query_as::<_, Role>(
@@ -41,8 +46,11 @@ pub async fn list(pool: &Arc<Database>, tenant_id: Option<Uuid>, actor_tenant_id
     Ok(roles)
 }
 
-
-pub async fn create(pool: &Arc<Database>, cmd: CreateRoleCmd, actor_tenant_id: Option<Uuid>) -> Result<Role> {
+pub async fn create(
+    pool: &Arc<Database>,
+    cmd: CreateRoleCmd,
+    actor_tenant_id: Option<Uuid>,
+) -> Result<Role> {
     // If actor is present, force their tenant_id
     let target_tenant = actor_tenant_id.or(cmd.tenant_id);
 
@@ -64,7 +72,12 @@ pub async fn create(pool: &Arc<Database>, cmd: CreateRoleCmd, actor_tenant_id: O
     Ok(role)
 }
 
-pub async fn update(pool: &Arc<Database>, id: Uuid, cmd: UpdateRoleCmd, actor_tenant_id: Option<Uuid>) -> Result<Option<Role>> {
+pub async fn update(
+    pool: &Arc<Database>,
+    id: Uuid,
+    cmd: UpdateRoleCmd,
+    actor_tenant_id: Option<Uuid>,
+) -> Result<Option<Role>> {
     let (code_val, code_present) = match cmd.code {
         Some(inner) => (inner, true),
         None => (None, false),
@@ -111,7 +124,11 @@ pub async fn delete(pool: &Arc<Database>, id: Uuid, actor_tenant_id: Option<Uuid
     Ok(result.rows_affected() > 0)
 }
 
-pub async fn get_permissions(pool: &Arc<Database>, role_id: Uuid, actor_tenant_id: Option<Uuid>) -> Result<Vec<Permission>> {
+pub async fn get_permissions(
+    pool: &Arc<Database>,
+    role_id: Uuid,
+    actor_tenant_id: Option<Uuid>,
+) -> Result<Vec<Permission>> {
     let permissions = sqlx::query_as::<_, Permission>(
         "SELECT p.id, p.code, p.slug, p.name, p.description, p.is_system, p.is_active, p.created_at, p.updated_at 
          FROM sys_permissions p
@@ -128,27 +145,36 @@ pub async fn get_permissions(pool: &Arc<Database>, role_id: Uuid, actor_tenant_i
     Ok(permissions)
 }
 
-pub async fn update_permissions(pool: &Arc<Database>, role_id: Uuid, permission_ids: Vec<Uuid>, actor_tenant_id: Option<Uuid>) -> Result<()> {
+pub async fn update_permissions(
+    pool: &Arc<Database>,
+    role_id: Uuid,
+    permission_ids: Vec<Uuid>,
+    actor_tenant_id: Option<Uuid>,
+) -> Result<()> {
     // 1. Verify role access
     let role_exists = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM sys_roles WHERE id = $1 AND (tenant_id = $2 OR $2 IS NULL) AND deleted_at IS NULL")
         .bind(role_id)
         .bind(actor_tenant_id)
         .fetch_one(&pool.pool)
         .await?;
-    
+
     if role_exists == 0 {
         return Err(anyhow!("Role not found or access denied"));
     }
 
-    let mut tx = pool.pool.begin().await.map_err(|e| anyhow!("Failed to begin transaction: {}", e))?;
-    
+    let mut tx = pool
+        .pool
+        .begin()
+        .await
+        .map_err(|e| anyhow!("Failed to begin transaction: {}", e))?;
+
     // Delete existing
     sqlx::query("DELETE FROM sys_role_permissions WHERE role_id = $1")
         .bind(role_id)
         .execute(&mut *tx)
         .await
         .map_err(|e| anyhow!("Failed to delete existing mappings: {}", e))?;
-        
+
     // Insert new
     for perm_id in permission_ids {
         sqlx::query("INSERT INTO sys_role_permissions (role_id, permission_id) VALUES ($1, $2)")
@@ -158,7 +184,9 @@ pub async fn update_permissions(pool: &Arc<Database>, role_id: Uuid, permission_
             .await
             .map_err(|e| anyhow!("Failed to insert mapping: {}", e))?;
     }
-    
-    tx.commit().await.map_err(|e| anyhow!("Failed to commit transaction: {}", e))?;
+
+    tx.commit()
+        .await
+        .map_err(|e| anyhow!("Failed to commit transaction: {}", e))?;
     Ok(())
 }

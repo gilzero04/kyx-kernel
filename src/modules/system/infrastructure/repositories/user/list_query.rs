@@ -1,5 +1,5 @@
-use crate::modules::system::domain::user::{UserEntry, PaginatedUsers, UserFilter};
 use crate::core::infrastructure::database::Database;
+use crate::modules::system::domain::user::{PaginatedUsers, UserEntry, UserFilter};
 use anyhow::Result;
 use std::sync::Arc;
 
@@ -23,7 +23,11 @@ fn build_user_order_clause(sort_param: &Option<String>) -> String {
                 let col = parts[0].trim();
                 let dir = parts.get(1).map(|d| d.trim()).unwrap_or("asc");
                 if let Some(sql_col) = get_user_sort_column(col) {
-                    let direction = if dir.eq_ignore_ascii_case("desc") { "DESC" } else { "ASC" };
+                    let direction = if dir.eq_ignore_ascii_case("desc") {
+                        "DESC"
+                    } else {
+                        "ASC"
+                    };
                     order_parts.push(format!("{} {} NULLS LAST", sql_col, direction));
                 }
             }
@@ -42,25 +46,30 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
 
     // Build the hierarchy/isolation filter
     // $1 = tree_root, $2 = specific_tenant (optional)
-    let (hierarchy_cte, hierarchy_where, p_count) = if let Some(_root) = filter.actor_tenant_id.or(filter.tenant_id) {
-        (
-            r#"WITH RECURSIVE tenant_tree AS (
+    let (hierarchy_cte, hierarchy_where, p_count) =
+        if let Some(_root) = filter.actor_tenant_id.or(filter.tenant_id) {
+            (
+                r#"WITH RECURSIVE tenant_tree AS (
                 SELECT id FROM auth_tenants WHERE id = $1 AND deleted_at IS NULL
                 UNION ALL
                 SELECT t.id FROM auth_tenants t
                 JOIN tenant_tree tt ON t.parent_id = tt.id
                 WHERE t.deleted_at IS NULL
             )"#,
-            if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() {
-                "AND t.id = $2 AND t.id IN (SELECT id FROM tenant_tree)"
-            } else {
-                "AND t.id IN (SELECT id FROM tenant_tree)"
-            },
-            if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() { 2 } else { 1 }
-        )
-    } else {
-        ("", "", 0)
-    };
+                if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() {
+                    "AND t.id = $2 AND t.id IN (SELECT id FROM tenant_tree)"
+                } else {
+                    "AND t.id IN (SELECT id FROM tenant_tree)"
+                },
+                if filter.actor_tenant_id.is_some() && filter.tenant_id.is_some() {
+                    2
+                } else {
+                    1
+                },
+            )
+        } else {
+            ("", "", 0)
+        };
 
     let base_sql = format!(
         r#"{}
@@ -97,15 +106,30 @@ pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedU
         let search_term = format!("%{}%", s);
         let data = format!(
             "{} AND (u.email ILIKE ${} OR u.full_name ILIKE ${} OR r.name ILIKE ${}) {} LIMIT ${} OFFSET ${}",
-            base_sql, p_count + 1, p_count + 1, p_count + 1, order_clause, p_count + 2, p_count + 3
+            base_sql,
+            p_count + 1,
+            p_count + 1,
+            p_count + 1,
+            order_clause,
+            p_count + 2,
+            p_count + 3
         );
         let count = format!(
             "{} AND (u.email ILIKE ${} OR u.full_name ILIKE ${} OR r.name ILIKE ${})",
-            count_base_sql, p_count + 1, p_count + 1, p_count + 1
+            count_base_sql,
+            p_count + 1,
+            p_count + 1,
+            p_count + 1
         );
         (data, count, Some(search_term))
     } else {
-        let data = format!("{} {} LIMIT ${} OFFSET ${}", base_sql, order_clause, p_count + 1, p_count + 2);
+        let data = format!(
+            "{} {} LIMIT ${} OFFSET ${}",
+            base_sql,
+            order_clause,
+            p_count + 1,
+            p_count + 2
+        );
         (data, count_base_sql.to_string(), None)
     };
 

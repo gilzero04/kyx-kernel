@@ -1,9 +1,9 @@
-use std::sync::Arc;
+use crate::core::domain::auth::UserRole;
+use crate::core::infrastructure::audit::AuditService;
+use crate::core::utils::jwt::JwtService;
 use ntex::service::{Middleware, Service, ServiceCtx};
 use ntex::web;
-use crate::core::utils::jwt::JwtService;
-use crate::core::infrastructure::audit::AuditService;
-use crate::core::domain::auth::UserRole;
+use std::sync::Arc;
 
 pub struct RequireRole {
     pub min_role: UserRole,
@@ -13,8 +13,16 @@ pub struct RequireRole {
 
 impl RequireRole {
     #[allow(dead_code)]
-    pub fn new(min_role: UserRole, jwt_service: Arc<JwtService>, audit_service: Arc<AuditService>) -> Self {
-        Self { min_role, jwt_service, audit_service }
+    pub fn new(
+        min_role: UserRole,
+        jwt_service: Arc<JwtService>,
+        audit_service: Arc<AuditService>,
+    ) -> Self {
+        Self {
+            min_role,
+            jwt_service,
+            audit_service,
+        }
     }
 }
 
@@ -45,9 +53,13 @@ where
     type Response = web::WebResponse;
     type Error = web::Error;
 
-    async fn call(&self, req: web::WebRequest<Err>, ctx: ServiceCtx<'_, Self>) -> Result<Self::Response, Self::Error> {
+    async fn call(
+        &self,
+        req: web::WebRequest<Err>,
+        ctx: ServiceCtx<'_, Self>,
+    ) -> Result<Self::Response, Self::Error> {
         let auth_header = req.headers().get("Authorization");
-        
+
         let token = match auth_header {
             Some(h) => h.to_str().ok().and_then(|v| v.strip_prefix("Bearer ")),
             None => None,
@@ -66,29 +78,25 @@ where
                         let audit = self.audit_service.clone();
                         let sub = claims.sub.clone();
                         let path = req.path().to_string();
-                        
-                        // We can't easily spark a tokio task here if we want to be ultra-clean, 
+
+                        // We can't easily spark a tokio task here if we want to be ultra-clean,
                         // but let's just do it background style for now.
                         tokio::spawn(async move {
-                            let _ = audit.log(&sub, "UNAUTHORIZED_ACCESS", Some(&path), "FAILURE", None).await;
+                            let _ = audit
+                                .log(&sub, "UNAUTHORIZED_ACCESS", Some(&path), "FAILURE", None)
+                                .await;
                         });
-                        
-                        return Ok(req.into_response(
-                            web::HttpResponse::Forbidden().finish()
-                        ));
+
+                        return Ok(req.into_response(web::HttpResponse::Forbidden().finish()));
                     }
                 }
                 Err(_) => {
                     // Invalid token
-                    return Ok(req.into_response(
-                        web::HttpResponse::Unauthorized().finish()
-                    ));
+                    return Ok(req.into_response(web::HttpResponse::Unauthorized().finish()));
                 }
             }
         }
 
-        Ok(req.into_response(
-            web::HttpResponse::Unauthorized().finish()
-        ))
+        Ok(req.into_response(web::HttpResponse::Unauthorized().finish()))
     }
 }

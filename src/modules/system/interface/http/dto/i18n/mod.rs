@@ -33,4 +33,3 @@ pub struct CreateLocaleRequest {
     pub code: String,
     pub name: String,
 }
-

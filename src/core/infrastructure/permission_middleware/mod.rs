@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use ntex::service::{Middleware, Service, ServiceCtx};
-use ntex::web;
-use crate::core::utils::jwt::JwtService;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::infrastructure::redis::Redis;
+use crate::core::utils::jwt::JwtService;
+use ntex::service::{Middleware, Service, ServiceCtx};
+use ntex::web;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct RequirePermission {
@@ -14,23 +14,30 @@ pub struct RequirePermission {
     pub redis_service: Option<Arc<Redis>>,
 }
 
-
 impl RequirePermission {
-    pub fn new(permission: impl Into<String>, jwt_service: Arc<JwtService>, audit_service: Arc<AuditService>) -> Self {
-        Self { 
-            permission: permission.into(), 
-            system_only: false, 
-            jwt_service, 
+    pub fn new(
+        permission: impl Into<String>,
+        jwt_service: Arc<JwtService>,
+        audit_service: Arc<AuditService>,
+    ) -> Self {
+        Self {
+            permission: permission.into(),
+            system_only: false,
+            jwt_service,
             audit_service,
             redis_service: None,
         }
     }
 
-    pub fn system(permission: impl Into<String>, jwt_service: Arc<JwtService>, audit_service: Arc<AuditService>) -> Self {
-        Self { 
-            permission: permission.into(), 
-            system_only: true, 
-            jwt_service, 
+    pub fn system(
+        permission: impl Into<String>,
+        jwt_service: Arc<JwtService>,
+        audit_service: Arc<AuditService>,
+    ) -> Self {
+        Self {
+            permission: permission.into(),
+            system_only: true,
+            jwt_service,
             audit_service,
             redis_service: None,
         }
@@ -78,9 +85,13 @@ where
     type Response = web::WebResponse;
     type Error = web::Error;
 
-    async fn call(&self, req: web::WebRequest<Err>, ctx: ServiceCtx<'_, Self>) -> Result<Self::Response, Self::Error> {
+    async fn call(
+        &self,
+        req: web::WebRequest<Err>,
+        ctx: ServiceCtx<'_, Self>,
+    ) -> Result<Self::Response, Self::Error> {
         let auth_header = req.headers().get("Authorization");
-        
+
         let token = match auth_header {
             Some(h) => h.to_str().ok().and_then(|v| v.strip_prefix("Bearer ")),
             None => None,
@@ -94,26 +105,35 @@ where
                         if !sid.is_empty() {
                             let key = format!("auth:session:{}:{}", claims.sub, sid);
                             let mut conn = redis.get_connection();
-                            
+
                             let exists: i32 = redis::cmd("EXISTS")
                                 .arg(&key)
                                 .query_async(&mut conn)
                                 .await
                                 .map_err(|e| {
-                                    log::error!("[RequirePermission] Redis connection error: {}", e);
+                                    log::error!(
+                                        "[RequirePermission] Redis connection error: {}",
+                                        e
+                                    );
                                     web::error::ErrorInternalServerError("Security check failed")
                                 })?;
-                            
-                            println!("[RequirePermission] Checking key: {} -> Exists: {}", key, exists);
-                            
+
+                            println!(
+                                "[RequirePermission] Checking key: {} -> Exists: {}",
+                                key, exists
+                            );
+
                             if exists == 0 {
-                                println!("[RequirePermission] REJECTED: Session not found in Redis for user: {}, sid: {}", claims.sub, sid);
-                                return Ok(req.into_response(
-                                    web::HttpResponse::Unauthorized().finish()
-                                ));
+                                println!(
+                                    "[RequirePermission] REJECTED: Session not found in Redis for user: {}, sid: {}",
+                                    claims.sub, sid
+                                );
+                                return Ok(
+                                    req.into_response(web::HttpResponse::Unauthorized().finish())
+                                );
                             }
                         } else {
-                             // println!("[RequirePermission] Skipping check: SID is empty");
+                            // println!("[RequirePermission] Skipping check: SID is empty");
                         }
                     } else {
                         // println!("[RequirePermission] Skipping check: Redis service or SID missing");
@@ -122,13 +142,15 @@ where
                     // 1. Mandatory System Owner check if system_only is true
                     let is_owner = claims.is_system_owner.unwrap_or(false);
                     if self.system_only && !is_owner {
-                         return Ok(req.into_response(
-                            web::HttpResponse::Forbidden().finish()
-                        ));
+                        return Ok(req.into_response(web::HttpResponse::Forbidden().finish()));
                     }
 
                     // 2. Permission check
-                    if self.permission.is_empty() || is_owner || claims.permissions.contains(&"system:manage".to_string()) || claims.permissions.contains(&self.permission) {
+                    if self.permission.is_empty()
+                        || is_owner
+                        || claims.permissions.contains(&"system:manage".to_string())
+                        || claims.permissions.contains(&self.permission)
+                    {
                         // Authorized - attach claims to request extensions and continue
                         req.extensions_mut().insert(claims);
                         return ctx.call(&self.service, req).await;
@@ -138,34 +160,30 @@ where
                         let sub = claims.sub.clone();
                         let path = req.path().to_string();
                         let required_perm = self.permission.clone();
-                        
+
                         tokio::spawn(async move {
-                            let _ = audit.log(
-                                &sub, 
-                                "UNAUTHORIZED_ACCESS", 
-                                Some(&path), 
-                                "FAILURE", 
-                                Some(format!("Missing permission: {}", required_perm).into())
-                            ).await;
+                            let _ = audit
+                                .log(
+                                    &sub,
+                                    "UNAUTHORIZED_ACCESS",
+                                    Some(&path),
+                                    "FAILURE",
+                                    Some(format!("Missing permission: {}", required_perm).into()),
+                                )
+                                .await;
                         });
-                        
-                        return Ok(req.into_response(
-                            web::HttpResponse::Forbidden().finish()
-                        ));
+
+                        return Ok(req.into_response(web::HttpResponse::Forbidden().finish()));
                     }
                 }
                 Err(_) => {
                     // Invalid token
-                    return Ok(req.into_response(
-                        web::HttpResponse::Unauthorized().finish()
-                    ));
+                    return Ok(req.into_response(web::HttpResponse::Unauthorized().finish()));
                 }
             }
         }
 
-        Ok(req.into_response(
-            web::HttpResponse::Unauthorized().finish()
-        ))
+        Ok(req.into_response(web::HttpResponse::Unauthorized().finish()))
     }
 }
 
@@ -184,7 +202,10 @@ impl RequirePlatform {
 impl<S> Middleware<S> for RequirePlatform {
     type Service = RequirePlatformMiddleware<S>;
     fn create(&self, service: S) -> Self::Service {
-        RequirePlatformMiddleware { service, jwt_service: self.jwt_service.clone() }
+        RequirePlatformMiddleware {
+            service,
+            jwt_service: self.jwt_service.clone(),
+        }
     }
 }
 
@@ -200,9 +221,15 @@ where
     type Response = web::WebResponse;
     type Error = web::Error;
 
-    async fn call(&self, req: web::WebRequest<Err>, ctx: ServiceCtx<'_, Self>) -> Result<Self::Response, Self::Error> {
+    async fn call(
+        &self,
+        req: web::WebRequest<Err>,
+        ctx: ServiceCtx<'_, Self>,
+    ) -> Result<Self::Response, Self::Error> {
         let auth_header = req.headers().get("Authorization");
-        let token = auth_header.and_then(|h| h.to_str().ok()).and_then(|v| v.strip_prefix("Bearer "));
+        let token = auth_header
+            .and_then(|h| h.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "));
 
         if let Some(t) = token {
             if let Ok(claims) = self.jwt_service.verify_token(t) {

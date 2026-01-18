@@ -1,0 +1,58 @@
+/**
+ * KYX Dark Theme - Main Entry Point
+ * ==================================
+ * This file imports all theme components in the correct order.
+ * 
+ * Order matters:
+ * 1. Variables (foundation)
+ * 2. Font imports
+ * 3. Layout components
+ * 4. UI components
+ * 5. Page-specific styles
+ */
+
+/* 1. Foundation - CSS Variables */
+@import './variables.css';
+
+/* 2. Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Prata&display=swap');
+
+/* 3. Layout Components */
+@import './header.css';
+@import './sidebar.css';
+@import './footer.css';
+@import './pagelayout.css';
+@import './admin-layout.css';
+
+/* 4. UI Components */
+@import './button.css';
+@import './input.css';
+@import './select.css';
+@import './toggleswitch.css';
+@import './card.css';
+@import './badge.css';
+@import './modal.css';
+@import './alert.css';
+@import './avatar.css';
+@import './toast.css';
+@import './datatable.css';
+@import './viewtoggle.css';
+@import './userprofilepill.css';
+@import './language-switcher.css';
+@import './theme-manager.css';
+@import './theme-card.css';
+@import './action-button.css';
+@import './stat-card.css';
+@import './quick-action-card.css';
+@import './nav-category-item.css';
+@import './admin-tab-bar.css';
+
+/* 5. Background & Visual Effects */
+@import './app-background.css';
+@import './splash-background.css';
+@import './splash-screen.css';
+
+/* 6. Page-specific Styles */
+@import './system-error.css';
+@import './setup-page.css';
+@import './branding-form.css';

@@ -1,13 +1,15 @@
-use ntex::web;
-use std::sync::Arc;
-use crate::modules::system::application::services::user::UserAdminService;
-use crate::modules::system::application::services::tenant::TenantService;
-use crate::modules::system::interface::http::dto::user::{UsersQuery, UpdateUserRequest, AdminResetPasswordRequest};
-use crate::modules::system::domain::user::UserFilter;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::utils::jwt::Claims;
 use crate::core::utils::response::ApiResponse;
+use crate::modules::system::application::services::tenant::TenantService;
+use crate::modules::system::application::services::user::UserAdminService;
+use crate::modules::system::domain::user::UserFilter;
+use crate::modules::system::interface::http::dto::user::{
+    AdminResetPasswordRequest, UpdateUserRequest, UsersQuery,
+};
+use ntex::web;
 use serde_json::json;
+use std::sync::Arc;
 
 /// List all users (Admin)
 #[utoipa::path(
@@ -53,12 +55,15 @@ pub async fn list_users(
 
     match service.list_users(filter, actor_tenant_id).await {
         Ok(data) => {
-            let response = ApiResponse::ok(json!({
-                "users": data.data,
-                "total": data.pagination.total,
-                "page": data.pagination.page,
-                "limit": data.pagination.limit
-            }), "Users listed successfully");
+            let response = ApiResponse::ok(
+                json!({
+                    "users": data.data,
+                    "total": data.pagination.total,
+                    "page": data.pagination.page,
+                    "limit": data.pagination.limit
+                }),
+                "Users listed successfully",
+            );
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
@@ -113,9 +118,21 @@ pub async fn update_user(
         }
     }
 
-    match service.update_user(id_uuid, body.full_name.clone(), body.is_active, body.role_slug.clone(), body.tenant_id, actor_tenant_id).await {
+    match service
+        .update_user(
+            id_uuid,
+            body.full_name.clone(),
+            body.is_active,
+            body.role_slug.clone(),
+            body.tenant_id,
+            actor_tenant_id,
+        )
+        .await
+    {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "USER_UPDATED", Some(&path), "SUCCESS", None).await;
+            let _ = audit
+                .log("SuperAdmin", "USER_UPDATED", Some(&path), "SUCCESS", None)
+                .await;
             let response = ApiResponse::ok(json!({ "updated": true }), "User updated successfully");
             web::HttpResponse::Ok().json(&response)
         }
@@ -175,9 +192,14 @@ pub async fn delete_user(
         }
     }
 
-    match service.delete_user(id_uuid, current_user_id, actor_tenant_id).await {
+    match service
+        .delete_user(id_uuid, current_user_id, actor_tenant_id)
+        .await
+    {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "USER_DELETED", Some(&path), "SUCCESS", None).await;
+            let _ = audit
+                .log("SuperAdmin", "USER_DELETED", Some(&path), "SUCCESS", None)
+                .await;
             let response = ApiResponse::ok(json!({ "deleted": true }), "User deleted successfully");
             web::HttpResponse::Ok().json(&response)
         }
@@ -238,9 +260,20 @@ pub async fn reset_password(
         }
     }
 
-    match service.reset_password(id_uuid, body.new_password.clone(), actor_tenant_id).await {
+    match service
+        .reset_password(id_uuid, body.new_password.clone(), actor_tenant_id)
+        .await
+    {
         Ok(_) => {
-            let _ = audit.log("SuperAdmin", "USER_PASSWORD_RESET", Some(&path), "SUCCESS", None).await;
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "USER_PASSWORD_RESET",
+                    Some(&path),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
             let response = ApiResponse::ok(json!({ "reset": true }), "Password reset successfully");
             web::HttpResponse::Ok().json(&response)
         }

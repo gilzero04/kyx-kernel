@@ -1,0 +1,40 @@
+/**
+ * ActionButton - Light Theme Colors
+ * ==================================
+ */
+
+/* Variants */
+.action-btn--danger {
+    color: var(--color-error);
+}
+.action-btn--danger:hover:not(:disabled) {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+}
+
+.action-btn--primary {
+    color: var(--color-primary);
+}
+.action-btn--primary:hover:not(:disabled) {
+    color: white;
+    background: var(--color-primary);
+}
+
+/* Theme Mode Toggle - Active States */
+.action-btn--preview.action-btn--active {
+    background: rgb(139, 92, 246) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+
+.action-btn--light.action-btn--active {
+    background: rgb(251, 191, 36) !important;
+    border-color: transparent !important;
+    color: white !important;
+}
+
+.action-btn--dark.action-btn--active {
+    background: rgb(99, 102, 241) !important;
+    border-color: transparent !important;
+    color: white !important;
+}

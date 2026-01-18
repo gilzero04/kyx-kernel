@@ -2,14 +2,28 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::core::infrastructure::database::Database;
-use crate::modules::auth::domain::user_preferences::{UserPreferences, UpdateUserPreferencesDto};
+use crate::modules::auth::domain::user_preferences::{UpdateUserPreferencesDto, UserPreferences};
 
 #[allow(dead_code)]
 pub trait UserPreferencesRepository: Send + Sync {
-    fn get_by_user_id(&self, user_id: Uuid) -> impl std::future::Future<Output = Result<Option<UserPreferences>, sqlx::Error>> + Send;
-    fn create(&self, prefs: &UserPreferences) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
-    fn update(&self, user_id: Uuid, dto: &UpdateUserPreferencesDto) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
-    fn upsert(&self, user_id: Uuid, dto: &UpdateUserPreferencesDto) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
+    fn get_by_user_id(
+        &self,
+        user_id: Uuid,
+    ) -> impl std::future::Future<Output = Result<Option<UserPreferences>, sqlx::Error>> + Send;
+    fn create(
+        &self,
+        prefs: &UserPreferences,
+    ) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
+    fn update(
+        &self,
+        user_id: Uuid,
+        dto: &UpdateUserPreferencesDto,
+    ) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
+    fn upsert(
+        &self,
+        user_id: Uuid,
+        dto: &UpdateUserPreferencesDto,
+    ) -> impl std::future::Future<Output = Result<UserPreferences, sqlx::Error>> + Send;
 }
 
 pub struct PostgresUserPreferencesRepository {
@@ -30,7 +44,7 @@ impl UserPreferencesRepository for PostgresUserPreferencesRepository {
                    theme_mode, locale, timezone, notifications_enabled, created_at, updated_at
             FROM user_preferences
             WHERE user_id = $1
-            "#
+            "#,
         )
         .bind(user_id)
         .fetch_optional(&self.db.pool)
@@ -46,7 +60,7 @@ impl UserPreferencesRepository for PostgresUserPreferencesRepository {
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING id, user_id, preferred_theme_light_id, preferred_theme_dark_id,
                       theme_mode, locale, timezone, notifications_enabled, created_at, updated_at
-            "#
+            "#,
         )
         .bind(prefs.id)
         .bind(prefs.user_id)
@@ -62,7 +76,11 @@ impl UserPreferencesRepository for PostgresUserPreferencesRepository {
         .await
     }
 
-    async fn update(&self, user_id: Uuid, dto: &UpdateUserPreferencesDto) -> Result<UserPreferences, sqlx::Error> {
+    async fn update(
+        &self,
+        user_id: Uuid,
+        dto: &UpdateUserPreferencesDto,
+    ) -> Result<UserPreferences, sqlx::Error> {
         sqlx::query_as::<_, UserPreferences>(
             r#"
             UPDATE user_preferences SET
@@ -76,7 +94,7 @@ impl UserPreferencesRepository for PostgresUserPreferencesRepository {
             WHERE user_id = $1
             RETURNING id, user_id, preferred_theme_light_id, preferred_theme_dark_id,
                       theme_mode, locale, timezone, notifications_enabled, created_at, updated_at
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(&dto.preferred_theme_light_id)
@@ -89,7 +107,11 @@ impl UserPreferencesRepository for PostgresUserPreferencesRepository {
         .await
     }
 
-    async fn upsert(&self, user_id: Uuid, dto: &UpdateUserPreferencesDto) -> Result<UserPreferences, sqlx::Error> {
+    async fn upsert(
+        &self,
+        user_id: Uuid,
+        dto: &UpdateUserPreferencesDto,
+    ) -> Result<UserPreferences, sqlx::Error> {
         sqlx::query_as::<_, UserPreferences>(
             r#"
             INSERT INTO user_preferences (

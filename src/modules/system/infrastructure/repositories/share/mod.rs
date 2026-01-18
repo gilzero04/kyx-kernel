@@ -1,10 +1,10 @@
 use crate::core::infrastructure::database::Database;
 use anyhow::{Result, anyhow};
-use std::sync::Arc;
-use uuid::Uuid;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use chrono::{DateTime, Utc};
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct ResourceShare {
@@ -62,16 +62,23 @@ impl ShareRepository {
     }
 
     /// Create a new share
-    pub async fn create(&self, cmd: CreateShareCmd, owner_tenant_id: Uuid, created_by: Option<Uuid>) -> Result<ResourceShare> {
+    pub async fn create(
+        &self,
+        cmd: CreateShareCmd,
+        owner_tenant_id: Uuid,
+        created_by: Option<Uuid>,
+    ) -> Result<ResourceShare> {
         // Verify ownership of the resource
-        let is_owner = self.verify_resource_ownership(&cmd.resource_type, cmd.resource_id, owner_tenant_id).await?;
+        let is_owner = self
+            .verify_resource_ownership(&cmd.resource_type, cmd.resource_id, owner_tenant_id)
+            .await?;
         if !is_owner {
             return Err(anyhow!("Cannot share resource you don't own"));
         }
 
         // Verify target tenant is within same network (trigger will also check this)
         let can_share = sqlx::query_scalar::<_, bool>(
-            "SELECT can_view_tenant($1, $2) OR can_view_tenant($2, $1)"
+            "SELECT can_view_tenant($1, $2) OR can_view_tenant($2, $1)",
         )
         .bind(owner_tenant_id)
         .bind(cmd.shared_to_tenant_id)
@@ -102,7 +109,11 @@ impl ShareRepository {
     }
 
     /// Revoke a share (with usage check)
-    pub async fn revoke(&self, share_id: Uuid, actor_tenant_id: Uuid) -> Result<(bool, Option<i32>)> {
+    pub async fn revoke(
+        &self,
+        share_id: Uuid,
+        actor_tenant_id: Uuid,
+    ) -> Result<(bool, Option<i32>)> {
         // Get share details
         let share = sqlx::query_as::<_, ResourceShare>(
             "SELECT * FROM sys_resource_shares WHERE id = $1 AND owner_tenant_id = $2 AND is_active = TRUE"
@@ -115,19 +126,21 @@ impl ShareRepository {
 
         let share = match share {
             Some(s) => s,
-            None => return Err(anyhow!("Share not found or you don't have permission to revoke")),
+            None => {
+                return Err(anyhow!(
+                    "Share not found or you don't have permission to revoke"
+                ));
+            }
         };
 
         // Check usage count
-        let usage_count: i32 = sqlx::query_scalar(
-            "SELECT get_resource_usage_count($1, $2, $3)"
-        )
-        .bind(&share.resource_type)
-        .bind(share.resource_id)
-        .bind(share.shared_to_tenant_id)
-        .fetch_one(&self.pool.pool)
-        .await
-        .unwrap_or(0);
+        let usage_count: i32 = sqlx::query_scalar("SELECT get_resource_usage_count($1, $2, $3)")
+            .bind(&share.resource_type)
+            .bind(share.resource_id)
+            .bind(share.shared_to_tenant_id)
+            .fetch_one(&self.pool.pool)
+            .await
+            .unwrap_or(0);
 
         if usage_count > 0 {
             // Return usage count so caller can warn user
@@ -135,11 +148,13 @@ impl ShareRepository {
         }
 
         // Safe to revoke - soft delete
-        sqlx::query("UPDATE sys_resource_shares SET is_active = FALSE, updated_at = NOW() WHERE id = $1")
-            .bind(share_id)
-            .execute(&self.pool.pool)
-            .await
-            .map_err(|e| anyhow!("Failed to revoke share: {}", e))?;
+        sqlx::query(
+            "UPDATE sys_resource_shares SET is_active = FALSE, updated_at = NOW() WHERE id = $1",
+        )
+        .bind(share_id)
+        .execute(&self.pool.pool)
+        .await
+        .map_err(|e| anyhow!("Failed to revoke share: {}", e))?;
 
         Ok((true, None))
     }
@@ -148,7 +163,7 @@ impl ShareRepository {
     pub async fn force_revoke(&self, share_id: Uuid, actor_tenant_id: Uuid) -> Result<bool> {
         let result = sqlx::query(
             "UPDATE sys_resource_shares SET is_active = FALSE, updated_at = NOW() 
-             WHERE id = $1 AND owner_tenant_id = $2"
+             WHERE id = $1 AND owner_tenant_id = $2",
         )
         .bind(share_id)
         .bind(actor_tenant_id)
@@ -161,50 +176,66 @@ impl ShareRepository {
 
     /// Check usage count for a share
     pub async fn get_usage_count(&self, share_id: Uuid) -> Result<i32> {
-        let share = sqlx::query_as::<_, ResourceShare>(
-            "SELECT * FROM sys_resource_shares WHERE id = $1"
-        )
-        .bind(share_id)
-        .fetch_optional(&self.pool.pool)
-        .await?;
+        let share =
+            sqlx::query_as::<_, ResourceShare>("SELECT * FROM sys_resource_shares WHERE id = $1")
+                .bind(share_id)
+                .fetch_optional(&self.pool.pool)
+                .await?;
 
         let share = match share {
             Some(s) => s,
             None => return Err(anyhow!("Share not found")),
         };
 
-        let count: i32 = sqlx::query_scalar(
-            "SELECT get_resource_usage_count($1, $2, $3)"
-        )
-        .bind(&share.resource_type)
-        .bind(share.resource_id)
-        .bind(share.shared_to_tenant_id)
-        .fetch_one(&self.pool.pool)
-        .await
-        .unwrap_or(0);
+        let count: i32 = sqlx::query_scalar("SELECT get_resource_usage_count($1, $2, $3)")
+            .bind(&share.resource_type)
+            .bind(share.resource_id)
+            .bind(share.shared_to_tenant_id)
+            .fetch_one(&self.pool.pool)
+            .await
+            .unwrap_or(0);
 
         Ok(count)
     }
 
     /// Verify resource ownership
-    async fn verify_resource_ownership(&self, resource_type: &str, resource_id: Uuid, tenant_id: Uuid) -> Result<bool> {
+    async fn verify_resource_ownership(
+        &self,
+        resource_type: &str,
+        resource_id: Uuid,
+        tenant_id: Uuid,
+    ) -> Result<bool> {
         let owner_id: Option<Uuid> = match resource_type {
-            "role" => sqlx::query_scalar("SELECT tenant_id FROM sys_roles WHERE id = $1 AND deleted_at IS NULL")
+            "role" => {
+                sqlx::query_scalar(
+                    "SELECT tenant_id FROM sys_roles WHERE id = $1 AND deleted_at IS NULL",
+                )
                 .bind(resource_id)
                 .fetch_optional(&self.pool.pool)
-                .await?,
-            "theme" => sqlx::query_scalar("SELECT tenant_id FROM sys_themes WHERE id = $1 AND deleted_at IS NULL")
+                .await?
+            }
+            "theme" => {
+                sqlx::query_scalar("SELECT tenant_id FROM sys_themes WHERE id = $1")
+                    .bind(resource_id)
+                    .fetch_optional(&self.pool.pool)
+                    .await?
+            }
+            "page" => {
+                sqlx::query_scalar(
+                    "SELECT tenant_id FROM sys_pages WHERE id = $1 AND deleted_at IS NULL",
+                )
                 .bind(resource_id)
                 .fetch_optional(&self.pool.pool)
-                .await?,
-            "page" => sqlx::query_scalar("SELECT tenant_id FROM sys_pages WHERE id = $1 AND deleted_at IS NULL")
+                .await?
+            }
+            "media" => {
+                sqlx::query_scalar(
+                    "SELECT tenant_id FROM media_assets WHERE id = $1 AND deleted_at IS NULL",
+                )
                 .bind(resource_id)
                 .fetch_optional(&self.pool.pool)
-                .await?,
-            "media" => sqlx::query_scalar("SELECT tenant_id FROM media_assets WHERE id = $1 AND deleted_at IS NULL")
-                .bind(resource_id)
-                .fetch_optional(&self.pool.pool)
-                .await?,
+                .await?
+            }
             _ => return Err(anyhow!("Unknown resource type: {}", resource_type)),
         };
 

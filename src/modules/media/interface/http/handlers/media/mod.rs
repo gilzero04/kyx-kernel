@@ -1,13 +1,13 @@
-use ntex::web;
-use ntex_multipart::Multipart;
-use futures_util::StreamExt;
-use uuid::Uuid;
 use crate::core::infrastructure::audit::AuditService;
 use crate::core::utils::jwt::Claims;
 use crate::modules::media::application::services::media::MediaService;
-use crate::modules::media::interface::http::dto::media::{CreateFolderRequest, AssetQuery};
-use std::sync::Arc;
+use crate::modules::media::interface::http::dto::media::{AssetQuery, CreateFolderRequest};
+use futures_util::StreamExt;
+use ntex::web;
+use ntex_multipart::Multipart;
 use std::path::Path;
+use std::sync::Arc;
+use uuid::Uuid;
 
 // DELETED: Manual extraction replaced by direct Claims injection
 
@@ -32,22 +32,26 @@ pub async fn upload_file(
     audit: web::types::State<Arc<AuditService>>,
 ) -> web::HttpResponse {
     let tenant_id = claims.tenant_id;
-    
+
     let mut filename = String::new();
     let mut original_name = String::new();
     let mut mime_type = String::new();
     let mut file_size: i64 = 0;
-    
+
     let query = web::types::Query::<AssetQuery>::from_query(req.query_string()).ok();
     let folder_id = query.and_then(|q| q.folder_id);
 
     while let Some(item) = payload.next().await {
         let mut field = match item {
             Ok(f) => f,
-            Err(_) => return web::HttpResponse::BadRequest().json(&serde_json::json!({"error": "Invalid file"}))
+            Err(_) => {
+                return web::HttpResponse::BadRequest()
+                    .json(&serde_json::json!({"error": "Invalid file"}));
+            }
         };
-        
-        original_name = field.headers()
+
+        original_name = field
+            .headers()
             .get("content-disposition")
             .and_then(|h| h.to_str().ok())
             .and_then(|s| {
@@ -58,7 +62,8 @@ pub async fn upload_file(
             .unwrap_or("unknown")
             .to_string();
 
-        mime_type = field.headers()
+        mime_type = field
+            .headers()
             .get("content-type")
             .and_then(|h| h.to_str().ok())
             .unwrap_or("application/octet-stream")
@@ -68,46 +73,75 @@ pub async fn upload_file(
             .extension()
             .and_then(|s| s.to_str())
             .unwrap_or("bin");
-        
+
         let id = Uuid::new_v4();
         filename = format!("{}.{}", id, ext);
-        
+
         let tenant_dir = format!("./uploads/{}", tenant_id);
         if std::fs::create_dir_all(&tenant_dir).is_err() {
-            return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Storage error"}));
+            return web::HttpResponse::InternalServerError()
+                .json(&serde_json::json!({"error": "Storage error"}));
         }
-        
+
         let filepath = format!("{}/{}", tenant_dir, filename);
-        
+
         let mut f = match std::fs::File::create(&filepath) {
             Ok(file) => file,
-            Err(_) => return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "File creation error"}))
+            Err(_) => {
+                return web::HttpResponse::InternalServerError()
+                    .json(&serde_json::json!({"error": "File creation error"}));
+            }
         };
-        
+
         while let Some(chunk) = field.next().await {
             match chunk {
                 Ok(data) => {
                     file_size += data.len() as i64;
                     if std::io::copy(&mut data.as_ref(), &mut f).is_err() {
-                        return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Write error"}));
+                        return web::HttpResponse::InternalServerError()
+                            .json(&serde_json::json!({"error": "Write error"}));
                     }
-                },
-                Err(_) => return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Chunk error"}))
+                }
+                Err(_) => {
+                    return web::HttpResponse::InternalServerError()
+                        .json(&serde_json::json!({"error": "Chunk error"}));
+                }
             }
         }
     }
 
     if filename.is_empty() {
-        return web::HttpResponse::BadRequest().json(&serde_json::json!({"error": "No file uploaded"}));
+        return web::HttpResponse::BadRequest()
+            .json(&serde_json::json!({"error": "No file uploaded"}));
     }
 
     let url = format!("/api/v1/media/{}/{}", tenant_id, filename);
-    match service.create_asset(tenant_id, folder_id, filename.clone(), original_name, mime_type, file_size, url).await {
+    match service
+        .create_asset(
+            tenant_id,
+            folder_id,
+            filename.clone(),
+            original_name,
+            mime_type,
+            file_size,
+            url,
+        )
+        .await
+    {
         Ok(asset) => {
-            let _ = audit.log(&tenant_id.to_string(), "MEDIA_UPLOADED", Some(&filename), "SUCCESS", None).await;
+            let _ = audit
+                .log(
+                    &tenant_id.to_string(),
+                    "MEDIA_UPLOADED",
+                    Some(&filename),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
             web::HttpResponse::Created().json(&asset)
-        },
-        Err(_) => web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Database error"}))
+        }
+        Err(_) => web::HttpResponse::InternalServerError()
+            .json(&serde_json::json!({"error": "Database error"})),
     }
 }
 
@@ -131,10 +165,14 @@ pub async fn create_folder(
     claims: Claims,
 ) -> web::HttpResponse {
     let tenant_id = claims.tenant_id;
-    
-    match service.create_folder(tenant_id, body.parent_id, body.name.clone()).await {
+
+    match service
+        .create_folder(tenant_id, body.parent_id, body.name.clone())
+        .await
+    {
         Ok(folder) => web::HttpResponse::Created().json(&folder),
-        Err(_) => web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Failed to create folder"}))
+        Err(_) => web::HttpResponse::InternalServerError()
+            .json(&serde_json::json!({"error": "Failed to create folder"})),
     }
 }
 
@@ -159,17 +197,23 @@ pub async fn list_assets(
     claims: Claims,
 ) -> web::HttpResponse {
     let tenant_id = claims.tenant_id;
-    
+
     let folders = match service.list_folders(tenant_id, query.folder_id).await {
         Ok(f) => f,
-        Err(_) => return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Failed to list folders"}))
+        Err(_) => {
+            return web::HttpResponse::InternalServerError()
+                .json(&serde_json::json!({"error": "Failed to list folders"}));
+        }
     };
-        
+
     let assets = match service.list_assets(tenant_id, query.folder_id).await {
         Ok(a) => a,
-        Err(_) => return web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Failed to list assets"}))
+        Err(_) => {
+            return web::HttpResponse::InternalServerError()
+                .json(&serde_json::json!({"error": "Failed to list assets"}));
+        }
     };
-        
+
     web::HttpResponse::Ok().json(&serde_json::json!({
         "folders": folders,
         "assets": assets
@@ -191,10 +235,10 @@ pub async fn serve_file(
 ) -> Result<ntex_files::NamedFile, web::Error> {
     let (tenant_id, filename) = path.into_inner();
     let filepath = format!("./uploads/{}/{}", tenant_id, filename);
-    
+
     match ntex_files::NamedFile::open(&filepath) {
         Ok(file) => Ok(file),
-        Err(e) => Err(web::Error::from(e))
+        Err(e) => Err(web::Error::from(e)),
     }
 }
 
@@ -222,12 +266,21 @@ pub async fn delete_asset(
 ) -> web::HttpResponse {
     let tenant_id = claims.tenant_id;
     let asset_id = path.into_inner().0;
-    
+
     match service.delete_asset(asset_id, tenant_id).await {
         Ok(_) => {
-            let _ = audit.log(&tenant_id.to_string(), "MEDIA_DELETED", Some(&asset_id.to_string()), "SUCCESS", None).await;
+            let _ = audit
+                .log(
+                    &tenant_id.to_string(),
+                    "MEDIA_DELETED",
+                    Some(&asset_id.to_string()),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
             web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
-        },
-        Err(_) => web::HttpResponse::InternalServerError().json(&serde_json::json!({"error": "Failed to delete"}))
+        }
+        Err(_) => web::HttpResponse::InternalServerError()
+            .json(&serde_json::json!({"error": "Failed to delete"})),
     }
 }

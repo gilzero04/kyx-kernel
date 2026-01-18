@@ -1,9 +1,9 @@
 use ntex::web;
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use utoipa::ToSchema;
 
-use crate::core::utils::jwt::{JwtService, Claims};
+use crate::core::utils::jwt::{Claims, JwtService};
 use crate::modules::signal::domain::service::SignalService;
 
 /// Request body for signal token generation
@@ -35,7 +35,7 @@ pub struct SignalErrorResponse {
 }
 
 /// Generate a signal ticket for WebSocket connection
-/// 
+///
 /// This endpoint issues a short-lived JWT token for connecting to kyx-signal.
 /// The ticket is valid for 30-60 seconds and contains mapped permissions.
 #[utoipa::path(
@@ -68,14 +68,14 @@ pub async fn generate_signal_token(
 
     // Validate TTL (max 300 seconds = 5 minutes)
     let ttl = body.ttl.map(|t| t.clamp(10, 300));
-    
+
     // Get plan and features from claims (populated by kyx-plan plugin if installed)
     let plan = claims.plan_type.clone();
     let features = claims.features.as_ref();
-    
+
     // Create signal service
     let signal_service = SignalService::new(jwt.get_ref().clone());
-    
+
     // Generate ticket
     match signal_service.generate_ticket(
         user_id,

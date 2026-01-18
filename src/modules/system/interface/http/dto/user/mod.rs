@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use utoipa::{ToSchema, IntoParams};
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct UsersQuery {

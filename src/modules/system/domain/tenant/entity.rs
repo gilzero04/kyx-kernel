@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use utoipa::ToSchema;
 
@@ -33,7 +33,7 @@ pub struct TenantEntry {
 }
 
 /// Branding entry - single source of truth for branding
-/// 
+///
 /// Contexts:
 /// - 'console': Platform/Owner branding for admin console
 /// - 'workspace': Tenant branding for workspace (also used by App)
@@ -43,7 +43,7 @@ pub struct BrandingEntry {
     pub name: String,
     pub description: Option<String>,
     // Context and ownership
-    pub context: Option<String>,  // 'console' or 'workspace'
+    pub context: Option<String>, // 'console' or 'workspace'
     pub tenant_id: Option<sqlx::types::Uuid>,
     // Visual assets
     pub logo_light_url: Option<String>,
@@ -51,10 +51,6 @@ pub struct BrandingEntry {
     pub favicon_url: Option<String>,
     pub icon_app_url: Option<String>,
     pub splash_image_url: Option<String>,
-    // Colors
-    pub primary_color: Option<String>,
-    pub secondary_color: Option<String>,
-    pub accent_color: Option<String>,
     // Text
     pub app_name: Option<String>,
     pub splash_text: Option<String>,
@@ -74,4 +70,3 @@ pub struct BrandingEntry {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
-

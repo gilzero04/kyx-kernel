@@ -1,7 +1,7 @@
-use crate::modules::system::domain::cors::{CorsOrigin, CorsRepository};
 use crate::core::infrastructure::database::Database;
-use async_trait::async_trait;
+use crate::modules::system::domain::cors::{CorsOrigin, CorsRepository};
 use anyhow::{Result, anyhow};
+use async_trait::async_trait;
 use std::sync::Arc;
 
 pub struct PostgresCorsRepository {
@@ -40,7 +40,12 @@ impl CorsRepository for PostgresCorsRepository {
         Ok(row)
     }
 
-    async fn update(&self, id: i32, is_active: Option<bool>, description: Option<String>) -> Result<CorsOrigin> {
+    async fn update(
+        &self,
+        id: i32,
+        is_active: Option<bool>,
+        description: Option<String>,
+    ) -> Result<CorsOrigin> {
         let row = sqlx::query_as::<_, CorsOrigin>(
             "UPDATE sys_cors_origins SET is_active = COALESCE($2, is_active), description = COALESCE($3, description) WHERE id = $1 RETURNING id, origin, is_active, description, created_at, updated_at"
         )
@@ -55,11 +60,13 @@ impl CorsRepository for PostgresCorsRepository {
     }
 
     async fn delete(&self, id: i32) -> Result<()> {
-        sqlx::query("UPDATE sys_cors_origins SET is_active = FALSE, deleted_at = NOW() WHERE id = $1")
-            .bind(id)
-            .execute(&self.pool.pool)
-            .await
-            .map_err(|e| anyhow!("Failed to delete origin: {}", e))?;
+        sqlx::query(
+            "UPDATE sys_cors_origins SET is_active = FALSE, deleted_at = NOW() WHERE id = $1",
+        )
+        .bind(id)
+        .execute(&self.pool.pool)
+        .await
+        .map_err(|e| anyhow!("Failed to delete origin: {}", e))?;
 
         Ok(())
     }

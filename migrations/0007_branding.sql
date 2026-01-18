@@ -24,11 +24,6 @@ CREATE TABLE IF NOT EXISTS sys_brandings (
     icon_app_url TEXT,
     splash_image_url TEXT,
     
-    -- Colors
-    primary_color VARCHAR(20),
-    secondary_color VARCHAR(20),
-    accent_color VARCHAR(20),
-    
     -- Text/Display
     app_name VARCHAR(255),
     splash_text VARCHAR(255),

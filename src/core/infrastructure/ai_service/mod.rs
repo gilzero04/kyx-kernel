@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use ntex::http::client::Client;
+use std::sync::Arc;
 // use ntex::http::header; // Unused
-use serde_json::{json, Value};
-use log::{error, info};
 use crate::core::infrastructure::config_service::ConfigService;
+use log::{error, info};
+use serde_json::{Value, json};
 
 #[derive(Clone)]
 pub struct AIService {
@@ -12,9 +12,7 @@ pub struct AIService {
 
 impl AIService {
     pub fn new(config: Arc<ConfigService>) -> Self {
-        Self {
-            config,
-        }
+        Self { config }
     }
 
     /// Translate a batch of texts to the target language
@@ -30,7 +28,10 @@ impl AIService {
 
         let provider = self.config.get_string("ai_provider", "openai").await;
         let api_key = self.config.get_string("ai_api_key", "").await;
-        let base_url = self.config.get_string("ai_base_url", "https://api.openai.com/v1").await;
+        let base_url = self
+            .config
+            .get_string("ai_base_url", "https://api.openai.com/v1")
+            .await;
         let model = self.config.get_string("ai_model", "gpt-4o").await;
 
         if !enabled {
@@ -69,23 +70,31 @@ impl AIService {
 
         let url = format!("{}/chat/completions", base_url.trim_end_matches('/'));
 
-        info!("Sending translation request to {} ({}) for {} items", provider, model, texts.len());
+        info!(
+            "Sending translation request to {} ({}) for {} items",
+            provider,
+            model,
+            texts.len()
+        );
 
         let client = Client::build()
             .timeout(std::time::Duration::from_secs(60))
             .finish();
 
-        match client.post(&url)
+        match client
+            .post(&url)
             .header("Authorization", format!("Bearer {}", api_key))
             .header("Content-Type", "application/json")
             .send_json(&body)
-            .await 
+            .await
         {
             Ok(mut res) => {
                 if res.status().is_success() {
                     if let Ok(json_body) = res.json::<Value>().await {
                         // Parse Content
-                        if let Some(content) = json_body["choices"][0]["message"]["content"].as_str() {
+                        if let Some(content) =
+                            json_body["choices"][0]["message"]["content"].as_str()
+                        {
                             // Try to parse content as JSON array
                             // Clean possible markdown code blocks ```json ... ```
                             let cleaned = content
@@ -94,12 +103,16 @@ impl AIService {
                                 .trim_start_matches("```")
                                 .trim_end_matches("```")
                                 .trim();
-                                
+
                             if let Ok(translated) = serde_json::from_str::<Vec<String>>(cleaned) {
                                 if translated.len() == texts.len() {
                                     return translated;
                                 } else {
-                                    error!("AI returned mismatch count: sent {}, got {}", texts.len(), translated.len());
+                                    error!(
+                                        "AI returned mismatch count: sent {}, got {}",
+                                        texts.len(),
+                                        translated.len()
+                                    );
                                 }
                             } else {
                                 error!("Failed to parse AI response as JSON Array: {}", cleaned);

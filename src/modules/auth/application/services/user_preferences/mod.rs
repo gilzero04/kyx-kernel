@@ -2,9 +2,9 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::core::infrastructure::database::Database;
-use crate::modules::auth::domain::user_preferences::{UserPreferences, UpdateUserPreferencesDto};
+use crate::modules::auth::domain::user_preferences::{UpdateUserPreferencesDto, UserPreferences};
 use crate::modules::auth::infrastructure::repositories::user_preferences::{
-    PostgresUserPreferencesRepository, UserPreferencesRepository
+    PostgresUserPreferencesRepository, UserPreferencesRepository,
 };
 
 /// Service for managing user preferences (theme, locale, etc.)
@@ -29,7 +29,10 @@ impl UserPreferencesService {
     }
 
     /// Get or create default preferences for a user
-    pub async fn get_or_create_preferences(&self, user_id: Uuid) -> Result<UserPreferences, String> {
+    pub async fn get_or_create_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> Result<UserPreferences, String> {
         match self.repo.get_by_user_id(user_id).await {
             Ok(Some(prefs)) => Ok(prefs),
             Ok(None) => {

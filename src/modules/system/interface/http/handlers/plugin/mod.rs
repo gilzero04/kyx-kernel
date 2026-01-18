@@ -228,10 +228,8 @@ pub async fn enable_plugin(
 
     match registry.enable(tenant_id, plugin_id).await {
         Ok(()) => {
-            let response = ApiResponse::ok(
-                json!({ "enabled": true }),
-                "Plugin enabled successfully",
-            );
+            let response =
+                ApiResponse::ok(json!({ "enabled": true }), "Plugin enabled successfully");
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
@@ -265,10 +263,8 @@ pub async fn disable_plugin(
 
     match registry.disable(tenant_id, plugin_id).await {
         Ok(()) => {
-            let response = ApiResponse::ok(
-                json!({ "disabled": true }),
-                "Plugin disabled successfully",
-            );
+            let response =
+                ApiResponse::ok(json!({ "disabled": true }), "Plugin disabled successfully");
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {

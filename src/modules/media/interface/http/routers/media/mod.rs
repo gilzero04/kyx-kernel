@@ -1,5 +1,5 @@
-use ntex::web;
 use crate::modules::media::interface::http::handlers::media;
+use ntex::web;
 
 #[allow(dead_code)]
 pub fn media_routes(
@@ -10,4 +10,3 @@ pub fn media_routes(
         .route("", web::post().to(media::upload_file))
         .route("/{filename}", web::get().to(media::serve_file))
 }
-

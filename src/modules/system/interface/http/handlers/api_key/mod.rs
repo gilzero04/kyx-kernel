@@ -1,12 +1,12 @@
-use ntex::web;
-use std::sync::Arc;
+use crate::core::infrastructure::audit::AuditService;
+use crate::core::utils::response::ApiResponse;
 use crate::modules::system::application::services::api_key::ApiKeyService;
 #[allow(unused_imports)]
 use crate::modules::system::domain::api_key::ApiKey;
-use crate::core::infrastructure::audit::AuditService;
-use crate::core::utils::response::ApiResponse;
 use crate::modules::system::interface::http::dto::api_key::CreateApiKeyRequest;
+use ntex::web;
 use serde_json::json;
+use std::sync::Arc;
 use uuid::Uuid;
 
 /// Create a new API key (Admin)
@@ -27,15 +27,29 @@ pub async fn create_api_key(
     service: web::types::State<Arc<ApiKeyService>>,
     audit: web::types::State<Arc<AuditService>>,
 ) -> impl web::Responder {
-    match service.create_key(body.tenant_id, body.name.clone(), &body.key_type, None).await {
+    match service
+        .create_key(body.tenant_id, body.name.clone(), &body.key_type, None)
+        .await
+    {
         Ok((key, plain)) => {
-            let _ = audit.log("SuperAdmin", "API_KEY_CREATED", Some(&key.id.to_string()), "SUCCESS", None).await;
-            let response = ApiResponse::created(json!({
-                "id": key.id,
-                "prefix": key.prefix,
-                "plain_key": plain,
-                "note": "Save this key, it won't be shown again!"
-            }), "API key created successfully");
+            let _ = audit
+                .log(
+                    "SuperAdmin",
+                    "API_KEY_CREATED",
+                    Some(&key.id.to_string()),
+                    "SUCCESS",
+                    None,
+                )
+                .await;
+            let response = ApiResponse::created(
+                json!({
+                    "id": key.id,
+                    "prefix": key.prefix,
+                    "plain_key": plain,
+                    "note": "Save this key, it won't be shown again!"
+                }),
+                "API key created successfully",
+            );
             web::HttpResponse::Created().json(&response)
         }
         Err(e) => {
@@ -99,7 +113,8 @@ pub async fn revoke_api_key(
     let actor_tenant_id = claims.tenant_id;
     match service.revoke_key(key_id, actor_tenant_id).await {
         Ok(_) => {
-            let response = ApiResponse::ok(json!({ "revoked": true }), "API key revoked successfully");
+            let response =
+                ApiResponse::ok(json!({ "revoked": true }), "API key revoked successfully");
             web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
