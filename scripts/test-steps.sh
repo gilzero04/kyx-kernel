@@ -1276,10 +1276,26 @@ if [ -n "$FIRST_USER_ID" ]; then
         FAIL=$((FAIL + 1))
     fi
 
-    # 24.4 Reset Password - SKIPPED (backend bug: column name mismatch)
-    # The backend uses 'password_hash' but DB has 'hashed_password'
-    # TODO: Fix in backend then re-enable this test
-    echo "⏭️ SKIP POST /admin/users/{id}/reset-password (backend bug: password_hash vs hashed_password)"
+    # 24.4 Reset Password (admin action - sets temp password)
+    RESET_PW=$(curl -s -X POST "$URL/api/v1/admin/users/$FIRST_USER_ID/reset-password" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"new_password": "NewPassword123!"}')
+    
+    RESET_PW_SUCCESS=$(echo "$RESET_PW" | jq -r '.success // empty')
+    
+    if [ "$RESET_PW_SUCCESS" = "true" ]; then
+        echo "✅ POST /admin/users/{id}/reset-password success = true"
+        PASS=$((PASS + 1))
+        # Reset it back to original password
+        curl -s -X POST "$URL/api/v1/admin/users/$FIRST_USER_ID/reset-password" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"new_password": "Admin123!"}' > /dev/null
+    else
+        echo "❌ POST /admin/users/{id}/reset-password success = $RESET_PW_SUCCESS"
+        FAIL=$((FAIL + 1))
+    fi
 else
     echo "❌ No users found to test update"
     FAIL=$((FAIL + 1))

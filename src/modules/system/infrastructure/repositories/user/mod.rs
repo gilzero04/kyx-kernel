@@ -125,7 +125,7 @@ impl UserRepository for PostgresUserRepository {
         actor_tenant_id: Option<Uuid>,
     ) -> Result<bool> {
         let result = sqlx::query(
-            "UPDATE auth_users SET password_hash = $1, updated_at = NOW() 
+            "UPDATE auth_users SET hashed_password = $1, updated_at = NOW() 
              WHERE id = $2 AND deleted_at IS NULL
              AND ($3::uuid IS NULL OR EXISTS (
                  SELECT 1 FROM auth_memberships 

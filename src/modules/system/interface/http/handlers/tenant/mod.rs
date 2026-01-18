@@ -182,13 +182,18 @@ pub async fn get_tenant(
             }
 
     match service.get_tenant_by_id(*id, actor_tenant_id).await {
-        Ok(Some(tenant)) => web::HttpResponse::Ok().json(&tenant),
-        Ok(None) => web::HttpResponse::NotFound().json(&serde_json::json!({
-            "error": "Organization not found"
-        })),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": e.message
-        })),
+        Ok(Some(tenant)) => {
+            let response = ApiResponse::ok(tenant, "Tenant retrieved");
+            web::HttpResponse::Ok().json(&response)
+        }
+        Ok(None) => {
+            let response = ApiResponse::<()>::not_found("Organization not found");
+            web::HttpResponse::NotFound().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -257,11 +262,13 @@ pub async fn create_tenant(
                     None,
                 )
                 .await;
-            web::HttpResponse::Created().json(&data)
+            let response = ApiResponse::created(data, "Tenant created successfully");
+            web::HttpResponse::Created().json(&response)
         }
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": e.message
-        })),
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -327,11 +334,13 @@ pub async fn update_tenant(
                     None,
                 )
                 .await;
-            web::HttpResponse::Ok().json(&data)
+            let response = ApiResponse::ok(data, "Tenant updated successfully");
+            web::HttpResponse::Ok().json(&response)
         }
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": e.message
-        })),
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -375,11 +384,13 @@ pub async fn delete_tenant(
                     None,
                 )
                 .await;
-            web::HttpResponse::Ok().json(&serde_json::json!({ "success": true }))
+            let response = ApiResponse::ok(serde_json::json!({"deleted": true}), "Tenant deleted successfully");
+            web::HttpResponse::Ok().json(&response)
         }
-        Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({
-            "error": e.message
-        })),
+        Err(e) => {
+            let response = ApiResponse::<()>::bad_request(&e.message);
+            web::HttpResponse::BadRequest().json(&response)
+        }
     }
 }
 
