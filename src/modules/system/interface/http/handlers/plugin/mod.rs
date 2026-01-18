@@ -341,16 +341,17 @@ pub async fn update_plugin_config(
     let config = body.into_inner().config;
 
     match registry.update_config(tenant_id, plugin_id, config).await {
-        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
-            status: "success".to_string(),
-            message: "Plugin configuration updated".to_string(),
-        }),
+        Ok(()) => {
+            let response = ApiResponse::ok(
+                json!({ "updated": true }),
+                "Plugin configuration updated successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to update plugin config: {}", e);
-            web::HttpResponse::BadRequest().json(&ErrorResponse {
-                error: "Failed to update plugin configuration".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::bad_request(&e.to_string());
+            web::HttpResponse::BadRequest().json(&response)
         }
     }
 }
@@ -373,7 +374,11 @@ pub async fn analyze_plugin_security(
     let manifest = body.into_inner().manifest;
     let summary = registry.get_security_summary(&manifest);
 
-    web::HttpResponse::Ok().json(&summary)
+    let response = ApiResponse::ok(
+        json!({ "security_summary": summary }),
+        "Security analysis complete",
+    );
+    web::HttpResponse::Ok().json(&response)
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

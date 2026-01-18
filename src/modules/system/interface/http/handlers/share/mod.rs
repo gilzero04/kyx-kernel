@@ -108,15 +108,17 @@ pub async fn create_share(
     let user_id = Uuid::parse_str(&claims.sub).ok();
 
     match repo.create(cmd, tenant_id, user_id).await {
-        Ok(share) => web::HttpResponse::Created().json(&ShareResponse {
-            success: true,
-            data: Some(share),
-            message: None,
-        }),
-        Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({
-            "success": false,
-            "message": e.to_string()
-        })),
+        Ok(share) => {
+            let response = ApiResponse::created(
+                json!({ "share": share }),
+                "Share created successfully",
+            );
+            web::HttpResponse::Created().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::bad_request(&e.to_string());
+            web::HttpResponse::BadRequest().json(&response)
+        }
     }
 }
 
@@ -136,46 +138,43 @@ pub async fn revoke_share(
         match repo.force_revoke(share_id, tenant_id).await {
             Ok(revoked) => {
                 if revoked {
-                    web::HttpResponse::Ok().json(&RevokeResponse {
-                        success: true,
-                        message: "Share force revoked successfully".to_string(),
-                        usage_count: None,
-                    })
+                    let response = ApiResponse::ok(
+                        json!({ "revoked": true }),
+                        "Share force revoked successfully",
+                    );
+                    web::HttpResponse::Ok().json(&response)
                 } else {
-                    web::HttpResponse::NotFound().json(&RevokeResponse {
-                        success: false,
-                        message: "Share not found or you don't have permission".to_string(),
-                        usage_count: None,
-                    })
+                    let response = ApiResponse::<()>::not_found("Share not found or you don't have permission");
+                    web::HttpResponse::NotFound().json(&response)
                 }
             }
-            Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-                "success": false,
-                "message": e.to_string()
-            })),
+            Err(e) => {
+                let response = ApiResponse::<()>::internal_error(&e.to_string());
+                web::HttpResponse::InternalServerError().json(&response)
+            }
         }
     } else {
         // Normal revoke with usage check
         match repo.revoke(share_id, tenant_id).await {
             Ok((revoked, usage_count)) => {
                 if revoked {
-                    web::HttpResponse::Ok().json(&RevokeResponse {
-                        success: true,
-                        message: "Share revoked successfully".to_string(),
-                        usage_count: None,
-                    })
+                    let response = ApiResponse::ok(
+                        json!({ "revoked": true }),
+                        "Share revoked successfully",
+                    );
+                    web::HttpResponse::Ok().json(&response)
                 } else {
-                    web::HttpResponse::Conflict().json(&RevokeResponse {
-                        success: false,
-                        message: format!("Resource is still in use by {} entities. Use ?force=true to revoke anyway.", usage_count.unwrap_or(0)),
-                        usage_count,
-                    })
+                    let response = ApiResponse::<()>::conflict(&format!(
+                        "Resource is still in use by {} entities. Use ?force=true to revoke anyway.",
+                        usage_count.unwrap_or(0)
+                    ));
+                    web::HttpResponse::Conflict().json(&response)
                 }
             }
-            Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({
-                "success": false,
-                "message": e.to_string()
-            })),
+            Err(e) => {
+                let response = ApiResponse::<()>::bad_request(&e.to_string());
+                web::HttpResponse::BadRequest().json(&response)
+            }
         }
     }
 }
@@ -189,13 +188,16 @@ pub async fn get_share_usage(
     let repo = ShareRepository::new(db.get_ref().clone());
 
     match repo.get_usage_count(share_id).await {
-        Ok(count) => web::HttpResponse::Ok().json(&serde_json::json!({
-            "success": true,
-            "usage_count": count
-        })),
-        Err(e) => web::HttpResponse::NotFound().json(&serde_json::json!({
-            "success": false,
-            "message": e.to_string()
-        })),
+        Ok(count) => {
+            let response = ApiResponse::ok(
+                json!({ "usage_count": count }),
+                "Usage count fetched successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::not_found(&e.to_string());
+            web::HttpResponse::NotFound().json(&response)
+        }
     }
 }
