@@ -85,9 +85,12 @@ impl ContextGuard {
                     if req_tid == target_tid {
                         ContextValidation::Allowed
                     } else {
-                        // TODO: Check if req_tenant is parent of target_tenant
+                        // Parent-child check: Requester can access if target is descendant
+                        // NOTE: Full hierarchy check requires DB query via get_ancestor_chain()
+                        // For sync validation, we deny cross-tenant access here.
+                        // Caller should pre-validate parent-child relationship via TenantService
                         ContextValidation::Denied(format!(
-                            "Tenant {} cannot access tenant {} resources",
+                            "Tenant {} cannot access tenant {} resources. Pre-validate hierarchy via TenantService if parent-child access is needed.",
                             req_tid, target_tid
                         ))
                     }

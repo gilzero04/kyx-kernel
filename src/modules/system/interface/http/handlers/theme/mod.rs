@@ -530,7 +530,7 @@ pub async fn delete_theme(
         ));
     }
 
-    service.delete_theme(theme_id).await?;
+    service.delete_theme(theme_id, Some(claims.tenant_id)).await?;
 
     log::info!("🗑️ Theme '{}' deleted", theme.name);
 
@@ -566,6 +566,7 @@ pub async fn set_sharing(
     path: web::types::Path<Uuid>,
     body: web::types::Json<UpdateSharingRequest>,
     service: web::types::State<std::sync::Arc<ThemeService>>,
+    claims: Claims,
 ) -> Result<web::HttpResponse, crate::core::AppError> {
     let theme_id = path.into_inner();
     let is_shared = body.is_shared;
@@ -609,7 +610,7 @@ pub async fn set_sharing(
         }
     }
 
-    service.update_theme(theme_id, dto).await?;
+    service.update_theme(theme_id, dto, Some(claims.tenant_id)).await?;
 
     let response = ApiResponse::ok(
         serde_json::json!({
@@ -764,7 +765,7 @@ pub async fn update_theme(
     };
 
     // 5. Update the theme
-    service.update_theme(theme_id, dto).await?;
+    service.update_theme(theme_id, dto, Some(claims.tenant_id)).await?;
 
     log::info!(
         "🔄 Theme '{}' (ID: {}) updated by SuperAdmin Owner (tenant: {})",

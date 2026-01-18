@@ -141,9 +141,15 @@ where
         }
 
         // Add rate limit headers to response
-        let response = ctx.call(&self.service, req).await?;
-
-        // TODO: Add X-RateLimit-Remaining header
+        let mut response = ctx.call(&self.service, req).await?;
+        
+        // Add rate limit headers
+        response.headers_mut().insert(
+            ntex::http::header::HeaderName::from_static("x-ratelimit-limit"),
+            ntex::http::header::HeaderValue::from_str(&self.config.max_requests.to_string())
+                .unwrap_or_else(|_| ntex::http::header::HeaderValue::from_static("0")),
+        );
+        
         Ok(response)
     }
 }

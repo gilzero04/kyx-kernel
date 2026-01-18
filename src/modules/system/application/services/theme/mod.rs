@@ -77,14 +77,61 @@ impl ThemeService {
     }
 
     #[allow(dead_code)]
-    pub async fn update_theme(&self, id: Uuid, dto: UpdateThemeDto) -> AppResult<Theme> {
-        // TODO: Enforce permissions (Tenant cannot update System theme)
+    pub async fn update_theme(
+        &self,
+        id: Uuid,
+        dto: UpdateThemeDto,
+        requester_tenant_id: Option<Uuid>,
+    ) -> AppResult<Theme> {
+        // Permission check: Validate requester can update this theme
+        // - System themes (tenant_id = None) can only be updated by platform admin
+        // - Tenant themes can only be updated by the owning tenant
+        if let Some(existing) = self.repo.find_by_id(id).await? {
+            match (existing.tenant_id, requester_tenant_id) {
+                // System theme: Only platform admin (None) can update
+                (None, None) => {} // Platform admin - allowed
+                (None, Some(_)) => {
+                    return Err(crate::core::AppError::forbidden(
+                        "Cannot update system theme - only platform admin allowed",
+                    ));
+                }
+                // Tenant theme: Only owning tenant can update
+                (Some(owner), Some(requester)) if owner == requester => {} // Same tenant - allowed
+                (Some(_), _) => {
+                    return Err(crate::core::AppError::forbidden(
+                        "Cannot update theme owned by another tenant",
+                    ));
+                }
+            }
+        }
         self.repo.update(id, dto).await
     }
 
     #[allow(dead_code)]
-    pub async fn delete_theme(&self, id: Uuid) -> AppResult<()> {
-        // TODO: Enforce permissions
+    pub async fn delete_theme(&self, id: Uuid, requester_tenant_id: Option<Uuid>) -> AppResult<()> {
+        // Permission check: Validate requester can delete this theme
+        // - System themes cannot be deleted
+        // - Tenant themes can only be deleted by the owning tenant
+        if let Some(existing) = self.repo.find_by_id(id).await? {
+            if existing.is_system {
+                return Err(crate::core::AppError::forbidden(
+                    "Cannot delete system theme",
+                ));
+            }
+            match (existing.tenant_id, requester_tenant_id) {
+                (None, _) => {
+                    return Err(crate::core::AppError::forbidden(
+                        "Cannot delete platform-level theme",
+                    ));
+                }
+                (Some(owner), Some(requester)) if owner == requester => {} // Same tenant - allowed
+                (Some(_), _) => {
+                    return Err(crate::core::AppError::forbidden(
+                        "Cannot delete theme owned by another tenant",
+                    ));
+                }
+            }
+        }
         self.repo.delete(id).await
     }
 
