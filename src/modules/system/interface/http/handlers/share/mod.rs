@@ -1,10 +1,14 @@
-use ntex::web;
-use std::sync::Arc;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use crate::core::infrastructure::database::Database;
 use crate::core::utils::jwt::Claims;
-use crate::modules::system::infrastructure::repositories::share::{ShareRepository, CreateShareCmd, ResourceShare};
+use crate::core::utils::response::ApiResponse;
+use crate::modules::system::infrastructure::repositories::share::{
+    CreateShareCmd, ResourceShare, ShareRepository,
+};
+use ntex::web;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 pub struct ShareResponse {
@@ -48,14 +52,17 @@ pub async fn list_shares(
 
     let repo = ShareRepository::new(db.get_ref().clone());
     match repo.list_by_owner(tenant_id).await {
-        Ok(shares) => web::HttpResponse::Ok().json(&ShareListResponse {
-            success: true,
-            data: shares,
-        }),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "success": false,
-            "message": e.to_string()
-        })),
+        Ok(shares) => {
+            let response = ApiResponse::ok(
+                json!({ "shares": shares }),
+                "Shares listed successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.to_string());
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -68,14 +75,17 @@ pub async fn list_received_shares(
 
     let repo = ShareRepository::new(db.get_ref().clone());
     match repo.list_received(tenant_id).await {
-        Ok(shares) => web::HttpResponse::Ok().json(&ShareListResponse {
-            success: true,
-            data: shares,
-        }),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "success": false,
-            "message": e.to_string()
-        })),
+        Ok(shares) => {
+            let response = ApiResponse::ok(
+                json!({ "shares": shares }),
+                "Received shares listed successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.to_string());
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -96,7 +106,7 @@ pub async fn create_share(
 
     let repo = ShareRepository::new(db.get_ref().clone());
     let user_id = Uuid::parse_str(&claims.sub).ok();
-    
+
     match repo.create(cmd, tenant_id, user_id).await {
         Ok(share) => web::HttpResponse::Created().json(&ShareResponse {
             success: true,

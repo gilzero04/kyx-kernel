@@ -3,15 +3,17 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 use ntex::web;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 
+use crate::core::utils::jwt::Claims;
+use crate::core::utils::response::ApiResponse;
+use crate::modules::system::application::services::tenant::TenantService;
+use crate::modules::system::domain::plugin::entity::MenuExtension;
 use crate::modules::system::domain::plugin::registry::PluginRegistry;
 use crate::modules::system::domain::plugin::{Manifest, Plugin};
-use crate::modules::system::domain::plugin::entity::MenuExtension;
-use crate::modules::system::application::services::tenant::TenantService;
-use crate::core::utils::jwt::Claims;
 
 // ════════════════════════════════════════════════════════════════════════════
 // Request/Response DTOs
@@ -105,25 +107,26 @@ pub async fn list_plugins(
     claims: Claims,
 ) -> web::HttpResponse {
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
-    
+
     match registry.list_plugins(tenant_id).await {
         Ok(plugins) => {
-            let responses: Vec<PluginResponse> = plugins.into_iter()
-                .map(PluginResponse::from)
-                .collect();
+            let responses: Vec<PluginResponse> =
+                plugins.into_iter().map(PluginResponse::from).collect();
             let total = responses.len();
-            
-            web::HttpResponse::Ok().json(&PluginListResponse { 
-                plugins: responses, 
-                total 
-            })
+
+            let response = ApiResponse::ok(
+                json!({
+                    "plugins": responses,
+                    "total": total
+                }),
+                "Plugins listed successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
         }
         Err(e) => {
             log::error!("Failed to list plugins: {}", e);
-            web::HttpResponse::InternalServerError().json(&ErrorResponse {
-                error: "Failed to list plugins".to_string(),
-                message: e.to_string()
-            })
+            let response = ApiResponse::<()>::internal_error(&e.to_string());
+            web::HttpResponse::InternalServerError().json(&response)
         }
     }
 }
@@ -144,22 +147,18 @@ pub async fn get_plugin(
     path: web::types::Path<Uuid>,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    
+
     match registry.get_plugin(plugin_id).await {
-        Ok(Some(plugin)) => {
-            web::HttpResponse::Ok().json(&PluginResponse::from(plugin))
-        }
-        Ok(None) => {
-            web::HttpResponse::NotFound().json(&ErrorResponse {
-                error: "Not found".to_string(),
-                message: "Plugin not found".to_string()
-            })
-        }
+        Ok(Some(plugin)) => web::HttpResponse::Ok().json(&PluginResponse::from(plugin)),
+        Ok(None) => web::HttpResponse::NotFound().json(&ErrorResponse {
+            error: "Not found".to_string(),
+            message: "Plugin not found".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to get plugin: {}", e);
             web::HttpResponse::InternalServerError().json(&ErrorResponse {
                 error: "Failed to get plugin".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -182,16 +181,17 @@ pub async fn install_plugin(
     body: web::types::Json<InstallPluginRequest>,
 ) -> web::HttpResponse {
     let req = body.into_inner();
-    
-    match registry.install(req.tenant_id, req.manifest, None, req.config).await {
-        Ok(plugin) => {
-            web::HttpResponse::Created().json(&PluginResponse::from(plugin))
-        }
+
+    match registry
+        .install(req.tenant_id, req.manifest, None, req.config)
+        .await
+    {
+        Ok(plugin) => web::HttpResponse::Created().json(&PluginResponse::from(plugin)),
         Err(e) => {
             log::error!("Failed to install plugin: {}", e);
             web::HttpResponse::BadRequest().json(&ErrorResponse {
                 error: "Failed to install plugin".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -217,19 +217,17 @@ pub async fn enable_plugin(
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
-    
+
     match registry.enable(tenant_id, plugin_id).await {
-        Ok(()) => {
-            web::HttpResponse::Ok().json(&SuccessResponse {
-                status: "success".to_string(),
-                message: "Plugin enabled".to_string()
-            })
-        }
+        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
+            status: "success".to_string(),
+            message: "Plugin enabled".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to enable plugin: {}", e);
             web::HttpResponse::NotFound().json(&ErrorResponse {
                 error: "Plugin not found".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -255,19 +253,17 @@ pub async fn disable_plugin(
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
-    
+
     match registry.disable(tenant_id, plugin_id).await {
-        Ok(()) => {
-            web::HttpResponse::Ok().json(&SuccessResponse {
-                status: "success".to_string(),
-                message: "Plugin disabled".to_string()
-            })
-        }
+        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
+            status: "success".to_string(),
+            message: "Plugin disabled".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to disable plugin: {}", e);
             web::HttpResponse::NotFound().json(&ErrorResponse {
                 error: "Plugin not found".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -293,19 +289,17 @@ pub async fn uninstall_plugin(
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
-    
+
     match registry.uninstall(tenant_id, plugin_id).await {
-        Ok(()) => {
-            web::HttpResponse::Ok().json(&SuccessResponse {
-                status: "success".to_string(),
-                message: "Plugin uninstalled".to_string()
-            })
-        }
+        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
+            status: "success".to_string(),
+            message: "Plugin uninstalled".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to uninstall plugin: {}", e);
             web::HttpResponse::BadRequest().json(&ErrorResponse {
                 error: "Failed to uninstall plugin".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -334,19 +328,17 @@ pub async fn update_plugin_config(
     let plugin_id = path.into_inner();
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
     let config = body.into_inner().config;
-    
+
     match registry.update_config(tenant_id, plugin_id, config).await {
-        Ok(()) => {
-            web::HttpResponse::Ok().json(&SuccessResponse {
-                status: "success".to_string(),
-                message: "Plugin configuration updated".to_string()
-            })
-        }
+        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
+            status: "success".to_string(),
+            message: "Plugin configuration updated".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to update plugin config: {}", e);
             web::HttpResponse::BadRequest().json(&ErrorResponse {
                 error: "Failed to update plugin configuration".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -369,7 +361,7 @@ pub async fn analyze_plugin_security(
 ) -> web::HttpResponse {
     let manifest = body.into_inner().manifest;
     let summary = registry.get_security_summary(&manifest);
-    
+
     web::HttpResponse::Ok().json(&summary)
 }
 
@@ -395,27 +387,33 @@ pub async fn install_plugin_with_approval(
     body: web::types::Json<InstallWithApprovalRequest>,
 ) -> web::HttpResponse {
     let req = body.into_inner();
-    
+
     // TODO: Verify caller has plugin:approve permission
     // For now, require approval_reason and approved_by in request
-    
-    match registry.install_with_approval(
-        req.tenant_id,
-        req.manifest,
-        None,
-        req.config,
-        req.approved_by,
-        &req.approval_reason,
-    ).await {
+
+    match registry
+        .install_with_approval(
+            req.tenant_id,
+            req.manifest,
+            None,
+            req.config,
+            req.approved_by,
+            &req.approval_reason,
+        )
+        .await
+    {
         Ok(plugin) => {
-            log::info!("SECURITY: Plugin {} installed with approval", plugin.plugin_id);
+            log::info!(
+                "SECURITY: Plugin {} installed with approval",
+                plugin.plugin_id
+            );
             web::HttpResponse::Created().json(&PluginResponse::from(plugin))
         }
         Err(e) => {
             log::error!("Failed to install plugin with approval: {}", e);
             web::HttpResponse::BadRequest().json(&ErrorResponse {
                 error: "Failed to install plugin".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -446,7 +444,7 @@ pub async fn get_plugin_security(
     path: web::types::Path<Uuid>,
 ) -> web::HttpResponse {
     let plugin_id = path.into_inner();
-    
+
     match registry.get_plugin(plugin_id).await {
         Ok(Some(plugin)) => {
             let warnings = registry.validate_plugin_security(&plugin);
@@ -457,17 +455,15 @@ pub async fn get_plugin_security(
                 warning_count,
             })
         }
-        Ok(None) => {
-            web::HttpResponse::NotFound().json(&ErrorResponse {
-                error: "Not found".to_string(),
-                message: "Plugin not found".to_string()
-            })
-        }
+        Ok(None) => web::HttpResponse::NotFound().json(&ErrorResponse {
+            error: "Not found".to_string(),
+            message: "Plugin not found".to_string(),
+        }),
         Err(e) => {
             log::error!("Failed to get plugin security: {}", e);
             web::HttpResponse::InternalServerError().json(&ErrorResponse {
                 error: "Failed to get plugin security".to_string(),
-                message: e.to_string()
+                message: e.to_string(),
             })
         }
     }
@@ -496,7 +492,7 @@ pub async fn get_menus(
     claims: Claims,
 ) -> web::HttpResponse {
     let tenant_id = claims.tenant_id;
-    
+
     // 1. Get Parent Tenant ID (for inheritance)
     let parent_id = match tenant_service.get_ref().get_parent_id(tenant_id).await {
         Ok(pid) => pid,
@@ -504,7 +500,11 @@ pub async fn get_menus(
     };
 
     // 2. Fetch Available Plugins (Own + Global + Shared Parent)
-    let plugins = match registry.get_ref().find_available_plugins(tenant_id, parent_id).await {
+    let plugins = match registry
+        .get_ref()
+        .find_available_plugins(tenant_id, parent_id)
+        .await
+    {
         Ok(p) => p,
         Err(e) => {
             log::error!("Failed to fetch available plugins for menus: {}", e);
@@ -521,10 +521,18 @@ pub async fn get_menus(
 
     for plugin in plugins {
         if let Some(ui_val) = &plugin.ui {
-            if let Ok(ui) = serde_json::from_value::<crate::modules::system::domain::plugin::entity::UIExtensions>(ui_val.clone()) {
+            if let Ok(ui) = serde_json::from_value::<
+                crate::modules::system::domain::plugin::entity::UIExtensions,
+            >(ui_val.clone())
+            {
                 for menu in ui.menus {
                     // 4. Permission Filtering
-                    if menu.permissions.is_empty() || menu.permissions.iter().any(|p| user_permissions.contains(p)) {
+                    if menu.permissions.is_empty()
+                        || menu
+                            .permissions
+                            .iter()
+                            .any(|p| user_permissions.contains(p))
+                    {
                         all_menus.push(menu);
                     }
                 }
@@ -535,9 +543,7 @@ pub async fn get_menus(
     // 5. Sort by order
     all_menus.sort_by(|a, b| a.order.cmp(&b.order));
 
-    web::HttpResponse::Ok().json(&AggregatedMenuResponse {
-        menus: all_menus,
-    })
+    web::HttpResponse::Ok().json(&AggregatedMenuResponse { menus: all_menus })
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -546,23 +552,23 @@ pub async fn get_menus(
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/plugins")  // Relative path - already inside /api/v1/admin scope
+        web::scope("/plugins") // Relative path - already inside /api/v1/admin scope
             .route("", web::get().to(list_plugins))
             .route("", web::post().to(install_plugin))
             .route("/analyze", web::post().to(analyze_plugin_security))
-            .route("/install-approved", web::post().to(install_plugin_with_approval))
+            .route(
+                "/install-approved",
+                web::post().to(install_plugin_with_approval),
+            )
             .route("/{id}", web::get().to(get_plugin))
             .route("/{id}", web::delete().to(uninstall_plugin))
             .route("/{id}/enable", web::post().to(enable_plugin))
             .route("/{id}/disable", web::post().to(disable_plugin))
             .route("/{id}/config", web::put().to(update_plugin_config))
-            .route("/{id}/security", web::get().to(get_plugin_security))
+            .route("/{id}/security", web::get().to(get_plugin_security)),
     );
 }
 
 pub fn configure_me(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/menus")
-            .route("", web::get().to(get_menus))
-    );
+    cfg.service(web::scope("/menus").route("", web::get().to(get_menus)));
 }

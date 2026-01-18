@@ -1,8 +1,10 @@
-use ntex::web;
-use std::sync::Arc;
+use crate::core::utils::response::ApiResponse;
 use crate::modules::system::application::services::audit::AuditQueryService;
-use crate::modules::system::interface::http::dto::audit::LogsQuery;
 use crate::modules::system::domain::audit::AuditLogFilter;
+use crate::modules::system::interface::http::dto::audit::LogsQuery;
+use ntex::web;
+use serde_json::json;
+use std::sync::Arc;
 
 /// List audit logs (Admin)
 #[utoipa::path(
@@ -31,9 +33,17 @@ pub async fn list_audit_logs(
     };
 
     match service.list_logs(filter).await {
-        Ok(data) => web::HttpResponse::Ok().json(&data),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": format!("Failed to fetch logs: {}", e)
-        }))
+        Ok(data) => {
+            let response = ApiResponse::ok(
+                json!({ "logs": data }),
+                "Audit logs listed successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&format!("Failed to fetch logs: {}", e));
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
+

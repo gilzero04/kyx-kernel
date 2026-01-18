@@ -1360,6 +1360,161 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════
+# Step 26: Plugins CRUD (Phase 3)
+# ═══════════════════════════════════════════════════════════
+echo "━━━ Step 26: Plugins CRUD ━━━"
+
+# 26.1 List Plugins
+PLUGINS_LIST=$(curl -s -X GET "$URL/api/v1/admin/plugins" \
+    -H "Authorization: Bearer $TOKEN")
+
+PLUGINS_SUCCESS=$(echo "$PLUGINS_LIST" | jq -r '.success // empty')
+PLUGINS_HAS_META=$(echo "$PLUGINS_LIST" | jq 'has("meta")')
+
+if [ "$PLUGINS_SUCCESS" = "true" ]; then
+    echo "✅ GET /admin/plugins success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /admin/plugins success = $PLUGINS_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+
+if [ "$PLUGINS_HAS_META" = "true" ]; then
+    echo "✅ Plugins list has 'meta' field (ApiResponse format)"
+    PASS=$((PASS + 1))
+else
+    echo "❌ Plugins list missing 'meta' field"
+    FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════
+# Step 27: Shares CRUD (Phase 3)
+# ═══════════════════════════════════════════════════════════
+echo "━━━ Step 27: Shares CRUD ━━━"
+
+# 27.1 List Shares (created by current tenant)
+SHARES_LIST=$(curl -s -X GET "$URL/api/v1/admin/shares" \
+    -H "Authorization: Bearer $TOKEN")
+
+SHARES_SUCCESS=$(echo "$SHARES_LIST" | jq -r '.success // empty')
+SHARES_HAS_META=$(echo "$SHARES_LIST" | jq 'has("meta")')
+
+if [ "$SHARES_SUCCESS" = "true" ]; then
+    echo "✅ GET /admin/shares success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /admin/shares success = $SHARES_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+
+if [ "$SHARES_HAS_META" = "true" ]; then
+    echo "✅ Shares list has 'meta' field (ApiResponse format)"
+    PASS=$((PASS + 1))
+else
+    echo "❌ Shares list missing 'meta' field"
+    FAIL=$((FAIL + 1))
+fi
+
+# 27.2 List Received Shares
+RECEIVED_SHARES=$(curl -s -X GET "$URL/api/v1/admin/shares/received" \
+    -H "Authorization: Bearer $TOKEN")
+
+RECEIVED_SUCCESS=$(echo "$RECEIVED_SHARES" | jq -r '.success // empty')
+
+if [ "$RECEIVED_SUCCESS" = "true" ]; then
+    echo "✅ GET /admin/shares/received success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /admin/shares/received success = $RECEIVED_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════
+# Step 28: Audit Logs (Phase 3)
+# ═══════════════════════════════════════════════════════════
+echo "━━━ Step 28: Audit Logs ━━━"
+
+AUDIT_LIST=$(curl -s -X GET "$URL/api/v1/admin/audit-logs?limit=10" \
+    -H "Authorization: Bearer $TOKEN")
+
+AUDIT_SUCCESS=$(echo "$AUDIT_LIST" | jq -r '.success // empty')
+AUDIT_HAS_META=$(echo "$AUDIT_LIST" | jq 'has("meta")')
+
+if [ "$AUDIT_SUCCESS" = "true" ]; then
+    echo "✅ GET /admin/audit-logs success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /admin/audit-logs success = $AUDIT_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+
+if [ "$AUDIT_HAS_META" = "true" ]; then
+    echo "✅ Audit logs has 'meta' field (ApiResponse format)"
+    PASS=$((PASS + 1))
+else
+    echo "❌ Audit logs missing 'meta' field"
+    FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════
+# Step 29: Workspace Status (Phase 3)
+# ═══════════════════════════════════════════════════════════
+echo "━━━ Step 29: Workspace Status ━━━"
+
+WORKSPACE_STATUS=$(curl -s -X GET "$URL/api/v1/admin/workspace/status" \
+    -H "Authorization: Bearer $TOKEN")
+
+WORKSPACE_SUCCESS=$(echo "$WORKSPACE_STATUS" | jq -r '.success // empty')
+
+if [ "$WORKSPACE_SUCCESS" = "true" ]; then
+    echo "✅ GET /admin/workspace/status success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /admin/workspace/status success = $WORKSPACE_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════
+# Step 30: User Preferences (Phase 3)
+# ═══════════════════════════════════════════════════════════
+echo "━━━ Step 30: User Preferences ━━━"
+
+# 30.1 Get User Preferences
+PREFS_GET=$(curl -s -X GET "$URL/api/v1/auth/preferences" \
+    -H "Authorization: Bearer $TOKEN")
+
+PREFS_SUCCESS=$(echo "$PREFS_GET" | jq -r '.success // empty')
+
+if [ "$PREFS_SUCCESS" = "true" ]; then
+    echo "✅ GET /auth/preferences success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /auth/preferences success = $PREFS_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+
+# 30.2 Update User Preferences (theme_mode)
+PREFS_UPDATE=$(curl -s -X PUT "$URL/api/v1/auth/preferences" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"theme_mode": "dark"}')
+
+PREFS_UPDATE_SUCCESS=$(echo "$PREFS_UPDATE" | jq -r '.success // empty')
+
+if [ "$PREFS_UPDATE_SUCCESS" = "true" ]; then
+    echo "✅ PUT /auth/preferences success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ PUT /auth/preferences success = $PREFS_UPDATE_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+echo ""
+
+# ═══════════════════════════════════════════════════════════
 # Summary
 # ═══════════════════════════════════════════════════════════
 echo "======================================"
