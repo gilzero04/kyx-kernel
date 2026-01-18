@@ -41,7 +41,7 @@ fn build_user_order_clause(sort_param: &Option<String>) -> String {
 
 pub async fn list(pool: &Arc<Database>, filter: UserFilter) -> Result<PaginatedUsers> {
     let page = filter.page.max(1);
-    let limit = filter.limit.min(100).max(1);
+    let limit = filter.limit.clamp(1, 100);
     let offset = (page - 1) * limit;
 
     // Build the hierarchy/isolation filter

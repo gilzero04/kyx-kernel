@@ -894,7 +894,6 @@ impl AuthService {
 
         // 6. Generate Tokens
         let user_id_str = user_id.to_string();
-        let tenant_id = tenant_id; // Uuid
         let _access_expiry = self.config.get_int("access_token_expire_minutes", 30).await;
         let _refresh_expiry = self
             .config

@@ -159,10 +159,11 @@ impl PluginRegistry {
         }
 
         // Check if already installed
-        if let Some(_) = self
+        if self
             .repository
             .find_by_plugin_id(tenant_id, &manifest.id)
             .await?
+            .is_some()
         {
             return Err(anyhow!("Plugin {} is already installed", manifest.id));
         }
@@ -389,10 +390,11 @@ impl PluginRegistry {
         }
 
         // Check if already installed
-        if let Some(_) = self
+        if self
             .repository
             .find_by_plugin_id(tenant_id, &manifest.id)
             .await?
+            .is_some()
         {
             return Err(anyhow!("Plugin {} is already installed", manifest.id));
         }

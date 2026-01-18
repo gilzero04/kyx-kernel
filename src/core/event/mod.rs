@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #![allow(dead_code)]
+#![allow(clippy::enum_variant_names)]
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

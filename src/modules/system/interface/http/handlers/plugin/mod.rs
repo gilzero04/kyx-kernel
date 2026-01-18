@@ -508,10 +508,7 @@ pub async fn get_menus(
     let tenant_id = claims.tenant_id;
 
     // 1. Get Parent Tenant ID (for inheritance)
-    let parent_id = match tenant_service.get_ref().get_parent_id(tenant_id).await {
-        Ok(pid) => pid,
-        Err(_) => None, // If error (e.g. root tenant or db error), assume no parent
-    };
+    let parent_id = tenant_service.get_ref().get_parent_id(tenant_id).await.unwrap_or_default();
 
     // 2. Fetch Available Plugins (Own + Global + Shared Parent)
     let plugins = match registry

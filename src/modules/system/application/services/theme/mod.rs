@@ -386,11 +386,8 @@ impl ThemeService {
             let trimmed = line.trim();
             if trimmed.starts_with("@import") {
                 // Handle different import styles: @import './file.css'; @import url('./file.css');
-                let path_match = if trimmed.contains("url(") {
-                    trimmed.split(['\'', '"']).nth(1)
-                } else {
-                    trimmed.split(['\'', '"']).nth(1)
-                };
+                // Both styles use ' or " for quoting the path
+                let path_match = trimmed.split(['\'', '"']).nth(1);
 
                 if let Some(import_path) = path_match
                     && let Some(sub_file) = import_path.strip_prefix("./") {

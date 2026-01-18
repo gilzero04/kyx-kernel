@@ -41,7 +41,7 @@ pub fn build_tenant_order_clause(sort_param: &Option<String>) -> String {
 
 pub async fn list(pool: &Arc<Database>, filter: TenantFilter) -> Result<PaginatedTenants> {
     let page = filter.page.max(1);
-    let limit = filter.limit.min(100).max(1);
+    let limit = filter.limit.clamp(1, 100);
     let offset = (page - 1) * limit;
 
     // Build the hierarchy filter if an actor tenant is provided
