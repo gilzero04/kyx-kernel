@@ -7,7 +7,10 @@
 // - Maintain their own state
 // - Communicate only via message passing
 // - Can be sharded by tenant_id for horizontal scaling
+// NOTE: This module is reserved for future use, hence #[allow(dead_code)]
 // ═══════════════════════════════════════════════════════════════════════════════
+
+#![allow(dead_code)]
 
 pub mod permission;
 pub mod tenant;

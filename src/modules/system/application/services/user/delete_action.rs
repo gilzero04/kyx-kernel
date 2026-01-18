@@ -10,14 +10,13 @@ pub async fn delete_user(
     actor_tenant_id: Option<Uuid>,
 ) -> Result<(), AppError> {
     // 1. Check self-deletion
-    if let Some(current) = current_user_id {
-        if current == target_id {
+    if let Some(current) = current_user_id
+        && current == target_id {
             return Err(AppError {
                 code: 400,
                 message: "Cannot delete your own account".into(),
             });
         }
-    }
 
     // 2. Check if SuperAdmin
     let is_super = repo.is_superadmin(target_id).await.unwrap_or(false);
@@ -34,14 +33,13 @@ pub async fn delete_user(
     // 3. Check if last user in any tenant
     let tenants = repo.get_user_tenants(target_id).await.unwrap_or_default();
     for t in tenants {
-        if let Some(count) = t.member_count {
-            if count <= 1 {
+        if let Some(count) = t.member_count
+            && count <= 1 {
                 return Err(AppError {
                     code: 400,
-                    message: format!("Cannot delete the last user of tenant '{}'", t.name).into(),
+                    message: format!("Cannot delete the last user of tenant '{}'", t.name),
                 });
             }
-        }
     }
 
     // 4. Perform Delete

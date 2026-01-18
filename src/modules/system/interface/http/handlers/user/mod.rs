@@ -36,13 +36,11 @@ pub async fn list_users(
 
     // Bypass isolation ONLY for System Admins (Admin/SuperAdmin in Owner Tenant)
     let role = claims.role.to_lowercase();
-    if role == "admin" || role == "superadmin" {
-        if let Ok(owner_id) = tenant_service.get_owner_id().await {
-            if claims.tenant_id == owner_id {
+    if (role == "admin" || role == "superadmin")
+        && let Ok(owner_id) = tenant_service.get_owner_id().await
+            && claims.tenant_id == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let filter = UserFilter {
         page: query.page.unwrap_or(1),
@@ -110,13 +108,11 @@ pub async fn update_user(
 
     // Bypass isolation ONLY for System Admins (Admin/SuperAdmin in Owner Tenant)
     let role = claims.role.to_lowercase();
-    if role == "admin" || role == "superadmin" {
-        if let Ok(owner_id) = tenant_service.get_owner_id().await {
-            if claims.tenant_id == owner_id {
+    if (role == "admin" || role == "superadmin")
+        && let Ok(owner_id) = tenant_service.get_owner_id().await
+            && claims.tenant_id == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service
         .update_user(
@@ -184,13 +180,11 @@ pub async fn delete_user(
 
     // Bypass isolation ONLY for System Admins
     let role = claims.role.to_lowercase();
-    if role == "admin" || role == "superadmin" {
-        if let Ok(owner_id) = tenant_service.get_owner_id().await {
-            if claims.tenant_id == owner_id {
+    if (role == "admin" || role == "superadmin")
+        && let Ok(owner_id) = tenant_service.get_owner_id().await
+            && claims.tenant_id == owner_id {
                 actor_tenant_id = None; // Disable isolation
             }
-        }
-    }
 
     match service
         .delete_user(id_uuid, current_user_id, actor_tenant_id)
@@ -252,13 +246,11 @@ pub async fn reset_password(
 
     // Bypass isolation ONLY for System Admins (Admin/SuperAdmin in Owner Tenant)
     let role = claims.role.to_lowercase();
-    if role == "admin" || role == "superadmin" {
-        if let Ok(owner_id) = tenant_service.get_owner_id().await {
-            if claims.tenant_id == owner_id {
+    if (role == "admin" || role == "superadmin")
+        && let Ok(owner_id) = tenant_service.get_owner_id().await
+            && claims.tenant_id == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service
         .reset_password(id_uuid, body.new_password.clone(), actor_tenant_id)

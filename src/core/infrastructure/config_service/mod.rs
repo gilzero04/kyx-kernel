@@ -36,14 +36,13 @@ impl ConfigService {
         default: &str,
     ) -> String {
         // 1. Try Tenant Workspace Scope
-        if let Some(tid) = tenant_id {
-            if let Some(val) = self
+        if let Some(tid) = tenant_id
+            && let Some(val) = self
                 .find_config_entry(Some(tid), key, Some("workspace"))
                 .await
             {
                 return self.value_to_string(&val, default);
             }
-        }
 
         // 2. Try Global Workspace Default (Owner's workspace scope)
         if let Ok(owner_id) = self.get_owner_id().await {
@@ -96,14 +95,13 @@ impl ConfigService {
         default: i64,
     ) -> i64 {
         // 1. Try Tenant Workspace Scope
-        if let Some(tid) = tenant_id {
-            if let Some(val) = self
+        if let Some(tid) = tenant_id
+            && let Some(val) = self
                 .find_config_entry(Some(tid), key, Some("workspace"))
                 .await
             {
                 return val.as_i64().unwrap_or(default);
             }
-        }
 
         // 2. Try Global Workspace Default (Owner's workspace scope)
         if let Ok(owner_id) = self.get_owner_id().await {
@@ -189,8 +187,8 @@ impl ConfigService {
             self.get_owner_id().await.ok()
         };
 
-        if let Some(tid) = effective_tid {
-            if let Some(db_val) = self.get_from_db(tid, key, scp).await {
+        if let Some(tid) = effective_tid
+            && let Some(db_val) = self.get_from_db(tid, key, scp).await {
                 self.cache
                     .insert(cache_key.clone(), (db_val.clone(), Instant::now()));
 
@@ -207,7 +205,6 @@ impl ConfigService {
                     .unwrap_or(());
                 return Some(db_val);
             }
-        }
 
         None
     }

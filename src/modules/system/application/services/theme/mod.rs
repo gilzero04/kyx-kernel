@@ -352,7 +352,7 @@ impl ThemeService {
                     config: config_val,
                     is_shared: true,
                     tenant_id: owner_id,
-                    author: author,
+                    author,
                     preview_url,
                     logo_url,
                     version: manifest_version,
@@ -387,14 +387,13 @@ impl ThemeService {
             if trimmed.starts_with("@import") {
                 // Handle different import styles: @import './file.css'; @import url('./file.css');
                 let path_match = if trimmed.contains("url(") {
-                    trimmed.split(|c| c == '\'' || c == '"').nth(1)
+                    trimmed.split(['\'', '"']).nth(1)
                 } else {
-                    trimmed.split(|c| c == '\'' || c == '"').nth(1)
+                    trimmed.split(['\'', '"']).nth(1)
                 };
 
-                if let Some(import_path) = path_match {
-                    if import_path.starts_with("./") {
-                        let sub_file = &import_path[2..];
+                if let Some(import_path) = path_match
+                    && let Some(sub_file) = import_path.strip_prefix("./") {
                         let sub_content =
                             Box::pin(self.inline_css_recursive(base_path, sub_file, visited))
                                 .await?;
@@ -402,7 +401,6 @@ impl ThemeService {
                         inlined_content.push('\n');
                         continue;
                     }
-                }
             }
             inlined_content.push_str(line);
             inlined_content.push('\n');

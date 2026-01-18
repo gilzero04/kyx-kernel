@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// Kyx Kernel — Main Entry Point
+// ═══════════════════════════════════════════════════════════════════════════════
+// Allow certain clippy lints for architectural decisions
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
+#![allow(dead_code)]
+
 use crate::core::AppModule;
 use crate::core::bootstrap::Kernel;
 use base64::Engine;
@@ -78,18 +86,13 @@ fn check_docs_auth(req: &web::HttpRequest) -> bool {
         return true; // No credentials set = allow access (avoid lockout)
     }
 
-    if let Some(auth) = req.headers().get("Authorization") {
-        if let Ok(auth_str) = auth.to_str() {
-            if auth_str.starts_with("Basic ") {
-                let encoded = &auth_str[6..];
-                if let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded) {
-                    if let Ok(creds) = String::from_utf8(decoded) {
+    if let Some(auth) = req.headers().get("Authorization")
+        && let Ok(auth_str) = auth.to_str()
+            && let Some(encoded) = auth_str.strip_prefix("Basic ")
+                && let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded)
+                    && let Ok(creds) = String::from_utf8(decoded) {
                         return creds == format!("{}:{}", docs_user, docs_pass);
                     }
-                }
-            }
-        }
-    }
     false // Auth failed
 }
 

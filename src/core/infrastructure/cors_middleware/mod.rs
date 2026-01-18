@@ -73,9 +73,9 @@ where
         };
 
         // Handle OPTIONS preflight requests
-        if is_preflight && allowed {
-            if let Some(ref origin_str) = origin {
-                if let Ok(hv) = HeaderValue::from_str(origin_str) {
+        if is_preflight && allowed
+            && let Some(ref origin_str) = origin
+                && let Ok(hv) = HeaderValue::from_str(origin_str) {
                     let mut res =
                         req.into_response(web::HttpResponse::build(StatusCode::OK).finish());
                     res.headers_mut().insert(ACCESS_CONTROL_ALLOW_ORIGIN, hv);
@@ -99,16 +99,14 @@ where
                         .append(VARY, HeaderValue::from_static("Origin"));
                     return Ok(res);
                 }
-            }
-        }
 
         // Call the actual service
         let res = ctx.call(&self.service, req).await?;
 
         // Add CORS headers to response if origin is allowed
-        if let Some(origin_str) = origin {
-            if allowed {
-                if let Ok(hv) = HeaderValue::from_str(&origin_str) {
+        if let Some(origin_str) = origin
+            && allowed
+                && let Ok(hv) = HeaderValue::from_str(&origin_str) {
                     let mut res = res;
                     res.headers_mut().insert(ACCESS_CONTROL_ALLOW_ORIGIN, hv);
                     res.headers_mut().insert(
@@ -129,8 +127,6 @@ where
                         .append(VARY, HeaderValue::from_static("Origin"));
                     return Ok(res);
                 }
-            }
-        }
 
         Ok(res)
     }

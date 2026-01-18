@@ -231,14 +231,12 @@ where
             .and_then(|h| h.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "));
 
-        if let Some(t) = token {
-            if let Ok(claims) = self.jwt_service.verify_token(t) {
-                if claims.is_system_owner.unwrap_or(false) {
+        if let Some(t) = token
+            && let Ok(claims) = self.jwt_service.verify_token(t)
+                && claims.is_system_owner.unwrap_or(false) {
                     req.extensions_mut().insert(claims);
                     return ctx.call(&self.service, req).await;
                 }
-            }
-        }
 
         Ok(req.into_response(web::HttpResponse::Forbidden().finish()))
     }

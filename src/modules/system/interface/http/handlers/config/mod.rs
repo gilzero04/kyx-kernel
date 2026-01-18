@@ -278,24 +278,21 @@ pub async fn update_config(
     }
 
     // 3. Validate min/max for numbers
-    if field_type == "number" {
-        if let Some(num) = value.as_i64() {
-            if let Some(min) = min_value {
-                if num < min as i64 {
+    if field_type == "number"
+        && let Some(num) = value.as_i64() {
+            if let Some(min) = min_value
+                && num < min as i64 {
                     let response =
                         ApiResponse::<()>::bad_request(&format!("Value must be at least {}", min));
                     return Ok(web::HttpResponse::BadRequest().json(&response));
                 }
-            }
-            if let Some(max) = max_value {
-                if num > max as i64 {
+            if let Some(max) = max_value
+                && num > max as i64 {
                     let response =
                         ApiResponse::<()>::bad_request(&format!("Value cannot exceed {}", max));
                     return Ok(web::HttpResponse::BadRequest().json(&response));
                 }
-            }
         }
-    }
 
     // 4. Save to sys_configs
     let scope_str = if scope == "workspace" {

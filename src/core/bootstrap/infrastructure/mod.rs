@@ -17,15 +17,13 @@ pub fn load_env_and_check() -> io::Result<(u16, String, String, String)> {
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let engine_secret = std::env::var("ENGINE_SECRET_KEY").expect("ENGINE_SECRET_KEY must be set");
 
-    if env == "production" {
-        if jwt_secret == "change_me_immediately_in_production" || jwt_secret.len() < 32 {
+    if env == "production"
+        && (jwt_secret == "change_me_immediately_in_production" || jwt_secret.len() < 32) {
             log::error!("❌ FATAL: Weak or default JWT_SECRET detected in PRODUCTION!");
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
+            return Err(io::Error::other(
                 "Insecure configuration in production",
             ));
         }
-    }
 
     Ok((port, env, jwt_secret, engine_secret))
 }
@@ -37,7 +35,7 @@ pub async fn init_redis() -> io::Result<Arc<Redis>> {
 
     let redis = Redis::new(&url, pass.as_deref())
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     Ok(Arc::new(redis))
 }
@@ -49,7 +47,7 @@ pub async fn init_database() -> io::Result<Arc<Database>> {
 
     let database = Database::new(&url)
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     // Migrations are NO LONGER run here.
     // Run `./scripts/migrate-db.sh` BEFORE starting the application.

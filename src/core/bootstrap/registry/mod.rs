@@ -40,7 +40,7 @@ impl Registry {
         cors_manager
             .refresh()
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.message))?;
+            .map_err(|e| io::Error::other(e.message))?;
 
         // 2. Repositories & Domain Services
         let api_key_repo = Arc::new(PostgresApiKeyRepository::new(database.clone()));
@@ -78,7 +78,7 @@ impl Registry {
         audit_service
             .log("SYSTEM", "KERNEL_STARTUP", None, "SUCCESS", None)
             .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.message))?;
+            .map_err(|e| io::Error::other(e.message))?;
 
         Ok(Self {
             audit_service,

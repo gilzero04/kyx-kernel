@@ -101,13 +101,11 @@ pub async fn create_role(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let cmd = CreateRoleCmd {
         tenant_id: None, // Will be set by service based on actor_tenant_id
@@ -169,13 +167,11 @@ pub async fn update_role(
 ) -> impl web::Responder {
     let mut actor_tenant_id = Some(claims.tenant_id);
 
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
@@ -241,13 +237,11 @@ pub async fn delete_role(
 ) -> impl web::Responder {
     let mut actor_tenant_id = Some(claims.tenant_id);
 
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
@@ -305,13 +299,11 @@ pub async fn get_role_permissions(
 ) -> impl web::Responder {
     let mut actor_tenant_id = Some(claims.tenant_id);
 
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
@@ -372,13 +364,11 @@ pub async fn update_role_permissions(
 ) -> impl web::Responder {
     let mut actor_tenant_id = Some(claims.tenant_id);
 
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let id_uuid = match sqlx::types::Uuid::parse_str(&path) {
         Ok(u) => u,
@@ -446,13 +436,11 @@ pub async fn list_permissions(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None for "unfiltered" access
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service.list_permissions(actor_tenant_id).await {
         Ok(perms) => {
@@ -492,13 +480,11 @@ pub async fn create_permission(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let cmd = CreatePermissionCmd {
         code: body.code.clone(),
@@ -577,11 +563,10 @@ pub async fn update_permission(
     };
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if claims.tenant_id == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && claims.tenant_id == owner_id {
             actor_tenant_id = None;
         }
-    }
 
     let cmd = UpdatePermissionCmd {
         name: body.name.clone(),
@@ -661,11 +646,10 @@ pub async fn delete_permission(
     };
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = tenant_service.get_owner_id().await {
-        if claims.tenant_id == owner_id {
+    if let Ok(owner_id) = tenant_service.get_owner_id().await
+        && claims.tenant_id == owner_id {
             actor_tenant_id = None;
         }
-    }
 
     match service.delete_permission(id_uuid, actor_tenant_id).await {
         Ok(_) => {

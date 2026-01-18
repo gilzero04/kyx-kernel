@@ -110,17 +110,14 @@ fn default_visibility() -> PluginVisibility {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, utoipa::ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub enum PluginVisibility {
+    #[default]
     Private,
     Shared,
     Global,
 }
 
-impl Default for PluginVisibility {
-    fn default() -> Self {
-        Self::Private
-    }
-}
 
 /// UI Definitions for the plugin
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema, PartialEq)]

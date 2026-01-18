@@ -34,13 +34,11 @@ pub async fn list_tenants(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None for "unfiltered" access
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     let filter = TenantFilter {
         page: query.page.unwrap_or(1),
@@ -96,13 +94,12 @@ pub async fn update_owner(
     let actor_tenant_id = Some(claims.tenant_id);
 
     // Strictly enforce System Owner only
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if actor_tenant_id != Some(owner_id) {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && actor_tenant_id != Some(owner_id) {
             return web::HttpResponse::Forbidden().json(
                 &serde_json::json!({ "error": "Only the system owner can update owner settings" }),
             );
         }
-    }
 
     // Check if any fields are being updated
     if body.name.is_some()
@@ -178,13 +175,11 @@ pub async fn get_tenant(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None for unfiltered access
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service.get_tenant_by_id(*id, actor_tenant_id).await {
         Ok(Some(tenant)) => web::HttpResponse::Ok().json(&tenant),
@@ -222,13 +217,11 @@ pub async fn create_tenant(
     let original_actor_id = actor_tenant_id;
 
     // If actor is system owner, treat as None (allowing them to specify any parent_id or bypass checks)
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     // Default parent_id to the creator's tenant if not specified
     let final_parent_id = body.parent_id.or(original_actor_id);
@@ -295,13 +288,11 @@ pub async fn update_tenant(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service
         .update_tenant(
@@ -367,13 +358,11 @@ pub async fn delete_tenant(
     let mut actor_tenant_id = Some(claims.tenant_id);
 
     // If actor is system owner, treat as None
-    if let Ok(owner_id) = service.get_owner_id().await {
-        if let Some(tid) = actor_tenant_id {
-            if tid == owner_id {
+    if let Ok(owner_id) = service.get_owner_id().await
+        && let Some(tid) = actor_tenant_id
+            && tid == owner_id {
                 actor_tenant_id = None;
             }
-        }
-    }
 
     match service.delete_tenant(tenant_id, actor_tenant_id).await {
         Ok(_) => {

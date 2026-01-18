@@ -534,8 +534,8 @@ pub async fn get_menus(
     let user_permissions = &claims.permissions;
 
     for plugin in plugins {
-        if let Some(ui_val) = &plugin.ui {
-            if let Ok(ui) = serde_json::from_value::<
+        if let Some(ui_val) = &plugin.ui
+            && let Ok(ui) = serde_json::from_value::<
                 crate::modules::system::domain::plugin::entity::UIExtensions,
             >(ui_val.clone())
             {
@@ -551,7 +551,6 @@ pub async fn get_menus(
                     }
                 }
             }
-        }
     }
 
     // 5. Sort by order

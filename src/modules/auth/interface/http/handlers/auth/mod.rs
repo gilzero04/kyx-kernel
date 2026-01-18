@@ -110,19 +110,15 @@ pub async fn logout(
 ) -> Result<web::HttpResponse, web::Error> {
     // Extract token from header
     let auth_header = req.headers().get("Authorization");
-    if let Some(header) = auth_header {
-        if let Ok(val) = header.to_str() {
-            if val.starts_with("Bearer ") {
-                let token = &val[7..];
-                if let Err(e) = service.logout(token).await {
+    if let Some(header) = auth_header
+        && let Ok(val) = header.to_str()
+            && let Some(token) = val.strip_prefix("Bearer ")
+                && let Err(e) = service.logout(token).await {
                     return Ok(web::HttpResponse::InternalServerError().json(&json!({
                         "status": "error",
                         "message": e.message
                     })));
                 }
-            }
-        }
-    }
 
     let response = ApiResponse::ok(
         serde_json::json!({"logged_out": true}),

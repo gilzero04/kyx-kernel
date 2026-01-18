@@ -24,7 +24,7 @@ pub struct UpdateSharingRequest {
 
 // Helper to determine mime type from extension
 fn get_mime_type(file_name: &str) -> &'static str {
-    let ext = file_name.split('.').last().unwrap_or("").to_lowercase();
+    let ext = file_name.split('.').next_back().unwrap_or("").to_lowercase();
     match ext.as_str() {
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
@@ -63,17 +63,15 @@ fn bundle_css_from_zip<R: Read + std::io::Seek>(
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("@import") {
-            let path_match = trimmed.split(|c| c == '\'' || c == '"').nth(1);
+            let path_match = trimmed.split(['\'', '"']).nth(1);
 
-            if let Some(import_path) = path_match {
-                if import_path.starts_with("./") {
-                    let sub_file = &import_path[2..];
+            if let Some(import_path) = path_match
+                && let Some(sub_file) = import_path.strip_prefix("./") {
                     let sub_content = bundle_css_from_zip(archive, sub_file, visited);
                     inlined_content.push_str(&sub_content);
                     inlined_content.push('\n');
                     continue;
                 }
-            }
         }
         inlined_content.push_str(line);
         inlined_content.push('\n');
@@ -99,14 +97,13 @@ fn extract_theme_config(bytes: &[u8]) -> AppResult<serde_json::Value> {
             found = true;
         }
 
-        if !found {
-            if let Ok(mut file) = archive.by_name("theme.json") {
+        if !found
+            && let Ok(mut file) = archive.by_name("theme.json") {
                 file.read_to_string(&mut c).map_err(|_| {
                     crate::core::AppError::internal_server_error("Failed to read theme.json")
                 })?;
                 found = true;
             }
-        }
 
         if !found {
             return Err(crate::core::AppError::bad_request(
@@ -141,14 +138,13 @@ fn extract_theme_config(bytes: &[u8]) -> AppResult<serde_json::Value> {
                 }
                 // Try search by filename
                 else {
-                    let filename = path_copy.split('/').last().unwrap_or(&path_copy);
+                    let filename = path_copy.split('/').next_back().unwrap_or(&path_copy);
                     for i in 0..archive.len() {
-                        if let Ok(file) = archive.by_index(i) {
-                            if file.name().ends_with(filename) {
+                        if let Ok(file) = archive.by_index(i)
+                            && file.name().ends_with(filename) {
                                 actual_name = Some(file.name().to_string());
                                 break;
                             }
-                        }
                     }
                 }
 

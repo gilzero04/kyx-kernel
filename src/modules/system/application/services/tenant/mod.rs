@@ -97,8 +97,8 @@ impl TenantService {
             parent_id = Some(tid);
         }
 
-        if let Some(pid) = parent_id {
-            if let Ok(Some(parent)) = self.repo.get_by_id(pid, None).await {
+        if let Some(pid) = parent_id
+            && let Ok(Some(parent)) = self.repo.get_by_id(pid, None).await {
                 let parent_plan = parent
                     .config
                     .as_ref()
@@ -113,7 +113,6 @@ impl TenantService {
                     });
                 }
             }
-        }
 
         let admin_infos =
             if let (Some(e), Some(p), Some(n)) = (admin_email, admin_password, admin_name) {
@@ -171,24 +170,20 @@ impl TenantService {
         verification_token: Option<String>,
     ) -> Result<crate::modules::system::domain::tenant::entity::TenantEntry, AppError> {
         // Hierarchical subdomain check
-        if let Some(true) = use_parent_subdomain {
-            if let Ok(Some(tenant)) = self.repo.get_by_id(id, None).await {
-                if let Some(pid) = tenant.parent_id {
-                    if pid != id {
+        if let Some(true) = use_parent_subdomain
+            && let Ok(Some(tenant)) = self.repo.get_by_id(id, None).await
+                && let Some(pid) = tenant.parent_id
+                    && pid != id {
                         // Not the root tenant
-                        if let Ok(Some(parent)) = self.repo.get_by_id(pid, None).await {
-                            if !parent.allow_child_subdomains.unwrap_or(false) {
+                        if let Ok(Some(parent)) = self.repo.get_by_id(pid, None).await
+                            && !parent.allow_child_subdomains.unwrap_or(false) {
                                 return Err(AppError {
                                     code: 403,
                                     message: "Parent tenant does not allow subdomain usage"
                                         .to_string(),
                                 });
                             }
-                        }
                     }
-                }
-            }
-        }
 
         self.repo
             .update_tenant(

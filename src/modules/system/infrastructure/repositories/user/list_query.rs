@@ -19,7 +19,7 @@ fn build_user_order_clause(sort_param: &Option<String>) -> String {
         let mut order_parts = Vec::new();
         for part in sort.split(',') {
             let parts: Vec<&str> = part.split(':').collect();
-            if parts.len() >= 1 {
+            if !parts.is_empty() {
                 let col = parts[0].trim();
                 let dir = parts.get(1).map(|d| d.trim()).unwrap_or("asc");
                 if let Some(sql_col) = get_user_sort_column(col) {

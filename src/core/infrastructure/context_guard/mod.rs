@@ -5,7 +5,10 @@
 // - Console events should not modify Workspace state
 // - Workspace events should not modify Console state
 // - Tenant A should not access Tenant B data
+// NOTE: Reserved for future integration
 // ═══════════════════════════════════════════════════════════════════════════════
+
+#![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

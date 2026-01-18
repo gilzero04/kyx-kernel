@@ -265,7 +265,7 @@ impl AuthService {
                 id: user_id,
                 email,
                 full_name,
-                role: role,
+                role,
                 permissions: permissions.clone(),
                 tenant_type,
                 avatar_url,
@@ -462,11 +462,10 @@ impl AuthService {
                 .await
                 .unwrap_or(None);
 
-            if let Some(j) = json {
-                if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
+            if let Some(j) = json
+                && let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
                     sessions.push(s);
                 }
-            }
         }
 
         Ok(sessions)
@@ -525,8 +524,8 @@ impl AuthService {
                 .await
                 .unwrap_or(None);
 
-            if let Some(j) = json {
-                if let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
+            if let Some(j) = json
+                && let Ok(s) = serde_json::from_str::<SessionInfo>(&j) {
                     // 4. Enrich with user data from Postgres
                     let user_row =
                         sqlx::query("SELECT email, full_name FROM auth_users WHERE id = $1")
@@ -557,7 +556,6 @@ impl AuthService {
                         is_current,
                     });
                 }
-            }
         }
 
         Ok(admin_sessions)
@@ -730,7 +728,7 @@ impl AuthService {
         // 5. Create User with auto-generated avatar, cover, and images
         use crate::core::utils::avatar::generate_user_images;
         let user_images = generate_user_images(&req.full_name);
-        let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
+        let hashed_pw = hash_password(&req.password)?;
         let user_row = sqlx::query(
             "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url, cover_url) VALUES ($1, $2, $3, $4, $5) RETURNING id"
         )
@@ -1028,7 +1026,7 @@ impl AuthService {
 
         use crate::core::utils::avatar::generate_user_images;
         let user_images = generate_user_images(&req.full_name);
-        let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
+        let hashed_pw = hash_password(&req.password)?;
 
         // 2. Create User with auto-generated avatar, cover, and images
         let user_row = sqlx::query(
@@ -1235,7 +1233,7 @@ impl AuthService {
         // 6. Create User with auto-generated avatar, cover, and images
         use crate::core::utils::avatar::generate_user_images;
         let user_images = generate_user_images(&req.full_name);
-        let hashed_pw = hash_password(&req.password).map_err(|e| e)?;
+        let hashed_pw = hash_password(&req.password)?;
         let user_row = sqlx::query(
             "INSERT INTO auth_users (email, hashed_password, full_name, avatar_url, cover_url) VALUES ($1, $2, $3, $4, $5) RETURNING id"
         )

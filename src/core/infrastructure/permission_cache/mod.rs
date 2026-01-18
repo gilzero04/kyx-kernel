@@ -4,7 +4,10 @@
 // Reduces database queries for permission checks by caching results.
 // Key: (user_id, tenant_id, permission_code)
 // TTL: 5 minutes default
+// NOTE: Reserved for future integration
 // ═══════════════════════════════════════════════════════════════════════════════
+
+#![allow(dead_code)]
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -84,12 +87,11 @@ impl PermissionCache {
     pub async fn get(&self, key: &PermissionCacheKey) -> Option<bool> {
         let cache = self.cache.read().await;
 
-        if let Some(entry) = cache.get(key) {
-            if !entry.is_expired() {
+        if let Some(entry) = cache.get(key)
+            && !entry.is_expired() {
                 *self.hits.write().await += 1;
                 return Some(entry.value);
             }
-        }
 
         *self.misses.write().await += 1;
         None

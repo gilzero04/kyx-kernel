@@ -3,7 +3,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // This module defines the central event types for the Kyx Kernel.
 // All events are versioned to support backward-compatible evolution.
+// NOTE: This module is reserved for future use, hence #[allow(dead_code)]
 // ═══════════════════════════════════════════════════════════════════════════════
+
+#![allow(dead_code)]
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
