@@ -1472,17 +1472,58 @@ else
 fi
 echo ""
 # ═══════════════════════════════════════════════════════════
-# Step 29: Workspace Status (Phase 3) - SKIPPED (endpoint not implemented)
+# Step 29: Workspace Status (Phase 3) - Using unified branding endpoint
 # ═══════════════════════════════════════════════════════════
 echo "━━━ Step 29: Workspace Status ━━━"
-echo "⏭️ SKIPPED - endpoint not implemented yet"
+
+# Use unified branding endpoint with workspace context
+WORKSPACE_STATUS=$(curl -s -X GET "$URL/api/v1/public/branding?context=workspace&slug=kyz-tech")
+
+WORKSPACE_SUCCESS=$(echo "$WORKSPACE_STATUS" | jq -r '.success // empty')
+
+if [ "$WORKSPACE_SUCCESS" = "true" ]; then
+    echo "✅ GET /public/branding?context=workspace success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /public/branding?context=workspace success = $WORKSPACE_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════
-# Step 30: User Preferences (Phase 3) - SKIPPED (use /me/preferences instead)
+# Step 30: User Preferences (Phase 3) - /me/preferences
 # ═══════════════════════════════════════════════════════════
 echo "━━━ Step 30: User Preferences ━━━"
-echo "⏭️ SKIPPED - use /me/preferences instead of /auth/preferences"
+
+# 30.1 Get User Preferences
+PREFS_GET=$(curl -s -X GET "$URL/api/v1/me/preferences" \
+    -H "Authorization: Bearer $TOKEN")
+
+PREFS_SUCCESS=$(echo "$PREFS_GET" | jq -r '.success // empty')
+
+if [ "$PREFS_SUCCESS" = "true" ]; then
+    echo "✅ GET /me/preferences success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ GET /me/preferences success = $PREFS_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
+
+# 30.2 Update User Preferences (theme_mode)
+PREFS_UPDATE=$(curl -s -X PATCH "$URL/api/v1/me/preferences" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"theme_mode": "dark"}')
+
+PREFS_UPDATE_SUCCESS=$(echo "$PREFS_UPDATE" | jq -r '.success // empty')
+
+if [ "$PREFS_UPDATE_SUCCESS" = "true" ]; then
+    echo "✅ PATCH /me/preferences success = true"
+    PASS=$((PASS + 1))
+else
+    echo "❌ PATCH /me/preferences success = $PREFS_UPDATE_SUCCESS"
+    FAIL=$((FAIL + 1))
+fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════
