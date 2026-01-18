@@ -149,17 +149,21 @@ pub async fn get_plugin(
     let plugin_id = path.into_inner();
 
     match registry.get_plugin(plugin_id).await {
-        Ok(Some(plugin)) => web::HttpResponse::Ok().json(&PluginResponse::from(plugin)),
-        Ok(None) => web::HttpResponse::NotFound().json(&ErrorResponse {
-            error: "Not found".to_string(),
-            message: "Plugin not found".to_string(),
-        }),
+        Ok(Some(plugin)) => {
+            let response = ApiResponse::ok(
+                json!({ "plugin": PluginResponse::from(plugin) }),
+                "Plugin fetched successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
+        Ok(None) => {
+            let response = ApiResponse::<()>::not_found("Plugin not found");
+            web::HttpResponse::NotFound().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to get plugin: {}", e);
-            web::HttpResponse::InternalServerError().json(&ErrorResponse {
-                error: "Failed to get plugin".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::internal_error(&e.to_string());
+            web::HttpResponse::InternalServerError().json(&response)
         }
     }
 }
@@ -186,13 +190,17 @@ pub async fn install_plugin(
         .install(req.tenant_id, req.manifest, None, req.config)
         .await
     {
-        Ok(plugin) => web::HttpResponse::Created().json(&PluginResponse::from(plugin)),
+        Ok(plugin) => {
+            let response = ApiResponse::created(
+                json!({ "plugin": PluginResponse::from(plugin) }),
+                "Plugin installed successfully",
+            );
+            web::HttpResponse::Created().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to install plugin: {}", e);
-            web::HttpResponse::BadRequest().json(&ErrorResponse {
-                error: "Failed to install plugin".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::bad_request(&e.to_string());
+            web::HttpResponse::BadRequest().json(&response)
         }
     }
 }
@@ -219,16 +227,17 @@ pub async fn enable_plugin(
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
 
     match registry.enable(tenant_id, plugin_id).await {
-        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
-            status: "success".to_string(),
-            message: "Plugin enabled".to_string(),
-        }),
+        Ok(()) => {
+            let response = ApiResponse::ok(
+                json!({ "enabled": true }),
+                "Plugin enabled successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to enable plugin: {}", e);
-            web::HttpResponse::NotFound().json(&ErrorResponse {
-                error: "Plugin not found".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::not_found(&e.to_string());
+            web::HttpResponse::NotFound().json(&response)
         }
     }
 }
@@ -255,16 +264,17 @@ pub async fn disable_plugin(
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
 
     match registry.disable(tenant_id, plugin_id).await {
-        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
-            status: "success".to_string(),
-            message: "Plugin disabled".to_string(),
-        }),
+        Ok(()) => {
+            let response = ApiResponse::ok(
+                json!({ "disabled": true }),
+                "Plugin disabled successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to disable plugin: {}", e);
-            web::HttpResponse::NotFound().json(&ErrorResponse {
-                error: "Plugin not found".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::not_found(&e.to_string());
+            web::HttpResponse::NotFound().json(&response)
         }
     }
 }
@@ -291,16 +301,17 @@ pub async fn uninstall_plugin(
     let tenant_id = query.tenant_id.unwrap_or(claims.tenant_id);
 
     match registry.uninstall(tenant_id, plugin_id).await {
-        Ok(()) => web::HttpResponse::Ok().json(&SuccessResponse {
-            status: "success".to_string(),
-            message: "Plugin uninstalled".to_string(),
-        }),
+        Ok(()) => {
+            let response = ApiResponse::ok(
+                json!({ "uninstalled": true }),
+                "Plugin uninstalled successfully",
+            );
+            web::HttpResponse::Ok().json(&response)
+        }
         Err(e) => {
             log::error!("Failed to uninstall plugin: {}", e);
-            web::HttpResponse::BadRequest().json(&ErrorResponse {
-                error: "Failed to uninstall plugin".to_string(),
-                message: e.to_string(),
-            })
+            let response = ApiResponse::<()>::bad_request(&e.to_string());
+            web::HttpResponse::BadRequest().json(&response)
         }
     }
 }

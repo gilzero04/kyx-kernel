@@ -1,10 +1,12 @@
-use ntex::web;
-use std::sync::Arc;
 use crate::core::infrastructure::database::Database;
+use crate::core::utils::response::ApiResponse;
+use ntex::web;
+use serde_json::json;
 use sqlx::Row;
+use std::sync::Arc;
 
 /// Get workspace status and branding for a specific tenant
-/// 
+///
 /// This endpoint provides tenant-specific branding for workspace context.
 /// Branding is now stored in sys_brandings table (single source of truth).
 #[utoipa::path(
@@ -24,14 +26,12 @@ pub async fn get_workspace_status(
     db: web::types::State<Arc<Database>>,
     query: web::types::Query<WorkspaceStatusQuery>,
 ) -> Result<web::HttpResponse, web::Error> {
-    
     // Validate tenant_id
     let tenant_id = match &query.tenant_id {
         Some(id) => id.clone(),
         None => {
-            return Ok(web::HttpResponse::BadRequest().json(&serde_json::json!({
-                "error": "Missing tenant_id parameter"
-            })));
+            let response = ApiResponse::<()>::bad_request("Missing tenant_id parameter");
+            return Ok(web::HttpResponse::BadRequest().json(&response));
         }
     };
 
@@ -39,15 +39,15 @@ pub async fn get_workspace_status(
     let tenant_uuid = match uuid::Uuid::parse_str(&tenant_id) {
         Ok(id) => id,
         Err(_) => {
-            return Ok(web::HttpResponse::BadRequest().json(&serde_json::json!({
-                "error": "Invalid tenant_id format"
-            })));
+            let response = ApiResponse::<()>::bad_request("Invalid tenant_id format");
+            return Ok(web::HttpResponse::BadRequest().json(&response));
         }
     };
 
     // Fetch tenant with branding from sys_brandings (single source of truth)
     // JOIN with sys_themes to get theme codes (portable identifiers) for each context
-    let tenant_row = sqlx::query(r#"
+    let tenant_row = sqlx::query(
+        r#"
         SELECT 
             t.id,
             t.name,
@@ -84,22 +84,21 @@ pub async fn get_workspace_status(
         LEFT JOIN sys_themes tal ON b.theme_app_light_id = tal.id
         LEFT JOIN sys_themes tad ON b.theme_app_dark_id = tad.id
         WHERE t.id = $1 AND t.deleted_at IS NULL
-    "#)
-        .bind(tenant_uuid)
-        .fetch_optional(&db.pool)
-        .await;
+    "#,
+    )
+    .bind(tenant_uuid)
+    .fetch_optional(&db.pool)
+    .await;
 
     let tenant_row = match tenant_row {
         Ok(Some(row)) => row,
         Ok(None) => {
-            return Ok(web::HttpResponse::NotFound().json(&serde_json::json!({
-                "error": "Tenant not found"
-            })));
+            let response = ApiResponse::<()>::not_found("Tenant not found");
+            return Ok(web::HttpResponse::NotFound().json(&response));
         }
         Err(e) => {
-            return Ok(web::HttpResponse::InternalServerError().json(&serde_json::json!({
-                "error": format!("Database error: {}", e)
-            })));
+            let response = ApiResponse::<()>::internal_error(&format!("Database error: {}", e));
+            return Ok(web::HttpResponse::InternalServerError().json(&response));
         }
     };
 
@@ -108,7 +107,7 @@ pub async fn get_workspace_status(
     let tenant_slug: String = tenant_row.get("slug");
     let tenant_type: Option<String> = tenant_row.get("tenant_type");
     let is_active: bool = tenant_row.get("is_active");
-    
+
     // Branding from sys_brandings
     let app_name: Option<String> = tenant_row.get("app_name");
     let logo: Option<String> = tenant_row.get("logo_light_url");
@@ -120,7 +119,7 @@ pub async fn get_workspace_status(
     let accent_color: Option<String> = tenant_row.get("accent_color");
     let splash_text: Option<String> = tenant_row.get("splash_text");
     let splash_subtext: Option<String> = tenant_row.get("splash_subtext");
-    
+
     // Theme slugs (console uses theme_light_slug/theme_dark_slug)
     let theme_light_slug: Option<String> = tenant_row.get("theme_light_slug");
     let theme_dark_slug: Option<String> = tenant_row.get("theme_dark_slug");

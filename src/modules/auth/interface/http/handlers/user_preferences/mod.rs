@@ -1,8 +1,10 @@
+use crate::core::utils::jwt::Claims;
+use crate::core::utils::response::ApiResponse;
 use ntex::web::{self, HttpResponse};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::core::utils::jwt::Claims;
 
 use crate::core::infrastructure::database::Database;
 use crate::modules::auth::application::services::user_preferences::UserPreferencesService;
@@ -54,28 +56,36 @@ pub async fn get_my_preferences(
     let user_id = match Uuid::parse_str(&claims.sub) {
         Ok(id) => id,
         Err(_) => {
-            return HttpResponse::Unauthorized().json(&serde_json::json!({
-                "error": "Invalid user ID in token"
-            }))
+            let response = ApiResponse::<()>::unauthorized("Invalid user ID in token");
+            return HttpResponse::Unauthorized().json(&response);
         }
     };
 
     let service = UserPreferencesService::new(db.get_ref().clone());
-    
+
     match service.get_or_create_preferences(user_id).await {
-        Ok(prefs) => HttpResponse::Ok().json(&PreferencesResponse {
-            id: prefs.id.to_string(),
-            user_id: prefs.user_id.to_string(),
-            preferred_theme_light_id: prefs.preferred_theme_light_id,
-            preferred_theme_dark_id: prefs.preferred_theme_dark_id,
-            theme_mode: prefs.theme_mode,
-            locale: prefs.locale,
-            timezone: prefs.timezone,
-            notifications_enabled: prefs.notifications_enabled,
-        }),
-        Err(e) => HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": e
-        })),
+        Ok(prefs) => {
+            let response = ApiResponse::ok(
+                json!({
+                    "preferences": PreferencesResponse {
+                        id: prefs.id.to_string(),
+                        user_id: prefs.user_id.to_string(),
+                        preferred_theme_light_id: prefs.preferred_theme_light_id,
+                        preferred_theme_dark_id: prefs.preferred_theme_dark_id,
+                        theme_mode: prefs.theme_mode,
+                        locale: prefs.locale,
+                        timezone: prefs.timezone,
+                        notifications_enabled: prefs.notifications_enabled,
+                    }
+                }),
+                "Preferences fetched successfully",
+            );
+            HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e);
+            HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -103,9 +113,8 @@ pub async fn update_my_preferences(
     let user_id = match Uuid::parse_str(&claims.sub) {
         Ok(id) => id,
         Err(_) => {
-            return HttpResponse::Unauthorized().json(&serde_json::json!({
-                "error": "Invalid user ID in token"
-            }))
+            let response = ApiResponse::<()>::unauthorized("Invalid user ID in token");
+            return HttpResponse::Unauthorized().json(&response);
         }
     };
 
@@ -120,18 +129,27 @@ pub async fn update_my_preferences(
     };
 
     match service.update_preferences(user_id, dto).await {
-        Ok(prefs) => HttpResponse::Ok().json(&PreferencesResponse {
-            id: prefs.id.to_string(),
-            user_id: prefs.user_id.to_string(),
-            preferred_theme_light_id: prefs.preferred_theme_light_id,
-            preferred_theme_dark_id: prefs.preferred_theme_dark_id,
-            theme_mode: prefs.theme_mode,
-            locale: prefs.locale,
-            timezone: prefs.timezone,
-            notifications_enabled: prefs.notifications_enabled,
-        }),
-        Err(e) => HttpResponse::InternalServerError().json(&serde_json::json!({
-            "error": e
-        })),
+        Ok(prefs) => {
+            let response = ApiResponse::ok(
+                json!({
+                    "preferences": PreferencesResponse {
+                        id: prefs.id.to_string(),
+                        user_id: prefs.user_id.to_string(),
+                        preferred_theme_light_id: prefs.preferred_theme_light_id,
+                        preferred_theme_dark_id: prefs.preferred_theme_dark_id,
+                        theme_mode: prefs.theme_mode,
+                        locale: prefs.locale,
+                        timezone: prefs.timezone,
+                        notifications_enabled: prefs.notifications_enabled,
+                    }
+                }),
+                "Preferences updated successfully",
+            );
+            HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e);
+            HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
