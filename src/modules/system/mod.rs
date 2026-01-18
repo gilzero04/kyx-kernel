@@ -270,7 +270,14 @@ impl AppModule for SystemModule {
                     )
                 })
                 // Resource Sharing
-                .configure(interface::http::routers::share::configure),
+                .configure(|conf| {
+                    interface::http::routers::share::share_routes(
+                        conf,
+                        self.jwt.clone(),
+                        self.audit.clone(),
+                        Some(self._redis.clone()),
+                    )
+                }),
         );
 
         // ═══════════════════════════════════════════════════════════════════════════
