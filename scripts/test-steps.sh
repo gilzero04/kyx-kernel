@@ -1393,6 +1393,19 @@ echo ""
 # ═══════════════════════════════════════════════════════════
 echo "━━━ Step 27: Shares CRUD ━━━"
 
+# Refresh token before shares test (token may have expired)
+echo "Refreshing token..."
+LOGIN_RESP=$(curl -s -X POST "$URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin@kyz.tech","password":"Admin123!"}')
+TOKEN=$(echo "$LOGIN_RESP" | jq -r '.data.access_token // .access_token // empty')
+if [ -z "$TOKEN" ]; then
+    echo "❌ Failed to refresh token for shares test"
+    FAIL=$((FAIL + 1))
+else
+    echo "$TOKEN" > /tmp/kyx_token.txt
+fi
+
 # 27.1 List Shares (created by current tenant)
 SHARES_LIST=$(curl -s -X GET "$URL/api/v1/admin/shares" \
     -H "Authorization: Bearer $TOKEN")
