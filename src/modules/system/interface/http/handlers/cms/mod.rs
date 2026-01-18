@@ -5,6 +5,7 @@ use serde_json::json;
 use uuid::Uuid;
 use chrono::Utc;
 use crate::core::utils::jwt::Claims;
+use crate::core::utils::response::ApiResponse;
 use crate::modules::system::application::services::cms::CmsService;
 use crate::modules::system::domain::cms::entity::PageEntry;
 
@@ -37,38 +38,47 @@ pub async fn get_page_by_slug(
     let segments: Vec<&str> = path_str.split("/cms/pages/").collect();
     
     if segments.len() < 2 {
-        return Ok(web::HttpResponse::BadRequest().json(&json!({"status": "error", "message": "Invalid CMS path"})));
+        let response = ApiResponse::<()>::bad_request("Invalid CMS path");
+        return Ok(web::HttpResponse::BadRequest().json(&response));
     }
     
     let remainder = segments[1];
     let parts: Vec<&str> = remainder.splitn(2, '/').collect();
     
     if parts.len() < 2 {
-        return Ok(web::HttpResponse::NotFound().json(&json!({"status": "error", "message": "Tenant ID and slug required"})));
+        let response = ApiResponse::<()>::not_found("Tenant ID and slug required");
+        return Ok(web::HttpResponse::NotFound().json(&response));
     }
     
     let tenant_id = match Uuid::parse_str(parts[0]) {
         Ok(id) => id,
-        Err(_) => return Ok(web::HttpResponse::BadRequest().json(&json!({"status": "error", "message": "Invalid tenant ID format"}))),
+        Err(_) => {
+            let response = ApiResponse::<()>::bad_request("Invalid tenant ID format");
+            return Ok(web::HttpResponse::BadRequest().json(&response));
+        }
     };
     
     let slug = parts[1].to_string();
     
     if slug.is_empty() {
-        return Ok(web::HttpResponse::NotFound().json(&json!({"status": "error", "message": "Page slug required"})));
+        let response = ApiResponse::<()>::not_found("Page slug required");
+        return Ok(web::HttpResponse::NotFound().json(&response));
     }
     
     // Strict tenant scoping: Only find pages belonging to the specified tenant
     match service.get_page_by_slug(tenant_id, &slug).await {
-        Ok(Some(page)) => Ok(web::HttpResponse::Ok().json(&page)),
-        Ok(None) => Ok(web::HttpResponse::NotFound().json(&json!({
-            "status": "error",
-            "message": "Page not found"
-        }))),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(Some(page)) => {
+            let response = ApiResponse::ok(json!({ "page": page }), "Page fetched successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Ok(None) => {
+            let response = ApiResponse::<()>::not_found("Page not found");
+            Ok(web::HttpResponse::NotFound().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }
 
@@ -80,11 +90,14 @@ pub async fn list_admin_pages(
     let tenant_id = claims.tenant_id;
 
     match service.list_pages(tenant_id).await {
-        Ok(pages) => Ok(web::HttpResponse::Ok().json(&pages)),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(pages) => {
+            let response = ApiResponse::ok(json!({ "pages": pages }), "Pages listed successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }
 
@@ -98,15 +111,18 @@ pub async fn get_admin_page(
     let tenant_id = claims.tenant_id;
 
     match service.get_page_by_id(tenant_id, page_id).await {
-        Ok(Some(page)) => Ok(web::HttpResponse::Ok().json(&page)),
-        Ok(None) => Ok(web::HttpResponse::NotFound().json(&json!({
-            "status": "error",
-            "message": "Page not found"
-        }))),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(Some(page)) => {
+            let response = ApiResponse::ok(json!({ "page": page }), "Page fetched successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Ok(None) => {
+            let response = ApiResponse::<()>::not_found("Page not found");
+            Ok(web::HttpResponse::NotFound().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }
 
@@ -117,9 +133,10 @@ pub async fn create_admin_page(
     claims: Claims,
 ) -> Result<web::HttpResponse, web::Error> {
     let tenant_id = claims.tenant_id;
+    let new_id = Uuid::new_v4();
 
     let page = PageEntry {
-        id: Uuid::new_v4(),
+        id: new_id,
         tenant_id,
         slug: body.slug.clone(),
         title: body.title.clone(),
@@ -130,14 +147,14 @@ pub async fn create_admin_page(
     };
 
     match service.save_page(page).await {
-        Ok(_) => Ok(web::HttpResponse::Created().json(&json!({
-            "status": "success",
-            "message": "Page created successfully"
-        }))),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(_) => {
+            let response = ApiResponse::created(json!({ "id": new_id }), "Page created successfully");
+            Ok(web::HttpResponse::Created().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }
 
@@ -154,8 +171,14 @@ pub async fn update_admin_page(
     // Verify ownership first
     let existing = match service.get_page_by_id(tenant_id, page_id).await {
         Ok(Some(p)) => p,
-        Ok(None) => return Ok(web::HttpResponse::NotFound().json(&json!({"status": "error", "message": "Page not found"}))),
-        Err(e) => return Ok(web::HttpResponse::InternalServerError().json(&json!({"status": "error", "message": e.message}))),
+        Ok(None) => {
+            let response = ApiResponse::<()>::not_found("Page not found");
+            return Ok(web::HttpResponse::NotFound().json(&response));
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            return Ok(web::HttpResponse::InternalServerError().json(&response));
+        }
     };
 
     let updated_page = PageEntry {
@@ -170,14 +193,14 @@ pub async fn update_admin_page(
     };
 
     match service.save_page(updated_page).await {
-        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
-            "status": "success",
-            "message": "Page updated successfully"
-        }))),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(_) => {
+            let response = ApiResponse::ok(json!({ "updated": true, "id": page_id }), "Page updated successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }
 
@@ -191,13 +214,13 @@ pub async fn delete_admin_page(
     let tenant_id = claims.tenant_id;
 
     match service.delete_page(tenant_id, page_id).await {
-        Ok(_) => Ok(web::HttpResponse::Ok().json(&json!({
-            "status": "success",
-            "message": "Page deleted successfully"
-        }))),
-        Err(e) => Ok(web::HttpResponse::InternalServerError().json(&json!({
-            "status": "error",
-            "message": e.message
-        })))
+        Ok(_) => {
+            let response = ApiResponse::ok(json!({ "deleted": true }), "Page deleted successfully");
+            Ok(web::HttpResponse::Ok().json(&response))
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            Ok(web::HttpResponse::InternalServerError().json(&response))
+        }
     }
 }

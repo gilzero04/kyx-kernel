@@ -4,7 +4,9 @@ use crate::modules::system::application::services::api_key::ApiKeyService;
 #[allow(unused_imports)]
 use crate::modules::system::domain::api_key::ApiKey;
 use crate::core::infrastructure::audit::AuditService;
+use crate::core::utils::response::ApiResponse;
 use crate::modules::system::interface::http::dto::api_key::CreateApiKeyRequest;
+use serde_json::json;
 use uuid::Uuid;
 
 /// Create a new API key (Admin)
@@ -28,14 +30,18 @@ pub async fn create_api_key(
     match service.create_key(body.tenant_id, body.name.clone(), &body.key_type, None).await {
         Ok((key, plain)) => {
             let _ = audit.log("SuperAdmin", "API_KEY_CREATED", Some(&key.id.to_string()), "SUCCESS", None).await;
-            web::HttpResponse::Created().json(&serde_json::json!({
+            let response = ApiResponse::created(json!({
                 "id": key.id,
                 "prefix": key.prefix,
-                "plain_key": plain, // Only shown once
+                "plain_key": plain,
                 "note": "Save this key, it won't be shown again!"
-            }))
-        },
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+            }), "API key created successfully");
+            web::HttpResponse::Created().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -57,8 +63,14 @@ pub async fn list_api_keys(
 ) -> impl web::Responder {
     let tenant_id = claims.tenant_id;
     match service.list_keys_hierarchical(tenant_id).await {
-        Ok(keys) => web::HttpResponse::Ok().json(&keys),
-        Err(e) => web::HttpResponse::InternalServerError().json(&serde_json::json!({ "error": e.message }))
+        Ok(keys) => {
+            let response = ApiResponse::ok(json!({ "keys": keys }), "API keys listed successfully");
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::internal_error(&e.message);
+            web::HttpResponse::InternalServerError().json(&response)
+        }
     }
 }
 
@@ -70,7 +82,7 @@ pub async fn list_api_keys(
         ("id" = Uuid, Path, description = "API Key ID to revoke")
     ),
     responses(
-        (status = 204, description = "API key revoked successfully"),
+        (status = 200, description = "API key revoked successfully"),
         (status = 400, description = "Failed to revoke key or access denied")
     ),
     tag = "api-keys",
@@ -86,7 +98,13 @@ pub async fn revoke_api_key(
     let key_id = path.into_inner();
     let actor_tenant_id = claims.tenant_id;
     match service.revoke_key(key_id, actor_tenant_id).await {
-        Ok(_) => web::HttpResponse::NoContent().finish(),
-        Err(e) => web::HttpResponse::BadRequest().json(&serde_json::json!({ "error": e.message }))
+        Ok(_) => {
+            let response = ApiResponse::ok(json!({ "revoked": true }), "API key revoked successfully");
+            web::HttpResponse::Ok().json(&response)
+        }
+        Err(e) => {
+            let response = ApiResponse::<()>::bad_request(&e.message);
+            web::HttpResponse::BadRequest().json(&response)
+        }
     }
 }
