@@ -1,10 +1,10 @@
 #!/bin/bash
-# Fresh Deployment - Complete Script
-# Pre-Phase (1-8) + Phase 0 (Setup)
+# Development Deployment - Fresh Database + Kernel (No Setup)
+# Use this for frontend-driven setup flow
 set -e
 
 echo "======================================"
-echo "🔄 Fresh Deployment + Phase 0"
+echo "🔄 Development Deployment (No Setup)"
 echo "Start: $(date)"
 echo "======================================"
 
@@ -70,69 +70,15 @@ for i in {1..15}; do
 done
 
 echo ""
-echo "✅ PRE-PHASE Complete"
-
-# ═══════════════════════════════════════════════════════════
-# PHASE 0: System Initialization
-# ═══════════════════════════════════════════════════════════
-echo ""
-echo "━━━ PHASE 0: System Initialization ━━━"
-
-# Read ENGINE_SECRET_KEY from .env if exists
-ENGINE_SECRET=$(grep ENGINE_SECRET_KEY .env 2>/dev/null | cut -d= -f2 || echo "")
-
-echo ">>> Sending setup request..."
-if [ -n "$ENGINE_SECRET" ]; then
-    echo "Using ENGINE_SECRET_KEY (Production Mode)"
-    RESP=$(curl -s -X POST http://localhost:8080/api/v1/auth/setup \
-      -H "Content-Type: application/json" \
-      -H "X-Engine-Secret: $ENGINE_SECRET" \
-      -d '{
-        "org_name": "KYZ Technologied Co., LTD.",
-        "org_slug": "kyz-tech",
-        "email": "admin@kyz.tech",
-        "password": "Admin123!",
-        "full_name": "Admin User",
-        "platform_type": "multi"
-      }')
-else
-    echo "No ENGINE_SECRET_KEY (Development Mode)"
-    RESP=$(curl -s -X POST http://localhost:8080/api/v1/auth/setup \
-      -H "Content-Type: application/json" \
-      -d '{
-        "org_name": "KYZ Technologied Co., LTD.",
-        "org_slug": "kyz-tech",
-        "email": "admin@kyz.tech",
-        "password": "Admin123!",
-        "full_name": "Admin User",
-        "platform_type": "multi"
-      }')
-fi
-
-echo "Response:"
-echo "$RESP" | jq .
-
-TOKEN=$(echo "$RESP" | jq -r '.access_token // empty')
-
-if [ -z "$TOKEN" ]; then
-    echo "❌ Setup failed"
-    exit 1
-fi
-
-echo "$TOKEN" > /tmp/kyx_token.txt
-echo ""
-echo "✅ Token saved: /tmp/kyx_token.txt"
-
-echo ""
 echo "======================================"
 echo "✅ DEPLOYMENT COMPLETE!"
 echo "End: $(date)"
 echo "======================================"
 echo ""
-echo "Credentials:"
-echo "  Email: admin@kyz.tech"
-echo "  Password: Admin123!"
+echo "System Status:"
+curl -s http://localhost:8080/api/v1/public/system/status | jq .
 echo ""
 echo "Next steps:"
-echo "  export TOKEN=\$(cat /tmp/kyx_token.txt)"
-echo "  curl -H \"Authorization: Bearer \$TOKEN\" http://localhost:8080/api/v1/admin/users"
+echo "  1. Open frontend: http://localhost:5173"
+echo "  2. Complete setup wizard"
+echo "  3. API available at: http://localhost:8080"
